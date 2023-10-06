@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"module": "ES6",
+		"target": "ES2019",
+
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+
+		"rootDir": "./src",
+		"outDir": "./dist",
+
+		"allowJs": false,
+		"noImplicitAny": true,
+		"esModuleInterop": true,
+		"strictNullChecks": true,
+		"allowSyntheticDefaultImports": true,
+	},
+	"exclude": [
+		"**/node_modules/",
+		"dist/",
+	],
+}
