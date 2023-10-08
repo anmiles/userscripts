@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.16
+// @version        0.9.17
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.16';
+window.__sbg_plus_version = '0.9.17';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -35,6 +35,7 @@ interface Window {
 	__sbg_preset: unknown;
 	__sbg_language: Lng;
 	__sbg_plus_version: string;
+	__sbg_plus_features: unknown;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -841,7 +842,7 @@ type ApiProfileData = {
 		}
 	}
 
-	const features = new Features();
+	const features = window.__sbg_plus_features = new Features();
 
 	/* scripts */
 
