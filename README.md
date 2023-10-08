@@ -1,4 +1,4 @@
-# userscripts
+# @anmiles/userscripts
 
 Userscripts for browsers
 

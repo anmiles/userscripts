@@ -660,6 +660,7 @@ type ApiProfileData = {
 		trigger: FeatureTrigger;
 		private public: boolean;
 		private desktop: boolean;
+		private toggleValue = false;
 
 		constructor(
 			func: (arg: TData) => TArgument,
@@ -709,6 +710,19 @@ type ApiProfileData = {
 
 		protected abstract getData(argument: TArgument): TData;
 
+		toggle(value: boolean = !this.toggleValue): boolean {
+			const attributeKey = `data-feat-${this.key}`;
+			this.toggleValue   = value;
+
+			if (value) {
+				document.body.setAttribute(attributeKey, '');
+			} else {
+				document.body.removeAttribute(attributeKey);
+			}
+
+			return value;
+		}
+
 		exec(argument: TArgument): TArgument {
 			if (!this.isEnabled()) {
 				log(`skipped ${this.func.name}`, 'debug');
@@ -718,6 +732,7 @@ type ApiProfileData = {
 			try {
 				const data   = this.getData(argument);
 				const result = this.func(data);
+				this.toggle(true);
 				log(`executed ${this.func.name}`);
 				return result;
 			} catch (ex) {
@@ -927,13 +942,17 @@ type ApiProfileData = {
 		{ ru : 'Показать кнопку перехода к настройкам авто-удаления', en : 'Show auto-delete settings button' },
 		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory.popup') });
 
-	new Feature(hideManualClearButtons,
-		{ ru : 'Спрятать кнопки ручного удаления предметов', en : 'Hide manual clear buttons' },
-		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
-
 	new Feature(restoreCUISort,
 		{ ru : 'Заменить сортировку Егора на сортировку Николая', en : 'Replace Egor sort with Nicko sort' },
 		{ public : true, group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+
+	new Feature(moveRerefenceButtonsDown,
+		{ ru : 'Сдвинуть ниже кнопки направления сортировки и закрытия', en : 'Move down sort direction button and close button' },
+		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+
+	new Feature(hideManualClearButtons,
+		{ ru : 'Спрятать кнопки ручного удаления предметов', en : 'Hide manual clear buttons' },
+		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
 
 	new Feature(quickRecycleAllRefs,
 		{ ru : 'Удалять все имеющиеся рефы от точки при нажатии кнопки удаления', en : 'Recycle all existing refs of the point by clicking recycle button' },
@@ -975,9 +994,9 @@ type ApiProfileData = {
 		{ ru : 'Показать кнопку для переключения между точками', en : 'Show button to swipe between points' },
 		{ group : 'info', trigger : 'mapReady', requires : () => $('.sbgcui_swipe-cards-arrow') });
 
-	new Feature(quickToggleInfoButtons,
-		{ ru : 'Разрешить быстрое переключение между наборами кнопок', en : 'Allow quick toggle buttons' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('.info.popup .i-image-box') });
+	new Feature(showFeatureToggles,
+		{ ru : 'Показать кнопки для быстрого переключение между фичами', en : 'Show buttons for quick toggling features' },
+		{ group : 'info', trigger : 'mapReady' });
 
 	/* draw */
 
@@ -2106,15 +2125,16 @@ type ApiProfileData = {
 			});
 	}
 
-	function hideManualClearButtons() {
+	function moveRerefenceButtonsDown() {
+		// TODO: split from hideManualClearButtons
 		setCSS(`
-			.inventory__controls {
+			[data-feat-moveRerefenceButtonsDown] .inventory__controls {
 				height: 0;
 				min-height: 0;
 				overflow: hidden;
 			}
 
-			.inventory__content[data-tab="3"] ~ .inventory__controls > select {
+			[data-feat-moveRerefenceButtonsDown] .inventory__content[data-tab="3"] ~ .inventory__controls > select {
 				position: fixed;
 				right: 0;
 				bottom: 51px;
@@ -2126,7 +2146,7 @@ type ApiProfileData = {
 				text-align: center;
 			}
 
-			.inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button {
+			[data-feat-moveRerefenceButtonsDown] .inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button {
 				border-width: revert;
 				border-radius: 0;
 				bottom: 51px;
@@ -2137,11 +2157,52 @@ type ApiProfileData = {
 				font-size: 20px;
 			}
 
-			#inventory__close {
+			[data-feat-moveRerefenceButtonsDown] #inventory__close {
 				bottom: 102px;
 			}
 
-			.inventory__content[data-tab="3"] {
+			[data-feat-moveRerefenceButtonsDown] .inventory__content[data-tab="3"] {
+				margin-bottom: 41px;
+			}
+		`);
+	}
+
+	function hideManualClearButtons() {
+		setCSS(`
+			[data-feat-hideManualClearButtons] .inventory__controls {
+				height: 0;
+				min-height: 0;
+				overflow: hidden;
+			}
+
+			[data-feat-hideManualClearButtons] .inventory__content[data-tab="3"] ~ .inventory__controls > select {
+				position: fixed;
+				right: 0;
+				bottom: 51px;
+				height: 40px;
+				flex-grow: 0;
+				flex-shrink: 0;
+				margin: 0 4px;
+				width: calc(100% - 8px);
+				text-align: center;
+			}
+
+			[data-feat-hideManualClearButtons] .inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button {
+				border-width: revert;
+				border-radius: 0;
+				bottom: 51px;
+				z-index: 2;
+				right: 4px;
+				height: 40px;
+				width: 40px;
+				font-size: 20px;
+			}
+
+			[data-feat-hideManualClearButtons] #inventory__close {
+				bottom: 102px;
+			}
+
+			[data-feat-hideManualClearButtons] .inventory__content[data-tab="3"] {
 				margin-bottom: 41px;
 			}
 		`);
@@ -2189,12 +2250,12 @@ type ApiProfileData = {
 
 	function restoreCUISort() {
 		setCSS(`
-			.inventory__content[data-tab="3"] ~ .inventory__controls > #eui-sort {
+			[data-feat-restoreCUISort] .inventory__content[data-tab="3"] ~ .inventory__controls > #eui-sort {
 				display: none !important;
 			}
 
-			.inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button,
-			.inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-select {
+			[data-feat-restoreCUISort] .inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button,
+			[data-feat-restoreCUISort] .inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-select {
 				display: block !important;
 			}
 		`);
@@ -2406,43 +2467,40 @@ type ApiProfileData = {
 	function hideCloseButton() {
 		$('#draw').on('click', (ev) => $('.draw-slider-buttons button').css({ height : `${$(ev.target).outerHeight()}px` }));
 
-		$('body').addClass('noclose');
-
 		setCSS(`
-			.noclose .popup-close,
-			.noclose #inventory__close,
-			.noclose #draw-slider-close {
+			[data-feat-hideCloseButton] .popup-close,
+			[data-feat-hideCloseButton] #inventory__close,
+			[data-feat-hideCloseButton] #draw-slider-close {
 				display: none !important;
 			}
 
-			.noclose .draw-slider-buttons {
+			[data-feat-hideCloseButton] .draw-slider-buttons {
 				padding: 0 calc(5%);
 				gap: 0.25em;
 			}
 
-			.noclose .draw-slider-buttons button {
+			[data-feat-hideCloseButton] .draw-slider-buttons button {
 				width: calc(50% - 0.125em);
 				max-width: none !important;
 				padding: 6px;
 				font-size: 1.1em;
 			}
 
-			.noclose .i-stat .i-buttons {
+			[data-feat-hideCloseButton] .i-stat .i-buttons {
 				margin: 0;
 			}
 		`);
 	}
 
 	function colorizeTimer() {
-		$('body').addClass('richtimer');
 		rearrangeButtons();
 
 		setCSS(`
-			.richtimer .i-stat .i-buttons {
+			[data-feat-colorizeTimer] .i-stat .i-buttons {
 				--discover-left: 1/6;
 			}
 
-			.richtimer #discover:after {
+			[data-feat-colorizeTimer] #discover:after {
 				transform: none;
 				width: var(--discover-sibling-left-width);
 				left: var(--discover-sibling-left-offset);
@@ -2456,60 +2514,58 @@ type ApiProfileData = {
 				content: ' ';
 			}
 
-			.richtimer #discover[data-time]:after {
+			[data-feat-colorizeTimer] #discover[data-time]:after {
 				content: attr(data-time);
 			}
 
-			.richtimer #discover[data-time][data-remain]:after {
+			[data-feat-colorizeTimer] #discover[data-time][data-remain]:after {
 				content: attr(data-time) ' #' attr(data-remain);
 			}
 
-			.richtimer #discover[data-time]:after {
+			[data-feat-colorizeTimer] #discover[data-time]:after {
 				color: var(--ingress-btn-disabled-color);
 				border-color: var(--ingress-btn-disabled-accent-color);
 			}
 
-			.richtimer #discover[data-time][data-remain]:after {
+			[data-feat-colorizeTimer] #discover[data-time][data-remain]:after {
 				background: none;
 				border-color: currentColor;
 			}
 
-			.richtimer #discover[data-time][data-remain="4"]:after {
+			[data-feat-colorizeTimer] #discover[data-time][data-remain="4"]:after {
 				color: var(--ingress-btn-border-color);
 			}
 
-			.richtimer #discover[data-time][data-remain="3"]:after {
+			[data-feat-colorizeTimer] #discover[data-time][data-remain="3"]:after {
 				color: white;
 			}
 
-			.richtimer #discover[data-time][data-remain="2"]:after {
+			[data-feat-colorizeTimer] #discover[data-time][data-remain="2"]:after {
 				color: yellow;
 			}
 
-			.richtimer #discover[data-time][data-remain="1"]:after {
+			[data-feat-colorizeTimer] #discover[data-time][data-remain="1"]:after {
 				color: orange;
 			}
 		`);
 	}
 
 	function hideRepairButton() {
-		$('body').addClass('norepair');
 		rearrangeButtons();
 
 		setCSS(`
-			.norepair #repair,
-			.norepair #eui-repair {
+			[data-feat-hideRepairButton] #repair,
+			[data-feat-hideRepairButton] #eui-repair {
 				display: none;
 			}
 
-			.norepair .i-stat .i-buttons > button:not(#discover) {
+			[data-feat-hideRepairButton] .i-stat .i-buttons > button:not(#discover) {
 				width: calc(45% + 0.125em);
 			}
 		`);
 	}
 
 	function replaceSwipeWithButton(arrow: JQuery<HTMLElement>) {
-		$('body').addClass('noswipe');
 		rearrangeButtons();
 
 		arrow.hide();
@@ -2583,11 +2639,11 @@ type ApiProfileData = {
 				display: none;
 			}
 
-			.noswipe .i-stat .i-buttons {
+			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons {
 				--discover-right: 1/6;
 			}
 
-			.noswipe .i-stat .i-buttons .next {
+			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next {
 				display: block;
 				position: absolute;
 				width: var(--discover-sibling-right-width);
@@ -2599,70 +2655,78 @@ type ApiProfileData = {
 				border: 2px solid var(--ingress-btn-border-color);
 			}
 
-			.noswipe .i-stat .i-buttons .next:disabled {
+			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next:disabled {
 				color: var(--ingress-btn-disabled-color);
 				background: var(--ingress-btn-disabled-bg-color);
 				border-color: var(--ingress-btn-disabled-accent-color);
 			}
 
-			.noswipe .i-stat .i-buttons .next:active {
+			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next:active {
 				filter: saturate(2);
 			}
 
-			.noswipe .i-stat .i-buttons .next svg {
+			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next svg {
 				height: 16px;
 				position: relative;
 				top: 2px;
 			}
 
-			.noswipe .i-stat .i-buttons .next svg path {
+			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next svg path {
 				fill: currentColor;
 			}
 		`);
 	}
 
-	function quickToggleInfoButtons(imageBox: JQuery<HTMLElement>) {
-		const buttons = $('<div></div>').addClass('i-buttons').appendTo(imageBox);
+	function showFeatureToggles() {
+		const containers = {
+			info      : $('.info.popup .i-image-box'),
+			inventory : $('.inventory.popup'),
+		} as const;
 
-		function toggleClass(button: JQuery<HTMLElement>, cssClass: string) {
-			button.toggleClass('off', !$('body').hasClass(cssClass));
-		}
+		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
 
-		[
-			{ title : 'CL', cssClass : 'noclose' },
-			{ title : 'RE', cssClass : 'norepair' },
-			{ title : 'SW', cssClass : 'noswipe' },
-			{ title : 'TM', cssClass : 'richtimer' },
-		].forEach(({ title, cssClass }) => {
+		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<any, any> }> = [
+			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
+			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
+			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
+			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
+
+			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
+			{ container : 'inventory', title : 'BUT', feature : features.get(moveRerefenceButtonsDown) },
+			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
+		];
+
+		for (const { container, title, feature } of featureToggles) {
 			const button = $('<button></button>')
 				.html(title)
-				.appendTo(buttons);
-
-			toggleClass(button, cssClass);
+				.toggleClass('off', !feature.isEnabled())
+				.appendTo(containers[container].find('.i-buttons'));
 
 			button.on('click', () => {
-				$('body').toggleClass(cssClass);
-				toggleClass(button, cssClass);
+				const toggleValue = feature.toggle();
+				button.toggleClass('off', !toggleValue);
 			});
-		});
+		}
 
 		setCSS(`
-			.i-image-box .i-buttons {
-				position: absolute;
+			.i-feature-toggles {
+				position: absolute !important;
 				left: 0;
 				bottom: 0;
 				justify-content: flex-start;
 				direction: ltr;
 			}
 
-			.i-image-box .i-buttons button {
+			.i-feature-toggles button {
 				width: auto;
 				position: relative;
 				z-index: 1;
 				font-size: 0.85em;
+				min-height: 0px;
+				line-height: 1;
 			}
 
-			.i-image-box .i-buttons button.off {
+			.i-feature-toggles button.off {
 				filter: saturate(0.15);
 			}
 		`);
