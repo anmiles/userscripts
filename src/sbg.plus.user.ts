@@ -35,7 +35,7 @@ interface Window {
 	__sbg_preset: unknown;
 	__sbg_language: Lng;
 	__sbg_plus_version: string;
-	__sbg_plus_features: unknown;
+	__sbg_plus_modifyFeatures: Function;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -842,7 +842,7 @@ type ApiProfileData = {
 		}
 	}
 
-	const features = window.__sbg_plus_features = new Features();
+	const features = new Features();
 
 	/* scripts */
 
@@ -1214,6 +1214,7 @@ type ApiProfileData = {
 		await waitHTMLLoaded();
 		initCSS();
 		initSettings();
+		window.__sbg_plus_modifyFeatures && window.__sbg_plus_modifyFeatures(features);
 		execFeatures('pageLoad');
 
 		const nativeScript = await getNativeScript();
