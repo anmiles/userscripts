@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.15
+// @version        0.9.16
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.15';
+window.__sbg_plus_version = '0.9.16';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -34,9 +34,7 @@ interface Window {
 	__sbg_local: boolean;
 	__sbg_preset: unknown;
 	__sbg_language: Lng;
-
 	__sbg_plus_version: string;
-	__sbg_plus_settingsPopup: unknown;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -801,20 +799,33 @@ type ApiProfileData = {
 		}
 	}
 
+	const featuresEvents = [
+		'add',
+	] as const;
+
+	type FeaturesEvents = typeof featuresEvents[number];
+
 	class Features {
 		func = {} as Record<string, FeatureBase<any, any>>;
 		group = {} as Record<FeatureGroup, FeatureBase<any, any>[]>;
 		trigger = {} as Record<FeatureTrigger, FeatureBase<any, any>[]>;
+		private listeners = {} as Record<FeaturesEvents, Array<(feature: FeatureBase<any, any>) => void>>;
 
 		constructor() {
 			Object.keys(featureGroups).map((key: FeatureGroup) => this.group[key] = []);
 			featureTriggers.map((key) => this.trigger[key] = []);
+			featuresEvents.map((ev) => this.listeners[ev] = []);
+		}
+
+		on(ev: FeaturesEvents, listener: (feature: FeatureBase<any, any>) => void) {
+			this.listeners[ev].push(listener);
 		}
 
 		add(feature: FeatureBase<any, any>) {
 			this.func[feature.func.name] = feature;
 			this.group[feature.group].push(feature);
 			this.trigger[feature.trigger].push(feature);
+			this.listeners['add'].map((listener) => listener(feature));
 		}
 
 		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
@@ -1638,7 +1649,7 @@ type ApiProfileData = {
 	}
 
 	function initSettings() {
-		window.__sbg_plus_settingsPopup = new SettingsPopup();
+		new SettingsPopup();
 		log('initialized settings');
 	}
 
@@ -3817,8 +3828,19 @@ type ApiProfileData = {
 
 		constructor() {
 			this.render();
-			Object.keys(featureGroups).map((group: FeatureGroup) => this.addGroup(group));
-			features.values().map((feature) => this.addFeature(feature));
+
+			Object.keys(features.group).map((group: FeatureGroup) => {
+				const groupFeatures = features.group[group].filter((feature) => feature.isAvailable());
+
+				if (groupFeatures.length === 0 && group !== 'custom') {
+					return;
+				}
+
+				this.addGroup(group);
+				groupFeatures.map((feature) => this.addFeature(feature));
+			});
+
+			features.on('add', (feature) => this.addFeature(feature));
 		}
 
 		private render() {
@@ -3866,10 +3888,6 @@ type ApiProfileData = {
 		}
 
 		addFeature(feature: FeatureBase<any, any>) {
-			if (!feature.isAvailable()) {
-				return;
-			}
-
 			const checkbox = this.renderFeatureCheckbox(feature);
 			const setting  = this.renderSetting(checkbox, feature.label);
 			this.sections[feature.group].append(setting);
