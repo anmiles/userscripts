@@ -1067,8 +1067,7 @@ type ApiProfileData = {
 		layers = {} as {[ key in LayerName ] : OlLayer<any> };
 
 		get<TLayerName extends LayerName>(layerName: TLayerName): OlLayer<TLayerName> {
-			const layer = this.layers[layerName];
-			return layer;
+			return this.layers[layerName];
 		}
 
 		set<TLayerName extends LayerName>(layerName: TLayerName, layer: OlLayer<TLayerName>) {
@@ -1689,7 +1688,15 @@ type ApiProfileData = {
 
 	function initLayers() {
 		for (const layer of window.__sbg_variable_map.get().getAllLayers()) {
-			layers.set(layer.getProperties().name, layer);
+			const layerName = layer.getProperties().name;
+
+			const key = !layerName
+				? 'base'
+				: layerName === 'lines' && layers.get('lines')
+					? 'lines_temp'
+					: layerName;
+
+			layers.set(key, layer);
 		}
 
 		log('initialized layers');
