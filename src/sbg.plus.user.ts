@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.17
+// @version        0.9.19
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.17';
+window.__sbg_plus_version = '0.9.19';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -316,6 +316,7 @@ type ApiProfileData = {
 			button: Label;
 			version: Label;
 			logs: Label;
+			advanced: Label;
 		},
 		toasts: {
 			back: Label;
@@ -402,6 +403,10 @@ type ApiProfileData = {
 			logs : new Label({
 				ru : 'Скопировать логи',
 				en : 'Copy logs',
+			}),
+			advanced : new Label({
+				ru : 'Все настройки',
+				en : 'All settings',
 			}),
 		},
 		toasts : {
@@ -658,6 +663,7 @@ type ApiProfileData = {
 		group: FeatureGroup;
 		trigger: FeatureTrigger;
 		private public: boolean;
+		private simple: boolean;
 		private desktop: boolean;
 		private toggleValue = false;
 
@@ -668,6 +674,7 @@ type ApiProfileData = {
 				group: FeatureGroup,
 				trigger: FeatureTrigger,
 				public?: boolean,
+				simple?: boolean,
 				desktop?: boolean,
 		}) {
 			this.key     = func.name;
@@ -675,6 +682,7 @@ type ApiProfileData = {
 			this.group   = options.group;
 			this.trigger = options.trigger;
 			this.public  = options.public || false;
+			this.simple  = options.simple || false;
 			this.desktop = options.desktop || false;
 		}
 
@@ -696,6 +704,10 @@ type ApiProfileData = {
 
 		isAvailable(): boolean {
 			return (isMobile() || this.desktop) && (this.public || this.getPreset() === 'full' || localStorage['sbg-plus-test-mode']);
+		}
+
+		isSimple(): boolean {
+			return this.simple;
 		}
 
 		private getPreset(): Presets {
@@ -753,6 +765,7 @@ type ApiProfileData = {
 				trigger: FeatureTrigger,
 				requires?: (() => TRequiredElement),
 				public?: boolean,
+				simple?: boolean,
 				desktop?: boolean,
 		}) {
 			super(func, labelValues, options);
@@ -788,6 +801,7 @@ type ApiProfileData = {
 				group: FeatureGroup,
 				trigger: FeatureTrigger,
 				public?: boolean,
+				simple?: boolean,
 				desktop?: boolean,
 		}) {
 			super(func, labelValues, options);
@@ -848,15 +862,15 @@ type ApiProfileData = {
 
 	new Feature(loadCUI,
 		{ ru : 'Скрипт Николая', en : 'Nicko script' },
-		{ public : true, group : 'scripts', trigger : '' });
+		{ public : true, simple : true, group : 'scripts', trigger : '' });
 
 	new Feature(loadEUI,
 		{ ru : 'Скрипт Егора', en : 'Egor script' },
-		{ public : true, group : 'scripts', trigger : 'mapReady', desktop : true });
+		{ public : true, simple : true, group : 'scripts', trigger : 'mapReady', desktop : true });
 
 	new Feature(showBuilderPanel,
 		{ ru : 'Конструктор (draw tools)', en : 'Builder (draw tools)' },
-		{ public : true, group : 'scripts', trigger : 'mapReady', desktop : true });
+		{ public : true, simple : true, group : 'scripts', trigger : 'mapReady', desktop : true });
 
 	/* base */
 
@@ -880,7 +894,7 @@ type ApiProfileData = {
 
 	new Transformer(disableClusters,
 		{ ru : 'Отключить ромашку', en : 'Disable clusters' },
-		{ public : true, group : 'cui', trigger : 'cuiTransform' });
+		{ public : true, simple : true, group : 'cui', trigger : 'cuiTransform' });
 
 	new Transformer(alwaysClearInventory,
 		{ ru : 'Авто-очищать инвентарь после каждого дискавера', en : 'Auto-delete inventory after every discover' },
@@ -956,7 +970,7 @@ type ApiProfileData = {
 
 	new Feature(restoreCUISort,
 		{ ru : 'Заменить сортировку Егора на сортировку Николая', en : 'Replace Egor sort with Nicko sort' },
-		{ public : true, group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ public : true, simple : true, group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
 
 	new Feature(moveRerefenceButtonsDown,
 		{ ru : 'Сдвинуть ниже кнопки направления сортировки и закрытия', en : 'Move down sort direction button and close button' },
@@ -1586,13 +1600,24 @@ type ApiProfileData = {
 
 			.sbg-plus-settings .settings-section h4 {
 				margin: 1em 0 0.5em 0;
-			}
-
-			.sbg-plus-settings .settings-section h4:last-child {
+				order: -1;
 				display: none;
 			}
 
+			.sbg-plus-settings .settings-section__item.simple ~ h4,
+			.sbg-plus-settings.advanced .settings-section__item ~ h4 {
+				display: block;
+			}
+
 			.sbg-plus-settings .settings-section__item {
+				display: none;
+			}
+
+			.sbg-plus-settings .settings-section__item.simple {
+				display: flex;
+			}
+
+			.sbg-plus-settings.advanced .settings-section__item {
 				display: flex;
 			}
 
@@ -1605,6 +1630,11 @@ type ApiProfileData = {
 				flex-direction: column;
 				align-items: center;
 				gap: 0.5em;
+			}
+
+			.sbg-plus-popup:before {
+				-webkit-backdrop-filter: blur(5px);
+				backdrop-filter: blur(5px);
 			}
 
 			.sbg-plus-popup textarea {
@@ -1627,7 +1657,11 @@ type ApiProfileData = {
 				gap: 0.5em;
 			}
 
-			.sbg-plus-popup .buttons .popup-button-secondary {
+			.sbg-plus-popup .popup-button {
+				white-space: nowrap;
+			}
+
+			.sbg-plus-popup .popup-button-secondary {
 				filter: grayscale(1);
 			}
 		`);
@@ -3872,19 +3906,28 @@ type ApiProfileData = {
 				.text(labels.settings.logs.toString())
 				.on('click', () => navigator.clipboard.writeText(logs.join('\n')).then(() => showToast(labels.toasts.logs, 2000)));
 
+			const advancedButton = $('<button></button>')
+				.addClass('popup-button-secondary')
+				.text(labels.settings.advanced.toString())
+				.on('click', () => {
+					advancedButton.toggleClass('popup-button-secondary');
+					settingsPopup.toggleClass('advanced');
+				});
+
 			settingsPopup.find('.buttons').prepend(saveButton);
 			settingsPopup.find('.buttons').append(logsButton);
+			settingsPopup.find('.buttons').append(advancedButton);
 
 			const settingsButton = $('<button></button>')
 				.addClass('settings-section__button')
 				.text(labels.settings.button.toString())
 				.on('click', () => settingsPopup.removeClass('hidden'));
 
-			const settingsLabel = this.renderSetting(labels.settings.title, settingsButton);
+			const settingsLabel = this.renderSetting(true, labels.settings.title, settingsButton);
 			$('.settings .settings-section:first .settings-section__item:first').before(settingsLabel);
 
 			const versionValue = $('<span></span>').text(`v${window.__sbg_plus_version}`);
-			const versionLabel = this.renderSetting(labels.settings.version, versionValue);
+			const versionLabel = this.renderSetting(true, labels.settings.version, versionValue);
 			$('.settings [data-i18n="settings.about.version"]').parent().after(versionLabel);
 		}
 
@@ -3898,12 +3941,12 @@ type ApiProfileData = {
 
 		addFeature(feature: FeatureBase<any, any>) {
 			const checkbox = this.renderFeatureCheckbox(feature);
-			const setting  = this.renderSetting(checkbox, feature.label);
-			this.sections[feature.group].append(setting);
+			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
+			this.sections[feature.group].find('h4').before(setting);
 		}
 
-		private renderSetting(...children: Array<Label | JQuery<HTMLElement>>) {
-			const settingLabel = $('<label></label>').addClass('settings-section__item');
+		private renderSetting(isSimple: boolean, ...children: Array<Label | JQuery<HTMLElement>>) {
+			const settingLabel = $('<label></label>').addClass('settings-section__item').toggleClass('simple', isSimple);
 
 			for (const child of children) {
 				const element = child instanceof Label ? $('<span></span>').text(child.toString()) : child;
