@@ -914,6 +914,10 @@ type ApiProfileData = {
 
 	/* eui */
 
+	new Feature(centerIconsInGraphicalButtons,
+		{ ru : 'Центрировать значки графических кнопок', en : 'Center icons in graphical buttons' },
+		{ public : true, group : 'eui', trigger : 'mapReady' });
+
 	/* windows */
 
 	new Feature(hideCloseButton,
@@ -2068,6 +2072,16 @@ type ApiProfileData = {
 
 			.settings-section__item select {
 				text-align: center;
+			}
+		`);
+	}
+
+	/* eui */
+
+	function centerIconsInGraphicalButtons() {
+		setCSS(`
+			.material-symbols-outlined {
+				line-height: 1 !important;
 			}
 		`);
 	}
