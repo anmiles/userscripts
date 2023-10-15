@@ -1488,6 +1488,7 @@ type ApiProfileData = {
 		script.transform(fixCompatibility);
 		script.transform(fixGotoReference);
 		script.transform(fixCUIDefaults);
+		script.transform(disableCUIPointNavigation);
 
 		features.trigger['cuiTransform'].map((transformer: Transformer) => {
 			script = transformer.exec(script);
@@ -1860,6 +1861,21 @@ type ApiProfileData = {
 					readable : [ 'DEFAULT_CONFIG' ],
 				},
 			})
+		;
+	}
+
+	function disableCUIPointNavigation(script: Script): Script {
+		return script
+			// .replaceCUI(
+			// 	'Навигация к точке',
+			// 	'{ throw new Error(); }',
+			// 	'',
+			// )
+			.replaceCUI(
+				'Навигация к точке',
+				/.*/,
+				'',
+			)
 		;
 	}
 
