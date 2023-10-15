@@ -2606,6 +2606,11 @@ type ApiProfileData = {
 				padding: 0 calc(0.5 * var(--discover-gap));
 				border-color: currentColor !important;
 			}
+
+			.sbgcui_no_loot:before,
+			.sbgcui_no_refs:before {
+				max-width: 1.5em;
+			}
 		`);
 	}
 
