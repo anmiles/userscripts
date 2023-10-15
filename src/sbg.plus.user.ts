@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.21
+// @version        0.9.22
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.21';
+window.__sbg_plus_version = '0.9.22';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -1121,15 +1121,19 @@ type ApiProfileData = {
 			return this;
 		}
 
-		replaceCUI<TSearchValue extends string | RegExp>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
+		replaceCUIBlock<TSearchValue extends string | RegExp>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
 			this.data = this.data
 				?.replace(
-					new RegExp(`((\\s+)\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/([\\s\\S]*)\n\\2\\})`),
-					(data) => Script.replaceData(data, searchValue, replacer) || data,
+					new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`),
+					(_data, open, _, block, close) => open + Script.replaceData(block, searchValue, replacer) + close,
 				)
 			;
 
 			return this;
+		}
+
+		removeCUIBlock(block: string) {
+			return this.replaceCUIBlock(block, /[\s\S]+/, '');
 		}
 
 		private static regexEscape(str: string): string {
@@ -1867,18 +1871,7 @@ type ApiProfileData = {
 	}
 
 	function disableCUIPointNavigation(script: Script): Script {
-		return script
-			// .replaceCUI(
-			// 	'Навигация к точке',
-			// 	'{ throw new Error(); }',
-			// 	'',
-			// )
-			.replaceCUI(
-				'Навигация к точке',
-				/.*/,
-				'',
-			)
-		;
+		return script.removeCUIBlock('Навигация к точке');
 	}
 
 	function replaceCUIDefaults() {
@@ -1909,7 +1902,7 @@ type ApiProfileData = {
 				'view.fit(',
 				'if (false) view.fit(',
 			)
-			.replaceCUI(
+			.replaceCUIBlock(
 				'Показ радиуса катализатора',
 				/(?<=\n\s+)view\./g,
 				(match: string) => `if (false) ${match}`,
