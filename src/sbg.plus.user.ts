@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.25
+// @version        0.9.26
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.25';
+window.__sbg_plus_version = '0.9.26';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -936,6 +936,10 @@ type ApiProfileData = {
 	new Transformer(disableAttackZoom,
 		{ ru : 'Отключить изменение зума при атаке', en : 'Disable changing zoom when attack' },
 		{ public : true, simple : true, group : 'cui', trigger : 'cuiTransform' });
+
+	new Transformer(unlockCompassWhenRotateMap,
+		{ ru : 'Разблокировать компас при вращении карты', en : 'Unlock compass when rotate map' },
+		{ public : true, group : 'cui', trigger : 'cuiTransform' });
 
 	new Transformer(alwaysClearInventory,
 		{ ru : 'Авто-очищать инвентарь после каждого дискавера', en : 'Auto-delete inventory after every discover' },
@@ -1960,16 +1964,13 @@ type ApiProfileData = {
 	}
 
 	function disableAttackZoom(script: Script): Script {
+		setCSS(`
+			.sbgcui_lock_rotation[sbgcui_locked="true"]::before {
+				transition: none !important;
+			}
+		`);
+
 		return script
-			.expose('__sbg_cui', {
-				functions : {
-					disabled : [ 'resetView' ],
-				},
-			})
-			.replace(
-				'if (touches.length != 0) { window.requestEntities(); }',
-				'',
-			)
 			.replace(
 				'view.fit(',
 				'if (false) view.fit(',
@@ -1978,6 +1979,21 @@ type ApiProfileData = {
 				'Показ радиуса катализатора',
 				/(?<=\n\s+)view\./g,
 				(match: string) => `if (false) ${match}`,
+			)
+			.replaceCUIBlock(
+				'Вращение карты',
+				'function resetView() {',
+				'function resetView() { view.setRotation(0); return; ',
+			)
+		;
+	}
+
+	function unlockCompassWhenRotateMap(script: Script): Script {
+		return script
+			.replaceCUIBlock(
+				'Вращение карты',
+				'if (latestTouchPoint == null) { return; }',
+				'if (latestTouchPoint == null) { if (isRotationLocked) { toggleRotationLock(event); touchStartHandler({...event, target: event.target, touches: [event.touches[0]], targetTouches: [event.targetTouches[0]] }); } return; }',
 			)
 		;
 	}
