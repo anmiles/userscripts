@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.24
+// @version        0.9.25
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.24';
+window.__sbg_plus_version = '0.9.25';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -953,6 +953,10 @@ type ApiProfileData = {
 
 	new Feature(centerIconsInGraphicalButtons,
 		{ ru : 'Центрировать значки графических кнопок', en : 'Center icons in graphical buttons' },
+		{ public : true, group : 'eui', trigger : 'mapReady' });
+
+	new Feature(showReloadButtonInCompactMode,
+		{ ru : 'Показать кнопку перезагрузки в компактном режиме', en : 'Show reload button in compact mode' },
 		{ public : true, group : 'eui', trigger : 'mapReady' });
 
 	/* windows */
@@ -2180,6 +2184,17 @@ type ApiProfileData = {
 		setCSS(`
 			.material-symbols-outlined {
 				line-height: 1 !important;
+			}
+		`);
+	}
+
+	function showReloadButtonInCompactMode() {
+		setCSS(`
+			.game-menu button.fa-solid-rotate:first-child:last-child {
+				height: 2em;
+				position: absolute;
+				top: 0.75em;
+				right: 0.75em;
 			}
 		`);
 	}
