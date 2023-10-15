@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.19
+// @version        0.9.20
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.19';
+window.__sbg_plus_version = '0.9.20';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -896,6 +896,10 @@ type ApiProfileData = {
 		{ ru : 'Отключить ромашку', en : 'Disable clusters' },
 		{ public : true, simple : true, group : 'cui', trigger : 'cuiTransform' });
 
+	new Transformer(disableAttackZoom,
+		{ ru : 'Отключить изменение зума при атаке', en : 'Disable changing zoom when attack' },
+		{ public : true, simple : true, group : 'cui', trigger : 'cuiTransform' });
+
 	new Transformer(alwaysClearInventory,
 		{ ru : 'Авто-очищать инвентарь после каждого дискавера', en : 'Auto-delete inventory after every discover' },
 		{ public : true, group : 'cui', trigger : 'cuiTransform' });
@@ -1091,6 +1095,8 @@ type ApiProfileData = {
 
 	const layers = new Layers();
 
+	type ScriptReplacer<TSearchValue extends string | RegExp> = TSearchValue extends string ? string : (string | ((substring: string, ...args: any[]) => string));
+
 	class Script {
 		private data: string | undefined;
 
@@ -1102,26 +1108,45 @@ type ApiProfileData = {
 			return this.data;
 		}
 
-		replace<TSearchValue extends string | RegExp>(searchValue: TSearchValue, replacer: TSearchValue extends string ? string : (string | ((substring: string, ...args: any[]) => string))): Script {
-			String.prototype.replace;
-			if (typeof this.data === 'undefined') {
+		replace<TSearchValue extends string | RegExp>(searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
+			this.data = Script.replaceData(this.data, searchValue, replacer);
+			return this;
+		}
+
+		replaceCUI<TSearchValue extends string | RegExp>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
+			this.data = this.data
+				?.replace(
+					new RegExp(`((\\s+)\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/([\\s\\S]*)\n\\2\\})`),
+					(data) => Script.replaceData(data, searchValue, replacer) || data,
+				)
+			;
+
+			return this;
+		}
+
+		private static regexEscape(str: string): string {
+			return str.replace(/[.\-$^*?+\\/\\|[\]{}()]/g, '\\$&');
+		}
+
+		private static replaceData<TSearchValue extends string | RegExp>(data: string | undefined, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): typeof data {
+			if (typeof data === 'undefined') {
 				log(`replace ${searchValue}: data is undefined`, 'error');
-				return this;
+				return data;
 			}
 
-			if (searchValue instanceof RegExp ? this.data.match(searchValue) : this.data.includes(searchValue)) {
+			if (searchValue instanceof RegExp ? data.match(searchValue) : data.includes(searchValue)) {
 				if (typeof replacer === 'string') {
 					log(`replace '${searchValue}' with a string: finished`, 'debug');
-					this.data = this.data.replace(searchValue, replacer);
+					data = data.replace(searchValue, replacer);
 				} else {
 					log(`replace '${searchValue}' with callback: finished`, 'debug');
-					this.data = this.data.replace(searchValue, replacer);
+					data = data.replace(searchValue, replacer);
 				}
 			} else {
 				log(`replace '${searchValue}': not found`, 'error');
 			}
 
-			return this;
+			return data;
 		}
 
 		transform(func: (script: Script) => void) {
@@ -1839,6 +1864,29 @@ type ApiProfileData = {
 			.replace(
 				'function mapClickHandler(event) {',
 				'function mapClickHandler(event) { event.isSilent = true;',
+			)
+		;
+	}
+
+	function disableAttackZoom(script: Script): Script {
+		return script
+			.expose('__sbg_cui', {
+				functions : {
+					disabled : [ 'resetView' ],
+				},
+			})
+			.replace(
+				'if (touches.length != 0) { window.requestEntities(); }',
+				'',
+			)
+			.replace(
+				'view.fit(',
+				'if (false) view.fit(',
+			)
+			.replaceCUI(
+				'Показ радиуса катализатора',
+				/(?<=\n\s+)view\./g,
+				(match: string) => `if (false) ${match}`,
 			)
 		;
 	}
