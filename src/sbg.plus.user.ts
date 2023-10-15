@@ -70,6 +70,17 @@ interface EventTarget {
 	getEventHandlers: <T = EventListener>(type: string) => T[];
 	clearEventListeners: (type: string, sealed: boolean) => void;
 	addOnlyEventListener: EventTarget['addEventListener'];
+	addRepeatingEventListener: (
+		type: string,
+		callback: (ev: Event) => void,
+		options: {
+			repeats: number,
+			timeout: number,
+			tick?: (ev: Event, iteration: number) => void,
+			filter?: (ev: Event) => boolean,
+			cancel?: (ev: Event) => boolean,
+		},
+	) => void;
 }
 
 type EventListeners = {
@@ -307,6 +318,18 @@ type ApiProfileData = {
 } & Record<string, number>;
 
 (function() {
+	const logs = [] as string[];
+
+	function log(message: string, error = false): void {
+		console[error ? 'error' : 'log'](`${message}`);
+		logs.push(message);
+	}
+
+	window.onerror = function(message, _url, lineNumber, columnNumber, error) {
+		logs.push(`error: ${message} on ${lineNumber}:${columnNumber} (${error})`);
+		return false;
+	};
+
 	type Labels = {
 		save: Label;
 		close: Label;
@@ -736,7 +759,7 @@ type ApiProfileData = {
 
 		exec(argument: TArgument): TArgument {
 			if (!this.isEnabled()) {
-				log(`skipped ${this.func.name}`, 'debug');
+				log(`skipped ${this.func.name}`);
 				return argument;
 			}
 
@@ -747,7 +770,7 @@ type ApiProfileData = {
 				log(`executed ${this.func.name}`);
 				return result;
 			} catch (ex) {
-				log(`failed ${this.func.name}: ${ex.toString()}`, 'error');
+				log(`failed ${this.func.name}: ${ex.toString()}`, true);
 				return argument;
 			}
 		}
@@ -1142,20 +1165,20 @@ type ApiProfileData = {
 
 		private static replaceData<TSearchValue extends string | RegExp>(data: string | undefined, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): typeof data {
 			if (typeof data === 'undefined') {
-				log(`replace ${searchValue}: data is undefined`, 'error');
+				log(`replace ${searchValue}: data is undefined`, true);
 				return data;
 			}
 
 			if (searchValue instanceof RegExp ? data.match(searchValue) : data.includes(searchValue)) {
 				if (typeof replacer === 'string') {
-					log(`replace '${searchValue}' with a string: finished`, 'debug');
+					log(`replace '${searchValue}' with a string: finished`);
 					data = data.replace(searchValue, replacer);
 				} else {
-					log(`replace '${searchValue}' with callback: finished`, 'debug');
+					log(`replace '${searchValue}' with callback: finished`);
 					data = data.replace(searchValue, replacer);
 				}
 			} else {
-				log(`replace '${searchValue}': not found`, 'error');
+				log(`replace '${searchValue}': not found`, true);
 			}
 
 			return data;
@@ -1173,7 +1196,7 @@ type ApiProfileData = {
 			functions?: { readable?: string[], writable?: string[], disabled?: string[] },
 		}): Script {
 			if (!this.data) {
-				log('expose: data is undefined', 'error');
+				log('expose: data is undefined', true);
 				return this;
 			}
 
@@ -1215,12 +1238,12 @@ type ApiProfileData = {
 		}
 
 		log(state: string, func: Function) {
-			log(`${func.name}: ${state}, ${this.describeData()}`, 'debug');
+			log(`${func.name}: ${state}, ${this.describeData()}`);
 		}
 
 		embed(): void {
 			if (!this.data) {
-				log('embed failed, data is undefined', 'error');
+				log('embed failed, data is undefined', true);
 				return;
 			}
 
@@ -1230,9 +1253,9 @@ type ApiProfileData = {
 		}
 
 		static loadScript(src: string): void {
-			log(`load: started, src: ${src}`, 'debug');
+			log(`load: started, src: ${src}`);
 			Script.append((el) => el.src = src);
-			log(`load: finished, src: ${src}`, 'debug');
+			log(`load: finished, src: ${src}`);
 		}
 
 		private static append(fill: (el: HTMLScriptElement) => void) {
@@ -1247,19 +1270,19 @@ type ApiProfileData = {
 		}
 	}
 
-	const logs = [] as string[];
-
 	async function main() {
 		if (location.pathname.startsWith('/login')) {
 			return;
 		}
 
 		log('started');
-		const done = initFeedback(30000, false);
 
-		window.__sbg_language = getLanguage();
 		preventLoadingScript();
 		enhanceEventListeners();
+
+		window.__sbg_language = getLanguage();
+		initFeedback();
+		fixPermissionsCompatibility();
 
 		await waitHTMLLoaded();
 		initCSS();
@@ -1277,46 +1300,14 @@ type ApiProfileData = {
 		execFireFeatures();
 
 		log('finished');
-		done();
 	}
 
-	function log(message: string, level: 'log' | 'debug' | 'error' = 'log'): void {
-		console[level](`${message}`);
-		logs.push(message);
-	}
-
-	function displayLogs(enabled: boolean) {
-		if (!enabled) {
-			return;
-		}
-
-		const logSpan            = document.createElement('span');
-		logSpan.style.position   = 'fixed';
-		logSpan.style.left       = '2vw';
-		logSpan.style.top        = '2vh';
-		logSpan.style.width      = '92vw';
-		logSpan.style.height     = '92vh';
-		logSpan.style.padding    = '2vh 2vw';
-		logSpan.style.overflow   = 'auto';
-		logSpan.style.zIndex     = '101';
-		logSpan.style.background = 'black';
-		logSpan.style.color      = 'white';
-		logSpan.style.display    = 'block';
-		logSpan.innerText        = logs.join('\n');
-		document.body.appendChild(logSpan);
-	}
-
-	function initFeedback(timeout: number, enabled: boolean): () => void {
-		// window.onerror = function(msg: string | Event, _url?: string, lineNo?: number, columnNo?: number, error?: Error) {
-		//	 log(`error: ${error} on ${lineNo}:${columnNo} (${msg})`, 'error');
-		// }
-
-		const doneTimeout = setTimeout(() => displayLogs(enabled), timeout);
-		return () => clearTimeout(doneTimeout);
+	async function copyLogs() {
+		return navigator.clipboard.writeText(logs.join('\n')).then(() => showToast(labels.toasts.logs, 2000));
 	}
 
 	function showToast(label: Label, duration: number): void {
-		window.Toastify({
+		window.Toastify && window.Toastify({
 			text          : label.toString(),
 			duration,
 			forceDuration : true,
@@ -1324,20 +1315,6 @@ type ApiProfileData = {
 			position      : 'right',
 			className     : 'interaction-toast',
 		}).showToast();
-	}
-
-	function getLanguage(): Lng {
-		let lang;
-
-		try {
-			lang = JSON.parse(localStorage.settings).lang;
-		} catch {
-			lang = navigator.language;
-		}
-
-		const result = [ 'ru', 'uk', 'be', 'kk' ].includes(lang.split('-')[0]) ? 'ru' : 'en';
-		log(`detected language: ${result}`);
-		return result;
 	}
 
 	function addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLike: LayerName) {
@@ -1378,15 +1355,19 @@ type ApiProfileData = {
 
 	function enhanceEventListeners() {
 		((addEventListener, removeEventListener) => {
+			function initEventListeners(target: EventTarget, type: string): EventTarget {
+				target.__events       = target.__events || {};
+				target.__events[type] = target.__events[type] || { listeners : [] };
+				return target;
+			}
+
 			EventTarget.prototype.addEventListener = function(type, listener) {
 				if (!listener) {
 					return;
 				}
 
-				const target = this as EventTarget;
+				const target = initEventListeners(this, type);
 
-				target.__events       = target.__events || {};
-				target.__events[type] = target.__events[type] || { listeners : [] };
 				if (target.__events[type].sealed) {
 					return;
 				}
@@ -1401,11 +1382,8 @@ type ApiProfileData = {
 					return;
 				}
 
-				const target = this as EventTarget;
-
-				target.__events       = target.__events || {};
-				target.__events[type] = target.__events[type] || { listeners : [] };
-				const index           = target.__events[type].listeners.indexOf(listener);
+				const target = initEventListeners(this, type);
+				const index  = target.__events[type].listeners.indexOf(listener);
 
 				if (index !== -1) {
 					target.__events[type].listeners.splice(index, 1);
@@ -1415,10 +1393,7 @@ type ApiProfileData = {
 			};
 
 			EventTarget.prototype.getEventListeners = function(type: string): EventListenerOrEventListenerObject[] {
-				const target = this as EventTarget;
-
-				target.__events       = target.__events || {};
-				target.__events[type] = target.__events[type] || { listeners : [] };
+				const target = initEventListeners(this, type);
 
 				const listeners = [];
 
@@ -1442,10 +1417,7 @@ type ApiProfileData = {
 			};
 
 			EventTarget.prototype.clearEventListeners = function(type: string, sealed: boolean) {
-				const target = this as EventTarget;
-
-				target.__events       = target.__events || {};
-				target.__events[type] = target.__events[type] || { listeners : [] };
+				const target = initEventListeners(this, type);
 
 				if (sealed) {
 					target.__events[type].sealed = true;
@@ -1463,16 +1435,88 @@ type ApiProfileData = {
 					return;
 				}
 
-				const target = this as EventTarget;
+				const target = initEventListeners(this, type);
 
 				target.clearEventListeners(type, true);
 				target.__events[type].listeners.push(listener);
 
 				addEventListener.apply(this, arguments);
 			};
+
+			EventTarget.prototype.addRepeatingEventListener = function(type, callback, { repeats: limit, timeout, tick = () => {}, filter = () => true, cancel = () => true }): void {
+				let repeats = 0;
+
+				addEventListener.call(this, type, (ev: Event) => {
+					if (!filter(ev)) {
+						return;
+					}
+
+					if (!cancel(ev)) {
+						repeats = 0;
+						return;
+					}
+
+					repeats++;
+
+					if (repeats >= limit) {
+						repeats = 0;
+						callback(ev);
+						return;
+					}
+
+					tick(ev, repeats);
+
+					setTimeout(() => {
+						repeats = 0;
+					}, timeout);
+				});
+
+			};
 		})(EventTarget.prototype.addEventListener, EventTarget.prototype.removeEventListener);
 
 		log('enhanced event listeneres');
+	}
+
+	function getLanguage(): Lng {
+		let lang;
+
+		try {
+			lang = JSON.parse(localStorage.settings).lang;
+		} catch {
+			lang = navigator.language;
+		}
+
+		const result = [ 'ru', 'uk', 'be', 'kk' ].includes(lang.split('-')[0]) ? 'ru' : 'en';
+		log(`detected language: ${result}`);
+		return result;
+	}
+
+	function initFeedback() {
+		const feedbackClickTimeout = 1000;
+		const feedbackTouches      = 2;
+		const feedbackTouchRepeats = 2;
+
+		document.addRepeatingEventListener('touchstart', () => copyLogs(), {
+			repeats : feedbackTouchRepeats,
+			timeout : feedbackClickTimeout,
+			filter  : (ev: TouchEvent) => ev.touches.length === feedbackTouches,
+		});
+	}
+
+	function fixPermissionsCompatibility() {
+		log(`userAgent: ${navigator.userAgent}`);
+
+		if (typeof navigator.permissions === 'undefined') {
+			Object.defineProperty(navigator, 'permissions', {
+				value : {
+					query : async () => ({ state : 'granted' }),
+				},
+			});
+		}
+
+		if (typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
+			window.DeviceOrientationEvent.requestPermission = async () => 'granted';
+		}
 	}
 
 	async function loadCUI(nativeScript: Script): Promise<void> {
@@ -1492,6 +1536,7 @@ type ApiProfileData = {
 		script.transform(fixCompatibility);
 		script.transform(fixGotoReference);
 		script.transform(fixCUIDefaults);
+		script.transform(fixCUIWarnings);
 		script.transform(disableCUIPointNavigation);
 
 		features.trigger['cuiTransform'].map((transformer: Transformer) => {
@@ -1539,7 +1584,7 @@ type ApiProfileData = {
 	}
 
 	async function transformScript(src: string, prefix: `__sbg_${string}`, transformer: (data: Script) => Script): Promise<Script> {
-		log(`transform script, src: ${src}`, 'debug');
+		log(`transform script, src: ${src}`);
 		const originalScriptName = `${prefix}_original` as `__sbg_${string}_original`;
 		const modifiedScriptName = `${prefix}_modified` as `__sbg_${string}_modified`;
 
@@ -1794,25 +1839,25 @@ type ApiProfileData = {
 
 	function fixCompatibility(script: Script): Script {
 		waitHTMLLoaded().then(async () => {
-			log('fix CUI compatibility: wait window.cuiEmbedded', 'debug');
+			log('fix CUI compatibility: wait window.cuiEmbedded');
 			await wait(() => window.cuiEmbedded);
 
-			log('fix CUI compatibility: wait window.ol', 'debug');
+			log('fix CUI compatibility: wait window.ol');
 			await wait(() => window.ol);
 
-			log('fix CUI compatibility: subscribe to mapReady', 'debug');
+			log('fix CUI compatibility: subscribe to mapReady');
 			window.addEventListener('mapReady', window.__sbg_cui_function_main);
 
-			log('fix CUI compatibility: call olInjection', 'debug');
+			log('fix CUI compatibility: call olInjection');
 			window.__sbg_cui_function_olInjection();
 
-			log('fix CUI compatibility: replace defaults', 'debug');
+			log('fix CUI compatibility: replace defaults');
 			replaceCUIDefaults();
 
-			log('fix CUI compatibility: call loadMainScript', 'debug');
+			log('fix CUI compatibility: call loadMainScript');
 			window.__sbg_cui_function_loadMainScript();
 
-			log('fix CUI compatibility: loaded', 'debug');
+			log('fix CUI compatibility: loaded');
 		});
 
 		script.log('replace', fixCompatibility);
@@ -1867,6 +1912,15 @@ type ApiProfileData = {
 					readable : [ 'DEFAULT_CONFIG' ],
 				},
 			})
+		;
+	}
+
+	function fixCUIWarnings(script: Script): Script {
+		return script
+			.replace(
+				'!viewport.content.match(yaRegexp)',
+				'!viewport.content.match(yaRegexp) && navigator.userAgent.toLowerCase().includes("yabrowser")',
+			)
 		;
 	}
 
@@ -1960,8 +2014,7 @@ type ApiProfileData = {
 	}
 
 	function enableBackButton() {
-		const backClickTimeout    = 1000;
-		let shouldExitOnBackClick = false;
+		const backClickTimeout = 1000;
 
 		const popups: Array<{ hiddenClass: string, selectors: string[] }> = [
 			{ hiddenClass : 'hidden', selectors : [ '.popup', '.draw-slider-wrp', '.attack-slider-wrp' ] },
@@ -1992,22 +2045,11 @@ type ApiProfileData = {
 			return false;
 		}
 
-		document.addOnlyEventListener('backbutton', () => {
-			if (isPopupClosed()) {
-				shouldExitOnBackClick = false;
-				return;
-			}
-
-			if (shouldExitOnBackClick) {
-				location.replace('/window.close');
-			} else {
-				showToast(labels.toasts.back, backClickTimeout);
-				shouldExitOnBackClick = true;
-
-				setTimeout(() => {
-					shouldExitOnBackClick = false;
-				}, backClickTimeout);
-			}
+		document.addRepeatingEventListener('backbutton', () => location.replace('/window.close'), {
+			repeats : 2,
+			timeout : backClickTimeout,
+			tick    : () => showToast(labels.toasts.back, backClickTimeout),
+			cancel  : () => !isPopupClosed(),
 		});
 	}
 
@@ -2055,18 +2097,6 @@ type ApiProfileData = {
 
 			.popup.pp-center > * {
 				position: relative;
-			}
-		`);
-	}
-
-	function enableOldWebViewCompatibility() {
-		setCSS(`
-			@media (max-width: 425px) {
-				.popup.pp-center {
-					top: 0 !important;
-					left: 0 !important;
-					transform: none !important;
-				}
 			}
 		`);
 	}
@@ -2950,6 +2980,18 @@ type ApiProfileData = {
 				position: static;
 				top: auto;
 				width: auto;
+			}
+		`);
+	}
+
+	function enableOldWebViewCompatibility() {
+		setCSS(`
+			@media (max-width: 425px) {
+				.popup.pp-center {
+					top: 0 !important;
+					left: 0 !important;
+					transform: none !important;
+				}
 			}
 		`);
 	}
@@ -4005,7 +4047,7 @@ type ApiProfileData = {
 			const logsButton = $('<button></button>')
 				.addClass('popup-button-secondary')
 				.text(labels.settings.logs.toString())
-				.on('click', () => navigator.clipboard.writeText(logs.join('\n')).then(() => showToast(labels.toasts.logs, 2000)));
+				.on('click', () => copyLogs);
 
 			const advancedButton = $('<button></button>')
 				.addClass('popup-button-secondary')
