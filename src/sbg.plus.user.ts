@@ -930,6 +930,10 @@ type ApiProfileData = {
 		{ ru : 'Отключить анимацию открытия и закрытия окон', en : 'Disable open/close windows animation' },
 		{ group : 'animations', trigger : 'pageLoad', requires : () => $('.popup') });
 
+	new Feature(disableAttackButtonAnimation,
+		{ ru : 'Отключить анимацию кнопки атаки', en : 'Disable attack button animation' },
+		{ group : 'animations', trigger : 'pageLoad', requires : () => $('#attack-menu') });
+
 	new Feature(closeToastsAfter1sec,
 		{ ru : 'Закрывать всплывающие сообщения через 1 секунду', en : 'Close toasts after 1 second' },
 		{ group : 'animations', trigger : 'pageLoad', requires : () => window.Toastify });
@@ -1912,6 +1916,15 @@ type ApiProfileData = {
 	function disablePopupAnimation() {
 		setCSS(`
 			.popup {
+				transition: none !important;
+			}
+		`);
+	}
+
+	function disableAttackButtonAnimation() {
+		setCSS(`
+			#attack-menu,
+			#attack-menu:after {
 				transition: none !important;
 			}
 		`);
