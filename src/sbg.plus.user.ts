@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.20
+// @version        0.9.21
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.20';
+window.__sbg_plus_version = '0.9.21';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -401,8 +401,8 @@ type ApiProfileData = {
 				en : 'SBG+ Version',
 			}),
 			logs : new Label({
-				ru : 'Скопировать логи',
-				en : 'Copy logs',
+				ru : 'Логи',
+				en : 'Logs',
 			}),
 			advanced : new Label({
 				ru : 'Все настройки',
@@ -1626,6 +1626,7 @@ type ApiProfileData = {
 				transform: none;
 				position: absolute;
 				padding: 0.5em 1em;
+				color: var(--text);
 			}
 
 			.sbg-plus-settings .settings-content {
@@ -1691,7 +1692,8 @@ type ApiProfileData = {
 				gap: 0.5em;
 			}
 
-			.sbg-plus-popup .popup-button {
+			.sbg-plus-popup .popup-button,
+			.sbg-plus-popup .popup-button-secondary {
 				white-space: nowrap;
 			}
 
