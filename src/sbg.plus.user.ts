@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.22
+// @version        0.9.24
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.22';
+window.__sbg_plus_version = '0.9.24';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -27,6 +27,12 @@ interface Window {
 	cuiStatus: 'loading' | 'loaded';
 	cuiEmbedded: boolean | undefined;
 	egorScript: Function | undefined;
+
+	DeviceOrientationEvent: {
+		prototype: DeviceOrientationEvent;
+		new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
+		requestPermission: () => Promise<'granted'>,
+	};
 
 	[key: `__sbg_${string}_original`]: string;
 	[key: `__sbg_${string}_modified`]: string;
@@ -90,6 +96,10 @@ type EventListeners = {
 
 interface CustomTouchEvent {
 	(data: { touches: TouchEvent['touches'] }): void;
+}
+
+interface DeviceOrientationEvent extends Event {
+	webkitCompassHeading: number;
 }
 
 type Ol = {
@@ -912,6 +922,10 @@ type ApiProfileData = {
 	new Feature(alignSettingsButtonsVertically,
 		{ ru : 'Выровнять кнопки в настройках по ширине', en : 'Align settings buttons vertically' },
 		{ public : true, group : 'base', trigger : 'mapReady', desktop : true, requires : () => $('.settings') });
+
+	new Feature(fixCompass,
+		{ ru : 'Починить компас', en : 'Fix compass' },
+		{ public : true, group : 'base', trigger : 'mapReady' });
 
 	/* cui */
 
@@ -2115,6 +2129,49 @@ type ApiProfileData = {
 				text-align: center;
 			}
 		`);
+	}
+
+	function fixCompass() {
+		const handlers = [ ...window.getEventHandlers<(ev: DeviceOrientationEvent) => void>('deviceorientation') ];
+
+		function triggerHandlers(webkitCompassHeading: number) {
+			handlers.map((handler) => handler({ webkitCompassHeading } as DeviceOrientationEvent));
+		}
+
+		function deviceOrientationAbsoluteListener(ev: DeviceOrientationEvent) {
+			if (!ev.absolute || ev.alpha == null || ev.beta == null || ev.gamma == null) {
+				return;
+			}
+
+			const totalDegrees = 360;
+
+			const webkitCompassHeading = -(ev.alpha + ev.beta * ev.gamma / 90) % totalDegrees;
+			window.removeEventListener('deviceorientation', deviceOrientationListener);
+			triggerHandlers(webkitCompassHeading);
+		}
+
+		const deviceOrientationListener = (ev: DeviceOrientationEvent) => {
+			const { webkitCompassHeading } = ev;
+
+			if (webkitCompassHeading !== null && !isNaN(webkitCompassHeading)) {
+				triggerHandlers(webkitCompassHeading);
+				window.removeEventListener('deviceorientationabsolute', deviceOrientationAbsoluteListener);
+			}
+		};
+
+		function addListeners() {
+			window.addEventListener('deviceorientationabsolute', deviceOrientationAbsoluteListener);
+			window.addEventListener('deviceorientation', deviceOrientationListener);
+		}
+
+		window.DeviceOrientationEvent.requestPermission()
+			.then((response) => {
+				if (response === 'granted') {
+					addListeners();
+				} else {
+					console.warn('DeviceOrientationEvent permission is not granted');
+				}
+			});
 	}
 
 	/* eui */
