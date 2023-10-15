@@ -1507,7 +1507,7 @@ type ApiProfileData = {
 
 	function initFeedback() {
 		const feedbackClickTimeout = 1000;
-		const feedbackTouches      = 2;
+		const feedbackTouches      = 3;
 		const feedbackTouchRepeats = 2;
 
 		document.addRepeatingEventListener('touchstart', () => copyLogs(), {
