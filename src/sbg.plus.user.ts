@@ -2200,7 +2200,7 @@ type ApiProfileData = {
 
 		const autoSelectButton = $('<button></button>')
 			.addClass('fa fa-solid-arrow-down-short-wide').addClass(cssClass)
-			.appendTo(toolbar.parent());
+			.appendTo(toolbar);
 
 		autoSelectButton.on('click', () => {
 			autoSelectButton.toggleClass('fa-rotate-180');
@@ -2231,6 +2231,16 @@ type ApiProfileData = {
 
 	function moveAllSidebarsRight(control: JQuery<HTMLElement>) {
 		control.children().prependTo($('.ol-control').first());
+
+		setCSS(`
+			.sbgcui_toolbar {
+				margin-bottom: 10px;
+			}
+
+			#toggle-follow {
+				margin-bottom: 10px;
+			}
+		`);
 	}
 
 	function alwaysShowCompassArrow(compass: JQuery<HTMLElement>) {
