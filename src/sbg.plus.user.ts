@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.26
+// @version        0.9.27
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.26';
+window.__sbg_plus_version = '0.9.27';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -889,217 +889,214 @@ type ApiProfileData = {
 		}
 	}
 
-	const features = new Features();
+	const features          = new Features();
+	let group: FeatureGroup = 'base';
 
-	/* scripts */
+	group = 'scripts';
 
 	new Feature(loadCUI,
 		{ ru : 'Скрипт Николая', en : 'Nicko script' },
-		{ public : true, simple : true, group : 'scripts', trigger : '' });
+		{ public : true, simple : true, group, trigger : '' });
 
 	new Feature(loadEUI,
 		{ ru : 'Скрипт Егора', en : 'Egor script' },
-		{ public : true, simple : true, group : 'scripts', trigger : 'mapReady', desktop : true });
+		{ public : true, simple : true, group, trigger : 'mapReady', desktop : true });
 
 	new Feature(showBuilderPanel,
 		{ ru : 'Конструктор (draw tools)', en : 'Builder (draw tools)' },
-		{ public : true, simple : true, group : 'scripts', trigger : 'mapReady', desktop : true });
+		{ public : true, simple : true, group, trigger : 'mapReady', desktop : true });
 
-	/* base */
+	group = 'base';
 
 	new Feature(enableBackButton,
 		{ ru : 'Разрешить кнопку Back', en : 'Enable back button' },
-		{ public : true, group : 'base', trigger : 'mapReady' });
+		{ public : true, group, trigger : 'mapReady' });
 
 	new Feature(updateLangCacheAutomatically,
 		{ ru : 'Автоматически обновлять кэш языка', en : 'Update language cache automatically' },
-		{ public : true, group : 'base', trigger : 'mapReady', desktop : true });
+		{ public : true, group, trigger : 'mapReady', desktop : true });
 
 	new Feature(fixBlurryBackground,
 		{ ru : 'Размывать фон за полупрозрачными окнами', en : 'Fix blurry background in popups' },
-		{ public : true, group : 'base', trigger : 'mapReady', desktop : true });
+		{ public : true, group, trigger : 'mapReady', desktop : true });
 
 	new Feature(alignSettingsButtonsVertically,
 		{ ru : 'Выровнять кнопки в настройках по ширине', en : 'Align settings buttons vertically' },
-		{ public : true, group : 'base', trigger : 'mapReady', desktop : true, requires : () => $('.settings') });
+		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => $('.settings') });
 
 	new Feature(fixCompass,
 		{ ru : 'Починить компас', en : 'Fix compass' },
-		{ public : true, group : 'base', trigger : 'mapReady' });
+		{ public : true, group, trigger : 'mapReady' });
 
-	/* cui */
+	group = 'cui';
 
 	new Transformer(disableClusters,
 		{ ru : 'Отключить ромашку', en : 'Disable clusters' },
-		{ public : true, simple : true, group : 'cui', trigger : 'cuiTransform' });
+		{ public : true, simple : true, group, trigger : 'cuiTransform' });
 
 	new Transformer(disableAttackZoom,
 		{ ru : 'Отключить изменение зума при атаке', en : 'Disable changing zoom when attack' },
-		{ public : true, simple : true, group : 'cui', trigger : 'cuiTransform' });
+		{ public : true, simple : true, group, trigger : 'cuiTransform' });
 
 	new Transformer(unlockCompassWhenRotateMap,
 		{ ru : 'Разблокировать компас при вращении карты', en : 'Unlock compass when rotate map' },
-		{ public : true, group : 'cui', trigger : 'cuiTransform' });
+		{ public : true, group, trigger : 'cuiTransform' });
 
 	new Transformer(alwaysClearInventory,
 		{ ru : 'Авто-очищать инвентарь после каждого дискавера', en : 'Auto-delete inventory after every discover' },
-		{ public : true, group : 'cui', trigger : 'cuiTransform' });
-
-	new Feature(alwaysShowCUIToolbar,
-		{ ru : 'Всегда раскрывать панель с кнопками скрипта Николая', en : 'Always show Nicko script buttons' },
-		{ public : true, group : 'cui', trigger : 'mapReady', requires : () => $('.sbgcui_toolbar') });
+		{ public : true, group, trigger : 'cuiTransform' });
 
 	new Feature(fixSortButton,
 		{ ru : 'Исправить расположение кнопки сортировки', en : 'Fix sort button z-index' },
-		{ public : true, group : 'cui', trigger : 'mapReady', requires : () => $('.sbgcui_refs-sort-button') });
+		{ public : true, group, trigger : 'mapReady', requires : () => $('.sbgcui_refs-sort-button') });
 
-	/* eui */
+	group = 'eui';
 
 	new Feature(centerIconsInGraphicalButtons,
 		{ ru : 'Центрировать значки графических кнопок', en : 'Center icons in graphical buttons' },
-		{ public : true, group : 'eui', trigger : 'mapReady' });
+		{ public : true, group, trigger : 'mapReady' });
 
 	new Feature(showReloadButtonInCompactMode,
 		{ ru : 'Показать кнопку перезагрузки в компактном режиме', en : 'Show reload button in compact mode' },
-		{ public : true, group : 'eui', trigger : 'mapReady' });
+		{ public : true, group, trigger : 'mapReady' });
 
-	/* windows */
+	group = 'windows';
 
 	new Feature(hideCloseButton,
 		{ ru : 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en : 'Hide close button, close only by pressing Back' },
-		{ group : 'windows', trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
+		{ group, trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
 
-	/* animations */
+	group = 'animations';
 
 	new Feature(disableCarouselAnimation,
 		{ ru : 'Отключить анимацию карусели', en : 'Disable carousel animations' },
-		{ group : 'animations', trigger : 'pageLoad', requires : () => window.Splide });
+		{ group, trigger : 'pageLoad', requires : () => window.Splide });
 
 	new Feature(disablePopupAnimation,
 		{ ru : 'Отключить анимацию открытия и закрытия окон', en : 'Disable open/close windows animation' },
-		{ group : 'animations', trigger : 'pageLoad', requires : () => $('.popup') });
+		{ group, trigger : 'pageLoad', requires : () => $('.popup') });
 
 	new Feature(disableAttackButtonAnimation,
 		{ ru : 'Отключить анимацию кнопки атаки', en : 'Disable attack button animation' },
-		{ group : 'animations', trigger : 'pageLoad', requires : () => $('#attack-menu') });
+		{ group, trigger : 'pageLoad', requires : () => $('#attack-menu') });
 
 	new Feature(closeToastsAfter1sec,
 		{ ru : 'Закрывать всплывающие сообщения через 1 секунду', en : 'Close toasts after 1 second' },
-		{ group : 'animations', trigger : 'pageLoad', requires : () => window.Toastify });
+		{ group, trigger : 'pageLoad', requires : () => window.Toastify });
 
-	/* toolbar */
+	group = 'toolbar';
 
 	new Feature(showQuickAutoSelectButton,
 		{ ru : 'Показать кнопку для быстрого переключения автовыбора коров', en : 'Show button for quick change auto-select settings' },
-		{ group : 'toolbar', trigger : 'mapReady', requires : () => $('.sbgcui_toolbar') });
+		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_toolbar') });
 
 	new Feature(moveAllSidebarsRight,
 		{ ru : 'Показывать все боковые панели справа', en : 'Move all sidebars to the right' },
-		{ group : 'toolbar', trigger : 'mapReady', requires : () => $('.sbgcui_toolbar-control') });
+		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_toolbar-control') });
 
-	new Feature(alwaysShowCompassArrow,
-		{ ru : 'Всегда показывать стрелку компаса', en : 'Always show compass arrow' },
-		{ group : 'toolbar', trigger : 'mapReady', requires : () => $('.fa-solid-compass') });
+	new Feature(hideCUIToolbarToggleButton,
+		{ ru : 'Скрыть кнопку закрытия панели скрипта Николая', en : 'Hide CUI toolbar toggle button' },
+		{ public : true, group, trigger : 'mapReady', requires : () => $('.sbgcui_toolbar') });
 
-	/* fire */
+	group = 'fire';
 
 	new Feature(alwaysCenterAlignFireItemsCount,
 		{ ru : 'Всегда выравнивать количество предметов по центру', en : 'Always center align items count' },
-		{ group : 'fire', trigger : 'fireClick', requires : () => $('#attack-slider') });
+		{ group, trigger : 'fireClick', requires : () => $('#attack-slider') });
 
 	new Feature(replaceHighlevelWarningWithIcon,
 		{ ru : 'Заменить предупреждение про недостаточный уровень на значок поверх предмета', en : 'Replace highlevel warning with an icon on top of the item' },
-		{ group : 'fire', trigger : 'fireClick', requires : () => $('#attack-slider') });
+		{ group, trigger : 'fireClick', requires : () => $('#attack-slider') });
 
 	new Feature(joinFireButtons,
 		{ ru : 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en : 'Join attack button and attack panel button, close panel by clicking outside' },
-		{ group : 'fire', trigger : 'fireClick', requires : () => $('#attack-menu') });
+		{ group, trigger : 'fireClick', requires : () => $('#attack-menu') });
 
-	/* inventory */
+	group = 'inventory';
 
 	new Feature(increaseItemsFont,
 		{ ru : 'Увеличить размер шрифта за счёт сокращения названий предметов', en : 'Increase font size by shortening item names' },
-		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
 
 	new Feature(showAutoDeleteSettingsButton,
 		{ ru : 'Показать кнопку перехода к настройкам авто-удаления', en : 'Show auto-delete settings button' },
-		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory.popup') });
+		{ group, trigger : 'mapReady', requires : () => $('.inventory.popup') });
 
 	new Feature(restoreCUISort,
 		{ ru : 'Заменить сортировку Егора на сортировку Николая', en : 'Replace Egor sort with Nicko sort' },
-		{ public : true, simple : true, group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ public : true, simple : true, group, trigger : 'mapReady', requires : () => $('.inventory__content') });
 
 	new Feature(moveRerefenceButtonsDown,
 		{ ru : 'Сдвинуть ниже кнопки направления сортировки и закрытия', en : 'Move down sort direction button and close button' },
-		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
 
 	new Feature(hideManualClearButtons,
 		{ ru : 'Спрятать кнопки ручного удаления предметов', en : 'Hide manual clear buttons' },
-		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
 
 	new Feature(quickRecycleAllRefs,
 		{ ru : 'Удалять все имеющиеся рефы от точки при нажатии кнопки удаления', en : 'Recycle all existing refs of the point by clicking recycle button' },
-		{ group : 'inventory', trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
 
-	/* leaderboard */
+	group = 'leaderboard';
 
 	new Feature(alwaysShowSelfStatistics,
 		{ ru : 'Всегда показывать собственную статистику', en : 'Always show self statistics' },
-		{ group : 'leaderboard', trigger : 'mapReady', requires : () => window.__sbg_function_drawLeaderboard, desktop : true });
+		{ group, trigger : 'mapReady', requires : () => window.__sbg_function_drawLeaderboard, desktop : true });
 
-	/* info */
+	group = 'info';
 
 	new Feature(makeInfoPopupSemiTransparent,
 		{ ru : 'Сделать окно точки полупрозрачным', en : 'Make info popup semi-transparent' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
 
 	new Feature(alwaysShowSecondsForCoolDowns,
 		{ ru : 'Всегда показывать отсчёт в секундах для кулдауна', en : 'Always show seconds for cooldowns' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('#discover') });
+		{ group, trigger : 'mapReady', requires : () => $('#discover') });
 
 	new Feature(enlargeCoreSlots,
 		{ ru : 'Увеличить размер коров', en : 'Enlarge core slots' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
 
 	new Feature(alignCloseButtonVertically,
 		{ ru : 'Выровнять кнопку закрытия по вертикали', en : 'Align close button vertically' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('.info.popup > .popup-close') });
+		{ group, trigger : 'mapReady', requires : () => $('.info.popup > .popup-close') });
 
 	new Feature(colorizeTimer,
 		{ ru : 'Менять цвет таймера в зависимости от количества оставшихся дискаверов', en : 'Change color of timer depending on remaining discovers' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('#discover') });
+		{ group, trigger : 'mapReady', requires : () => $('#discover') });
 
 	new Feature(hideRepairButton,
 		{ ru : 'Спрятать кнопку зарядки', en : 'Hide repair button' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
 
 	new Feature(replaceSwipeWithButton,
 		{ ru : 'Показать кнопку для переключения между точками', en : 'Show button to swipe between points' },
-		{ group : 'info', trigger : 'mapReady', requires : () => $('.sbgcui_swipe-cards-arrow') });
+		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_swipe-cards-arrow') });
 
 	new Feature(showFeatureToggles,
 		{ ru : 'Показать кнопки для быстрого переключение между фичами', en : 'Show buttons for quick toggling features' },
-		{ group : 'info', trigger : 'mapReady' });
+		{ group, trigger : 'mapReady' });
 
-	/* draw */
+	group = 'draw';
 
 	new Feature(selectTargetPointByClick,
 		{ ru : 'Разрешить выбирать конечную точку кликом по ней', en : 'Allow select target point by clicking it' },
-		{ group : 'draw', trigger : 'mapReady', requires : () => window.__sbg_function_showInfo });
+		{ group, trigger : 'mapReady', requires : () => window.__sbg_function_showInfo });
 
 	new Feature(highlightSelectedTargetPoint,
 		{ ru : 'Подсвечивать выбранную конечную точку', en : 'Highlight selected target point' },
-		{ group : 'draw', trigger : 'mapReady', requires : () => window.__sbg_variable_map });
+		{ group, trigger : 'mapReady', requires : () => window.__sbg_variable_map });
 
 	new Feature(matchDrawSliderButtons,
 		{ ru : 'Расположить кнопку рисования ровно под кнопкой карусели рисования', en : 'Place draw button exactly under draw carousel button' },
-		{ group : 'draw', trigger : 'mapReady', requires : () => $('.draw-slider-wrp') });
+		{ group, trigger : 'mapReady', requires : () => $('.draw-slider-wrp') });
 
-	/* other */
+	group = 'other';
 
 	new Feature(enableOldWebViewCompatibility,
 		{ ru : 'Включить совместимость со старыми webview', en : 'Enable old web view compatibility' },
-		{ public : true, group : 'other', trigger : 'mapReady', requires : () => $('.popup.pp-center') });
+		{ public : true, group, trigger : 'mapReady', requires : () => $('.popup.pp-center') });
 
 	settings.cleanupFeatures();
 
@@ -1702,6 +1699,7 @@ type ApiProfileData = {
 
 			.sbg-plus-settings .settings-content {
 				width: 100%;
+				gap: 0;
 			}
 
 			.sbg-plus-settings .settings-section h4 {
@@ -2313,7 +2311,7 @@ type ApiProfileData = {
 
 		const autoSelectButton = $('<button></button>')
 			.addClass('fa fa-solid-arrow-down-short-wide').addClass(cssClass)
-			.appendTo(toolbar);
+			.prependTo(toolbar);
 
 		autoSelectButton.on('click', () => {
 			autoSelectButton.toggleClass('fa-rotate-180');
@@ -2330,51 +2328,49 @@ type ApiProfileData = {
 		`);
 	}
 
-	function alwaysShowCUIToolbar() {
+	function moveAllSidebarsRight(control: JQuery<HTMLElement>) {
+		$('.ol-control').first()
+			.addClass('toolbar')
+			.prepend(control.children());
+
 		setCSS(`
+			.ol-control.toolbar {
+				display: flex;
+				flex-direction: column;
+			}
+
+			.ol-control.toolbar #settings {
+				order: 99;
+				margin-bottom: 0;
+			}
+
 			.sbgcui_toolbar {
-				display: block !important;
+				gap: 0;
 			}
 
 			.sbgcui_toolbar + button {
-				display: none !important;
-			}
-		`);
-	}
-
-	function moveAllSidebarsRight(control: JQuery<HTMLElement>) {
-		control.children().prependTo($('.ol-control').first());
-
-		setCSS(`
-			.sbgcui_toolbar {
 				margin-bottom: 10px;
 			}
 
 			#toggle-follow {
 				margin-bottom: 10px;
 			}
+
+			.sbgcui_lock_rotation {
+				margin-top: 10px !important;
+			}
 		`);
 	}
 
-	function alwaysShowCompassArrow(compass: JQuery<HTMLElement>) {
-		compass.addClass('fa fa-solid-compass').html('');
-
+	function hideCUIToolbarToggleButton() {
 		setCSS(`
-			.fa-solid-compass,
-			.fa-solid-compass.sbgcui_lock_rotation {
-				margin-top: 0 !important;
+			.sbgcui_toolbar {
+				display: flex !important;
+				margin-bottom: 10px;
 			}
 
-			.fa-solid-compass {
-				--fa-url: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='1em' viewBox='-48 0 512 512'%3E%3Cpath d='M429.6 92.1c4.9-11.9 2.1-25.6-7-34.7s-22.8-11.9-34.7-7l-352 144c-14.2 5.8-22.2 20.8-19.3 35.8s16.1 25.8 31.4 25.8H224V432c0 15.3 10.8 28.4 25.8 31.4s30-5.1 35.8-19.3l144-352z'/%3E%3C/svg%3E");
-			}
-
-			.fa-solid-compass:before {
-				transform: rotate(-45deg);
-				display: block;
-				position: relative;
-				top: 4px;
-				font-size: 0.9em;
+			.sbgcui_toolbar + button {
+				display: none !important;
 			}
 		`);
 	}
