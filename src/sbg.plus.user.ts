@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.27
+// @version        0.9.28
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.27';
+window.__sbg_plus_version = '0.9.28';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -1761,8 +1761,7 @@ type ApiProfileData = {
 				gap: 0.5em;
 			}
 
-			.sbg-plus-popup .popup-button,
-			.sbg-plus-popup .popup-button-secondary {
+			.sbg-plus-popup button {
 				white-space: nowrap;
 			}
 
@@ -2054,6 +2053,8 @@ type ApiProfileData = {
 		];
 
 		function isPopupClosed() {
+			let isClosed = false;
+
 			for (const { hiddenClass, selectors } of popups) {
 				for (const selector of selectors) {
 					for (const el of $(selector).toArray()) {
@@ -2068,13 +2069,13 @@ type ApiProfileData = {
 								$('#attack-menu').removeClass('sbgcui_attack-menu-rotate');
 							}
 
-							return true;
+							isClosed = true;
 						}
 					}
 				}
 			}
 
-			return false;
+			return isClosed;
 		}
 
 		document.addRepeatingEventListener('backbutton', () => location.replace('/window.close'), {
@@ -4128,7 +4129,9 @@ type ApiProfileData = {
 			const logsButton = $('<button></button>')
 				.addClass('popup-button-secondary')
 				.text(labels.settings.logs.toString())
-				.on('click', () => copyLogs);
+				.on('click', () => {
+					copyLogs();
+				});
 
 			const advancedButton = $('<button></button>')
 				.addClass('popup-button-secondary')
