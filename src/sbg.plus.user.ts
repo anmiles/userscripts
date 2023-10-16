@@ -3135,12 +3135,9 @@ type ApiProfileData = {
 
 				.builder button.active {
 					background: white;
+					color: #414141;
 					font-weight: bold;
 					border-radius: 4px;
-				}
-
-				[data-theme="dark"] .builder button.active {
-					color: buttonface;
 				}
 			`);
 		}
