@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.29
+// @version        0.9.30
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.29';
+window.__sbg_plus_version = '0.9.30';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -650,7 +650,7 @@ type ApiProfileData = {
 		}
 
 		cleanupFeatures() {
-			const featureKeys = features.keys();
+			const featureKeys = Object.keys(features.keys);
 
 			Object.keys(this.features)
 				.filter((key) => !featureKeys.includes(key))
@@ -689,8 +689,15 @@ type ApiProfileData = {
 	type FeatureGroup = keyof typeof featureGroups;
 	type FeatureTrigger = typeof featureTriggers[number];
 
-	abstract class FeatureBase<TArgument, TData> {
-		abstract func: (data: TData) => TArgument;
+	interface AnyFeatureOptions {
+		group: FeatureGroup;
+		trigger: FeatureTrigger;
+		public?: boolean;
+		simple?: boolean;
+		desktop?: boolean;
+	}
+
+	abstract class AnyFeatureBase {
 		key: string;
 		label: Label;
 		group: FeatureGroup;
@@ -700,28 +707,20 @@ type ApiProfileData = {
 		private desktop: boolean;
 		private toggleValue = false;
 
-		constructor(
-			func: (arg: TData) => TArgument,
-			labelValues: LabelValues,
-			options : {
-				group: FeatureGroup,
-				trigger: FeatureTrigger,
-				public?: boolean,
-				simple?: boolean,
-				desktop?: boolean,
-		}) {
-			this.key     = func.name;
+		constructor(key: string, labelValues: LabelValues, options : AnyFeatureOptions) {
+			this.key     = key;
 			this.label   = new Label(labelValues);
 			this.group   = options.group;
 			this.trigger = options.trigger;
+
 			this.public  = options.public || false;
 			this.simple  = options.simple || false;
 			this.desktop = options.desktop || false;
+
+			features.add(this);
 		}
 
-		setEnabled(value: boolean): void {
-			settings.setFeature(this.key, value);
-		}
+		abstract setEnabled(value: boolean): void;
 
 		isEnabled(): boolean {
 			return this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled();
@@ -743,17 +742,6 @@ type ApiProfileData = {
 			return this.simple;
 		}
 
-		private getPreset(): Presets {
-			return window.__sbg_preset as Presets;
-		}
-
-		private isIncluded(presetName: Presets): boolean {
-			const preset = presets[presetName] || presets['base'];
-			return preset.length === 0 || preset.includes(this);
-		}
-
-		protected abstract getData(argument: TArgument): TData;
-
 		toggle(value: boolean = !this.toggleValue): boolean {
 			const attributeKey = `data-feat-${this.key}`;
 			this.toggleValue   = value;
@@ -766,6 +754,39 @@ type ApiProfileData = {
 
 			return value;
 		}
+
+		private isIncluded(presetName: Presets): boolean {
+			const preset = presets[presetName] || presets['base'];
+			return preset.length === 0 || preset.includes(this);
+		}
+
+		private getPreset(): Presets {
+			return window.__sbg_preset as Presets;
+		}
+	}
+
+	abstract class FeatureBase<TArgument, TData> extends AnyFeatureBase {
+		abstract func: ((data: TData) => TArgument);
+		parent?: ParentFeature;
+
+		constructor(
+			func: ((data: TData) => TArgument),
+			labelValues: LabelValues,
+			options : AnyFeatureOptions,
+		) {
+			super(func.name, labelValues, options);
+		}
+
+		setEnabled(value: boolean): void {
+			settings.setFeature(this.key, value);
+
+			if (this.parent) {
+				const uncheckedChildren = this.parent.children.filter((feature) => !feature.isEnabled());
+				features.check(this.parent, uncheckedChildren.length === 0);
+			}
+		}
+
+		protected abstract getData(argument: TArgument): TData;
 
 		exec(argument: TArgument): TArgument {
 			if (!this.isEnabled()) {
@@ -783,6 +804,41 @@ type ApiProfileData = {
 				log(`failed ${this.func.name}: ${ex.toString()}`, true);
 				return argument;
 			}
+		}
+	}
+
+	class ParentFeature extends AnyFeatureBase {
+		children: AnyFeatureBase[] = [];
+		parent?: AnyFeatureBase;
+
+		constructor(
+			key: string,
+			labelValues: LabelValues,
+			options : AnyFeatureOptions & {
+				children: AnyFeatureBase[]
+			}) {
+			super(key, labelValues, options);
+
+			options.children.forEach((feature) => {
+				if (feature.key === this.key) {
+					return;
+				}
+
+				this.children.push(feature);
+
+				if (feature instanceof FeatureBase) {
+					feature.parent = this;
+				}
+			});
+		}
+
+		setEnabled(value: boolean): void {
+			settings.setFeature(this.key, value);
+			this.children.map((feature) => features.check(feature, value));
+		}
+
+		isEnabled(): boolean {
+			return this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled();
 		}
 	}
 
@@ -804,7 +860,6 @@ type ApiProfileData = {
 			super(func, labelValues, options);
 			this.func     = func;
 			this.requires = options.requires;
-			features.add(this);
 		}
 
 		override getData(): TRequiredElement {
@@ -839,7 +894,6 @@ type ApiProfileData = {
 		}) {
 			super(func, labelValues, options);
 			this.func = func;
-			features.add(this);
 		}
 
 		override getData(arg: Script): Script {
@@ -849,43 +903,47 @@ type ApiProfileData = {
 
 	const featuresEvents = [
 		'add',
+		'check',
 	] as const;
 
-	type FeaturesEvents = typeof featuresEvents[number];
+	type FeaturesEvents = {
+		add: [ AnyFeatureBase ],
+		check: [ AnyFeatureBase, boolean ],
+	};
 
 	class Features {
-		func = {} as Record<string, FeatureBase<any, any>>;
-		group = {} as Record<FeatureGroup, FeatureBase<any, any>[]>;
-		trigger = {} as Record<FeatureTrigger, FeatureBase<any, any>[]>;
-		private listeners = {} as Record<FeaturesEvents, Array<(feature: FeatureBase<any, any>) => void>>;
+		keys = {} as Record<string, AnyFeatureBase>;
+		groups = {} as Record<FeatureGroup, AnyFeatureBase[]>;
+		triggers = {} as Record<FeatureTrigger, AnyFeatureBase[]>;
+		private listeners = {} as { [K in keyof FeaturesEvents]: Array<(...args: FeaturesEvents[K]) => void> };
 
 		constructor() {
-			Object.keys(featureGroups).map((key: FeatureGroup) => this.group[key] = []);
-			featureTriggers.map((key) => this.trigger[key] = []);
-			featuresEvents.map((ev) => this.listeners[ev] = []);
+			Object.keys(featureGroups).map((key: FeatureGroup) => this.groups[key] = []);
+			featureTriggers.map((key) => this.triggers[key] = []);
+			featuresEvents.map((type) => this.listeners[type] = []);
 		}
 
-		on(ev: FeaturesEvents, listener: (feature: FeatureBase<any, any>) => void) {
-			this.listeners[ev].push(listener);
+		on<Type extends keyof FeaturesEvents>(type: Type, listener: (...args: FeaturesEvents[Type]) => void) {
+			this.listeners[type].push(listener);
 		}
 
-		add(feature: FeatureBase<any, any>) {
-			this.func[feature.func.name] = feature;
-			this.group[feature.group].push(feature);
-			this.trigger[feature.trigger].push(feature);
-			this.listeners['add'].map((listener) => listener(feature));
+		private emit<Type extends keyof FeaturesEvents>(type: Type, ...args: FeaturesEvents[Type]) {
+			this.listeners[type].map((listener) => listener(...args));
+		}
+
+		add(...[ feature ] : FeaturesEvents['add']) {
+			this.keys[feature.key] = feature;
+			this.groups[feature.group].push(feature);
+			this.triggers[feature.trigger].push(feature);
+			this.emit('add', feature);
+		}
+
+		check(...args : FeaturesEvents['check']) {
+			this.emit('check', ...args);
 		}
 
 		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
-			return this.func[func.name];
-		}
-
-		keys(): string[] {
-			return Object.keys(this.func);
-		}
-
-		values(): FeatureBase<any, any>[] {
-			return Object.values(this.func);
+			return this.keys[func.name];
 		}
 	}
 
@@ -1101,10 +1159,10 @@ type ApiProfileData = {
 	settings.cleanupFeatures();
 
 	type Presets = 'base' | 'nicoscript' | 'egorscript' | 'allscripts' | 'full';
-	const presets = {} as Record<Presets, FeatureBase<any, any>[]>;
+	const presets = {} as Record<Presets, AnyFeatureBase[]>;
 
 	presets['base'] = [
-		...features.group.base,
+		...features.groups.base,
 	];
 
 	if (window.innerWidth >= 800) {
@@ -1113,13 +1171,13 @@ type ApiProfileData = {
 
 	presets['nicoscript'] = [
 		...presets['base'],
-		...features.group.cui,
+		...features.groups.cui,
 		features.get(loadCUI),
 	];
 
 	presets['egorscript'] = [
 		...presets['base'],
-		...features.group.eui,
+		...features.groups.eui,
 		features.get(loadEUI),
 	];
 
@@ -1558,7 +1616,7 @@ type ApiProfileData = {
 		script.transform(fixCUIWarnings);
 		script.transform(disableCUIPointNavigation);
 
-		features.trigger['cuiTransform'].map((transformer: Transformer) => {
+		features.triggers['cuiTransform'].map((transformer: Transformer) => {
 			script = transformer.exec(script);
 		});
 
@@ -1841,7 +1899,11 @@ type ApiProfileData = {
 	}
 
 	function execFeatures(trigger: FeatureTrigger) {
-		features.trigger[trigger].map((feature: Feature) => feature.exec());
+		features.triggers[trigger].map((feature) => {
+			if (feature instanceof Feature) {
+				feature.exec();
+			}
+		});
 		log(`executed all features on ${trigger}`);
 	}
 
@@ -2955,7 +3017,7 @@ type ApiProfileData = {
 
 		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
 
-		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<any, any> }> = [
+		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: AnyFeatureBase }> = [
 			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
 			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
 			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
@@ -4093,12 +4155,13 @@ type ApiProfileData = {
 	class SettingsPopup {
 		private container: JQuery<HTMLElement>;
 		private sections = {} as Record<FeatureGroup, JQuery<HTMLElement>>;
+		private checkboxes = {} as Record<string, JQuery<HTMLElement>>;
 
 		constructor() {
 			this.render();
 
-			Object.keys(features.group).map((group: FeatureGroup) => {
-				const groupFeatures = features.group[group].filter((feature) => feature.isAvailable());
+			Object.keys(features.groups).map((group: FeatureGroup) => {
+				const groupFeatures = features.groups[group].filter((feature) => feature.isAvailable());
 
 				if (groupFeatures.length === 0 && group !== 'custom') {
 					return;
@@ -4109,6 +4172,7 @@ type ApiProfileData = {
 			});
 
 			features.on('add', (feature) => this.addFeature(feature));
+			features.on('check', (feature, value) => this.check(feature, value));
 		}
 
 		private render() {
@@ -4166,10 +4230,16 @@ type ApiProfileData = {
 			this.container.append(section);
 		}
 
-		addFeature(feature: FeatureBase<any, any>) {
+		addFeature(feature: AnyFeatureBase) {
 			const checkbox = this.renderFeatureCheckbox(feature);
 			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
 			this.sections[feature.group].find('h4').before(setting);
+			this.checkboxes[feature.key] = checkbox;
+		}
+
+		check(feature: AnyFeatureBase, value: boolean) {
+			settings.setFeature(feature.key, value);
+			this.checkboxes[feature.key].prop('checked', value);
 		}
 
 		private renderSetting(isSimple: boolean, ...children: Array<Label | JQuery<HTMLElement>>) {
@@ -4183,7 +4253,7 @@ type ApiProfileData = {
 			return settingLabel;
 		}
 
-		private renderFeatureCheckbox(feature: FeatureBase<any, any>) {
+		private renderFeatureCheckbox(feature: AnyFeatureBase) {
 			return ($('<input type="checkbox" />') as JQuery<HTMLInputElement>)
 				.prop('checked', feature.isEnabled())
 				.on('change', (ev) => {
