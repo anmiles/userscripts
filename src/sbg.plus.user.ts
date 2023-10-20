@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.28
+// @version        0.9.29
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.28';
+window.__sbg_plus_version = '0.9.29';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -332,11 +332,11 @@ type ApiProfileData = {
 
 	function log(message: string, error = false): void {
 		console[error ? 'error' : 'log'](`${message}`);
-		logs.push(message);
+		logs.push(`!!! ERROR !!! ${message}`);
 	}
 
 	window.onerror = function(message, _url, lineNumber, columnNumber, error) {
-		logs.push(`error: ${message} on ${lineNumber}:${columnNumber} (${error})`);
+		logs.push(`!!! ERROR !!! ${message} on ${lineNumber}:${columnNumber} (${error})`);
 		return false;
 	};
 
@@ -1857,7 +1857,7 @@ type ApiProfileData = {
 	}
 
 	function fixCompatibility(script: Script): Script {
-		waitHTMLLoaded().then(async () => {
+		(async () => {
 			log('fix CUI compatibility: wait window.cuiEmbedded');
 			await wait(() => window.cuiEmbedded);
 
@@ -1877,7 +1877,7 @@ type ApiProfileData = {
 			window.__sbg_cui_function_loadMainScript();
 
 			log('fix CUI compatibility: loaded');
-		});
+		})();
 
 		script.log('replace', fixCompatibility);
 
@@ -1918,7 +1918,7 @@ type ApiProfileData = {
 
 		return script
 			.replace(
-				'window.location.href = `/?point=${guid}`',
+				'window.location.href = `/app/?point=${guid}`',
 				'window.__sbg_function_showInfo(guid)',
 			)
 		;
