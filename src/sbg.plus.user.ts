@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.30
+// @version        0.9.31
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.30';
+window.__sbg_plus_version = '0.9.31';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -1028,19 +1028,23 @@ type ApiProfileData = {
 
 	new Feature(disableCarouselAnimation,
 		{ ru : 'Отключить анимацию карусели', en : 'Disable carousel animations' },
-		{ group, trigger : 'pageLoad', requires : () => window.Splide });
+		{ public : true, group, trigger : 'pageLoad', requires : () => window.Splide });
 
 	new Feature(disablePopupAnimation,
 		{ ru : 'Отключить анимацию открытия и закрытия окон', en : 'Disable open/close windows animation' },
-		{ group, trigger : 'pageLoad', requires : () => $('.popup') });
+		{ public : true, group, trigger : 'pageLoad', requires : () => $('.popup') });
 
 	new Feature(disableAttackButtonAnimation,
 		{ ru : 'Отключить анимацию кнопки атаки', en : 'Disable attack button animation' },
-		{ group, trigger : 'pageLoad', requires : () => $('#attack-menu') });
+		{ public : true, group, trigger : 'pageLoad', requires : () => $('#attack-menu') });
 
 	new Feature(closeToastsAfter1sec,
 		{ ru : 'Закрывать всплывающие сообщения через 1 секунду', en : 'Close toasts after 1 second' },
-		{ group, trigger : 'pageLoad', requires : () => window.Toastify });
+		{ public : true, group, trigger : 'pageLoad', requires : () => window.Toastify });
+
+	new ParentFeature('disableAllAnimations',
+		{ ru : 'Отключить все анимации', en : 'Disable all animations' },
+		{ public : true, simple : true, group, trigger : 'pageLoad', children : features.groups['animations'] });
 
 	group = 'toolbar';
 
