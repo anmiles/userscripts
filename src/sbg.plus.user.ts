@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.32
+// @version        0.9.33
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.32';
+window.__sbg_plus_version = '0.9.33';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -43,6 +43,7 @@ interface Window {
 	__sbg_plus_version: string;
 	__sbg_plus_modifyFeatures: Function;
 	__sbg_plus_animation_duration: number;
+	__sbg_plus_unlock_fingers: number;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -700,6 +701,7 @@ type ApiProfileData = {
 		public?: boolean;
 		simple?: boolean;
 		desktop?: boolean;
+		unchecked?: boolean;
 	}
 
 	abstract class AnyFeatureBase {
@@ -710,17 +712,23 @@ type ApiProfileData = {
 		private public: boolean;
 		private simple: boolean;
 		private desktop: boolean;
+		private unchecked: boolean;
 		private toggleValue = false;
 
-		constructor(key: string, labelValues: LabelValues, options : AnyFeatureOptions) {
+		constructor(
+			key: string,
+			labelValues: LabelValues,
+			options : AnyFeatureOptions,
+		) {
 			this.key     = key;
 			this.label   = new Label(labelValues);
 			this.group   = options.group;
 			this.trigger = options.trigger;
 
-			this.public  = options.public || false;
-			this.simple  = options.simple || false;
-			this.desktop = options.desktop || false;
+			this.public    = options.public || false;
+			this.simple    = options.simple || false;
+			this.desktop   = options.desktop || false;
+			this.unchecked = options.unchecked || false;
 
 			features.add(this);
 		}
@@ -736,7 +744,7 @@ type ApiProfileData = {
 		}
 
 		isImplicitlyEnabled(): boolean {
-			return this.isAvailable() && this.isIncluded(this.getPreset());
+			return this.isAvailable() && this.isIncluded(this.getPreset()) && !this.unchecked;
 		}
 
 		isAvailable(): boolean {
@@ -865,13 +873,8 @@ type ApiProfileData = {
 		constructor(
 			func: (element: TRequiredElement) => void,
 			labelValues: LabelValues,
-			options : {
-				group: FeatureGroup,
-				trigger: FeatureTrigger,
-				requires?: (() => TRequiredElement),
-				public?: boolean,
-				simple?: boolean,
-				desktop?: boolean,
+			options : AnyFeatureOptions & {
+				requires?: (() => TRequiredElement)
 		}) {
 			super(func, labelValues, options);
 			this.func     = func;
@@ -901,13 +904,8 @@ type ApiProfileData = {
 		constructor(
 			func: (script: Script) => Script,
 			labelValues: LabelValues,
-			options : {
-				group: FeatureGroup,
-				trigger: FeatureTrigger,
-				public?: boolean,
-				simple?: boolean,
-				desktop?: boolean,
-		}) {
+			options : AnyFeatureOptions,
+		) {
 			super(func, labelValues, options);
 			this.func = func;
 		}
@@ -1106,7 +1104,7 @@ type ApiProfileData = {
 
 	new Feature(restoreCUISort,
 		{ ru : 'Заменить сортировку Егора на сортировку Николая', en : 'Replace Egor sort with Nicko sort' },
-		{ public : true, simple : true, group, trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ public : true, simple : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('.inventory__content') });
 
 	new Feature(moveRerefenceButtonsDown,
 		{ ru : 'Сдвинуть ниже кнопки направления сортировки и закрытия', en : 'Move down sort direction button and close button' },
