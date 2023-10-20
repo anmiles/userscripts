@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.31
+// @version        0.9.32
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.31';
+window.__sbg_plus_version = '0.9.32';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -42,6 +42,7 @@ interface Window {
 	__sbg_language: Lng;
 	__sbg_plus_version: string;
 	__sbg_plus_modifyFeatures: Function;
+	__sbg_plus_animation_duration: number;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -104,6 +105,7 @@ interface DeviceOrientationEvent extends Event {
 
 type Ol = {
 	Map: OlMap,
+	View: OlView,
 	proj: OlProj;
 	source: {
 		Vector: new <TLayerName extends LayerName>() => OlSource<TLayerName>;
@@ -222,7 +224,10 @@ type OlSourceEvents<TLayerName extends LayerName> = {
 	},
 };
 
-type OlView = MapView<OlCoords>;
+type OlView = MapView<OlCoords> & {
+	prototype: OlView;
+	animate: (...args: Array<Record<'duration', number>>) => void;
+};
 
 type OlPixel = {};
 
@@ -816,7 +821,8 @@ type ApiProfileData = {
 			labelValues: LabelValues,
 			options : AnyFeatureOptions & {
 				children: AnyFeatureBase[]
-			}) {
+			},
+		) {
 			super(key, labelValues, options);
 
 			options.children.forEach((feature) => {
@@ -830,15 +836,25 @@ type ApiProfileData = {
 					feature.parent = this;
 				}
 			});
+
+			this.propagate();
 		}
 
 		setEnabled(value: boolean): void {
 			settings.setFeature(this.key, value);
-			this.children.map((feature) => features.check(feature, value));
+			this.propagate();
 		}
 
 		isEnabled(): boolean {
 			return this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled();
+		}
+
+		private propagate() {
+			const value = settings.getFeature(this.key);
+
+			if (value !== undefined) {
+				this.children.map((feature) => features.check(feature, value));
+			}
 		}
 	}
 
@@ -1033,6 +1049,10 @@ type ApiProfileData = {
 	new Feature(disablePopupAnimation,
 		{ ru : 'Отключить анимацию открытия и закрытия окон', en : 'Disable open/close windows animation' },
 		{ public : true, group, trigger : 'pageLoad', requires : () => $('.popup') });
+
+	new Feature(disableMapAnimation,
+		{ ru : 'Отключить анимацию карты', en : 'Disable map animation' },
+		{ public : true, group, trigger : 'pageLoad' });
 
 	new Feature(disableAttackButtonAnimation,
 		{ ru : 'Отключить анимацию кнопки атаки', en : 'Disable attack button animation' },
@@ -1908,6 +1928,7 @@ type ApiProfileData = {
 				feature.exec();
 			}
 		});
+
 		log(`executed all features on ${trigger}`);
 	}
 
@@ -1929,6 +1950,9 @@ type ApiProfileData = {
 
 			log('fix CUI compatibility: wait window.ol');
 			await wait(() => window.ol);
+
+			log('fix CUI compatibility: set view animation duration');
+			setViewAnimationDuration();
 
 			log('fix CUI compatibility: subscribe to mapReady');
 			window.addEventListener('mapReady', window.__sbg_cui_function_main);
@@ -1970,6 +1994,17 @@ type ApiProfileData = {
 				},
 			})
 		;
+	}
+
+	function setViewAnimationDuration() {
+		if (typeof window.__sbg_plus_animation_duration === 'number') {
+			((animate) => {
+				window.ol.View.prototype.animate = function(...args) {
+					const instantArgs = args.map((arg) => typeof arg === 'object' ? { ...arg, duration : window.__sbg_plus_animation_duration } : arg);
+					animate.call(this, ...instantArgs);
+				};
+			})(window.ol.View.prototype.animate);
+		}
 	}
 
 	function fixGotoReference(script: Script): Script {
@@ -2034,20 +2069,20 @@ type ApiProfileData = {
 		`);
 
 		return script
-			.replace(
-				'view.fit(',
-				'if (false) view.fit(',
-			)
+			// .replace(
+			// 	'view.fit(',
+			// 	'if (false) view.fit(',
+			// )
 			.replaceCUIBlock(
 				'Показ радиуса катализатора',
 				/(?<=\n\s+)view\./g,
 				(match: string) => `if (false) ${match}`,
 			)
-			.replaceCUIBlock(
-				'Вращение карты',
-				'function resetView() {',
-				'function resetView() { view.setRotation(0); return; ',
-			)
+			// .replaceCUIBlock(
+			// 	'Вращение карты',
+			// 	'function resetView() {',
+			// 	'function resetView() { view.setRotation(0); return; ',
+			// )
 		;
 	}
 
@@ -2085,6 +2120,10 @@ type ApiProfileData = {
 				transition: none !important;
 			}
 		`);
+	}
+
+	function disableMapAnimation() {
+		window.__sbg_plus_animation_duration = 0;
 	}
 
 	function disableAttackButtonAnimation() {
