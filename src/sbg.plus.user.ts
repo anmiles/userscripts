@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.33
+// @version        0.9.34
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.33';
+window.__sbg_plus_version = '0.9.34';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -64,8 +64,6 @@ interface Window {
 	__sbg_function_showInfo: (data: string | OlGuid | undefined) => void;
 	__sbg_function_takeUnits: (value: number) => [string, string];
 	__sbg_function_timeToString: (seconds: number) => string;
-
-	__sbg_cui_variable_DEFAULT_CONFIG: ReadableVariable<Record<string, any>>;
 
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
@@ -338,11 +336,13 @@ type ApiProfileData = {
 
 	function log(message: string, error = false): void {
 		console[error ? 'error' : 'log'](`${message}`);
-		logs.push(`!!! ERROR !!! ${message}`);
+		const prefix = error ? '!!! ERROR !!! ' : '';
+		logs.push(`${prefix}${message}`);
 	}
 
 	window.onerror = function(message, _url, lineNumber, columnNumber, error) {
-		logs.push(`!!! ERROR !!! ${message} on ${lineNumber}:${columnNumber} (${error})`);
+		const prefix = error ? '!!! ERROR !!! ' : '';
+		logs.push(`${prefix}${message} on ${lineNumber}:${columnNumber} (${error})`);
 		return false;
 	};
 
@@ -1176,7 +1176,7 @@ type ApiProfileData = {
 
 	new Feature(enableOldWebViewCompatibility,
 		{ ru : 'Включить совместимость со старыми webview', en : 'Enable old web view compatibility' },
-		{ public : true, group, trigger : 'mapReady', requires : () => $('.popup.pp-center') });
+		{ public : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('.popup.pp-center') });
 
 	settings.cleanupFeatures();
 
@@ -1958,9 +1958,6 @@ type ApiProfileData = {
 			log('fix CUI compatibility: call olInjection');
 			window.__sbg_cui_function_olInjection();
 
-			log('fix CUI compatibility: replace defaults');
-			replaceCUIDefaults();
-
 			log('fix CUI compatibility: call loadMainScript');
 			window.__sbg_cui_function_loadMainScript();
 
@@ -1977,6 +1974,14 @@ type ApiProfileData = {
 			.replace(
 				'window.stop',
 				'// window.stop',
+			)
+			.replace(
+				'window.navigator.geolocation.clearWatch',
+				'// window.navigator.geolocation.clearWatch',
+			)
+			.replace(
+				'document.open',
+				'// document.open',
 			)
 			.replace(
 				'fetch(\'/app\')',
@@ -2025,12 +2030,10 @@ type ApiProfileData = {
 
 	function fixCUIDefaults(script: Script): Script {
 		return script
-			.expose('__sbg_cui', {
-				variables : {
-					readable : [ 'DEFAULT_CONFIG' ],
-				},
-			})
-		;
+			.replace(
+				'sepia: 1',
+				'sepia: 0',
+			);
 	}
 
 	function fixCUIWarnings(script: Script): Script {
@@ -2044,10 +2047,6 @@ type ApiProfileData = {
 
 	function disableCUIPointNavigation(script: Script): Script {
 		return script.removeCUIBlock('Навигация к точке');
-	}
-
-	function replaceCUIDefaults() {
-		window.__sbg_cui_variable_DEFAULT_CONFIG.get().mapFilters.sepia = 0;
 	}
 
 	function disableClusters(script: Script): Script {
