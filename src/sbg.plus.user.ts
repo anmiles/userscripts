@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.34
+// @version        0.9.35
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.34';
+window.__sbg_plus_version = '0.9.35';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -1973,15 +1973,15 @@ type ApiProfileData = {
 			)
 			.replace(
 				'window.stop',
-				'// window.stop',
+				'if (false) window.stop',
 			)
 			.replace(
 				'window.navigator.geolocation.clearWatch',
-				'// window.navigator.geolocation.clearWatch',
+				'if (false) window.navigator.geolocation.clearWatch',
 			)
 			.replace(
 				'document.open',
-				'// document.open',
+				'if (false) document.open',
 			)
 			.replace(
 				'fetch(\'/app\')',
@@ -2039,8 +2039,8 @@ type ApiProfileData = {
 	function fixCUIWarnings(script: Script): Script {
 		return script
 			.replace(
-				'!viewport.content.match(yaRegexp)',
-				'!viewport.content.match(yaRegexp) && navigator.userAgent.toLowerCase().includes("yabrowser")',
+				'!viewportMeta.content.match(yaRegexp)',
+				'!viewportMeta.content.match(yaRegexp) && navigator.userAgent.toLowerCase().includes("yabrowser")',
 			)
 		;
 	}
