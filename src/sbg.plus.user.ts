@@ -978,6 +978,10 @@ type ApiProfileData = {
 		{ ru : 'Конструктор (draw tools)', en : 'Builder (draw tools)' },
 		{ public : true, simple : true, group, trigger : 'mapReady', desktop : true });
 
+	new Feature(showFeatureToggles,
+		{ ru : 'Показать кнопки для быстрого переключения между фичами', en : 'Show buttons for quick toggling features' },
+		{ group, trigger : 'mapReady' });
+
 	group = 'base';
 
 	new Feature(enableBackButton,
@@ -1153,10 +1157,6 @@ type ApiProfileData = {
 	new Feature(replaceSwipeWithButton,
 		{ ru : 'Показать кнопку для переключения между точками', en : 'Show button to swipe between points' },
 		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_swipe-cards-arrow') });
-
-	new Feature(showFeatureToggles,
-		{ ru : 'Показать кнопки для быстрого переключение между фичами', en : 'Show buttons for quick toggling features' },
-		{ group, trigger : 'mapReady' });
 
 	group = 'draw';
 
@@ -2192,6 +2192,65 @@ type ApiProfileData = {
 		wait(() => $('.topleft-container')).then((buttonsSection) => new Builder(buttonsSection));
 	}
 
+	function showFeatureToggles() {
+		const containers = {
+			info      : $('.info.popup .i-image-box'),
+			inventory : $('.inventory.popup'),
+			draw      : $('.draw-slider-wrp'),
+		} as const;
+
+		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
+
+		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: AnyFeatureBase }> = [
+			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
+			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
+			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
+			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
+
+			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
+			{ container : 'inventory', title : 'BTN', feature : features.get(moveRerefenceButtonsDown) },
+			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
+
+			{ container : 'draw', title : 'CLS', feature : features.get(hideCloseButton) },
+			{ container : 'draw', title : 'BTN', feature : features.get(matchDrawSliderButtons) },
+		];
+
+		for (const { container, title, feature } of featureToggles) {
+			const button = $('<button></button>')
+				.html(title)
+				.toggleClass('off', !feature.isEnabled())
+				.appendTo(containers[container].find('.i-buttons'));
+
+			button.on('click', () => {
+				const toggleValue = feature.toggle();
+				button.toggleClass('off', !toggleValue);
+			});
+		}
+
+		setCSS(`
+			.i-feature-toggles {
+				position: absolute !important;
+				left: 0;
+				top: 0;
+				justify-content: flex-start;
+				direction: ltr;
+			}
+
+			.i-feature-toggles button {
+				width: auto;
+				position: relative;
+				z-index: 1;
+				font-size: 0.85em;
+				min-height: 0px;
+				line-height: 1;
+			}
+
+			.i-feature-toggles button.off {
+				filter: saturate(0.15);
+			}
+		`);
+	}
+
 	function updateLangCacheAutomatically() {
 		const waitForVersion = setInterval(() => {
 			const currentVersion = window.__sbg_variable_VERSION.get();
@@ -3044,65 +3103,6 @@ type ApiProfileData = {
 
 			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next svg path {
 				fill: currentColor;
-			}
-		`);
-	}
-
-	function showFeatureToggles() {
-		const containers = {
-			info      : $('.info.popup .i-image-box'),
-			inventory : $('.inventory.popup'),
-			draw      : $('.draw-slider-wrp'),
-		} as const;
-
-		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
-
-		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: AnyFeatureBase }> = [
-			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
-			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
-			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
-			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
-
-			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
-			{ container : 'inventory', title : 'BTN', feature : features.get(moveRerefenceButtonsDown) },
-			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
-
-			{ container : 'draw', title : 'CLS', feature : features.get(hideCloseButton) },
-			{ container : 'draw', title : 'BTN', feature : features.get(matchDrawSliderButtons) },
-		];
-
-		for (const { container, title, feature } of featureToggles) {
-			const button = $('<button></button>')
-				.html(title)
-				.toggleClass('off', !feature.isEnabled())
-				.appendTo(containers[container].find('.i-buttons'));
-
-			button.on('click', () => {
-				const toggleValue = feature.toggle();
-				button.toggleClass('off', !toggleValue);
-			});
-		}
-
-		setCSS(`
-			.i-feature-toggles {
-				position: absolute !important;
-				left: 0;
-				top: 0;
-				justify-content: flex-start;
-				direction: ltr;
-			}
-
-			.i-feature-toggles button {
-				width: auto;
-				position: relative;
-				z-index: 1;
-				font-size: 0.85em;
-				min-height: 0px;
-				line-height: 1;
-			}
-
-			.i-feature-toggles button.off {
-				filter: saturate(0.15);
 			}
 		`);
 	}
