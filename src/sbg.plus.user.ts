@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.35
+// @version        0.9.36
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.35';
+window.__sbg_plus_version = '0.9.36';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -2852,7 +2852,6 @@ type ApiProfileData = {
 			}
 
 			[data-feat-hideCloseButton] .draw-slider-buttons button {
-				width: calc(50% - 0.125em);
 				max-width: none !important;
 				padding: 6px;
 				font-size: 1.1em;
@@ -3053,6 +3052,7 @@ type ApiProfileData = {
 		const containers = {
 			info      : $('.info.popup .i-image-box'),
 			inventory : $('.inventory.popup'),
+			draw      : $('.draw-slider-wrp'),
 		} as const;
 
 		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
@@ -3064,8 +3064,11 @@ type ApiProfileData = {
 			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
 
 			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
-			{ container : 'inventory', title : 'BUT', feature : features.get(moveRerefenceButtonsDown) },
+			{ container : 'inventory', title : 'BTN', feature : features.get(moveRerefenceButtonsDown) },
 			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
+
+			{ container : 'draw', title : 'CLS', feature : features.get(hideCloseButton) },
+			{ container : 'draw', title : 'BTN', feature : features.get(matchDrawSliderButtons) },
 		];
 
 		for (const { container, title, feature } of featureToggles) {
@@ -3084,7 +3087,7 @@ type ApiProfileData = {
 			.i-feature-toggles {
 				position: absolute !important;
 				left: 0;
-				bottom: 0;
+				top: 0;
 				justify-content: flex-start;
 				direction: ltr;
 			}
@@ -3158,15 +3161,31 @@ type ApiProfileData = {
 		});
 
 		setCSS(`
-			.draw-slider-wrp {
+			.draw-slider-buttons {
+				gap: 0.25em;
+			}
+
+			[data-feat-matchDrawSliderButtons] .draw-slider-wrp {
 				transform: translate(-50%, 0);
 				top: auto;
 			}
 
-			.sbgcui_drawslider_sort {
+			[data-feat-matchDrawSliderButtons] .draw-slider-buttons {
+				display: flex;
+			}
+
+			[data-feat-matchDrawSliderButtons] .sbgcui_drawslider_sort {
 				position: static;
 				top: auto;
 				width: auto;
+			}
+
+			[data-feat-matchDrawSliderButtons] .sbgcui_drawslider_fit {
+				display: none;
+			}
+
+			[data-feat-matchDrawSliderButtons] #draw-slider-close {
+				order: 1;
 			}
 		`);
 	}
