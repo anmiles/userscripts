@@ -2099,10 +2099,6 @@ type ApiProfileData = {
 				/const MIN_FREE_SPACE = \d+/,
 				'const MIN_FREE_SPACE = INVENTORY_LIMIT',
 			)
-			.replace(
-				'if (event.target == discoverButton) { clearInventory(); }',
-				'clearInventory();',
-			)
 		;
 	}
 
