@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.40
+// @version        0.9.41
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.40';
+window.__sbg_plus_version = '0.9.41';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -66,9 +66,11 @@ interface Window {
 	__sbg_function_timeToString: (seconds: number) => string;
 
 	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
+
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
 	__sbg_cui_function_loadMainScript: () => void;
+	__sbg_cui_function_clearInventory: (forceClear?: boolean, filteredLoot?: any[]) => Promise<void>;
 }
 
 interface EventTarget {
@@ -695,28 +697,39 @@ type ApiProfileData = {
 
 	const settings = new Settings();
 
-	type EventWatcherEvent<TEventData, TOptions = void> = {
+	type EventWatcherListenerOptions = {
+		once?: boolean;
+		previous?: boolean;
+	}
+
+	type EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> = {
+		handler: (eventData: TEventData) => void;
+		enabled: boolean;
+		listenerOptions: TListenerOptions;
+	};
+
+	type EventWatcherEvent<TEventData, TEventOptions = void> = {
 		eventData: TEventData;
-		eventOptions: TOptions;
+		eventOptions: TEventOptions;
 	};
 
-	type EventWatcherListener<TEventData, TOptions = void> = {
-		handler: (eventData: TEventData) => void,
-		listenerOptions: TOptions
-	};
-
-	abstract class EventWatcher<TEventTypes extends string, TEventDataTypes extends Record<TEventTypes, any>, TOptions = void> {
+	abstract class EventWatcher<
+		TEventTypes extends string,
+		TEventDataTypes extends Record<TEventTypes, any>,
+		TEventOptions = void,
+		TListenerOptions extends EventWatcherListenerOptions & TEventOptions = EventWatcherListenerOptions & TEventOptions
+	> {
 		protected eventTypes: readonly TEventTypes[];
-
-		protected events: {
-			[TEventType in TEventTypes]: Array<
-				EventWatcherEvent<TEventDataTypes[TEventType], TOptions>
-			>
-		};
 
 		protected listeners: {
 			[TEventType in TEventTypes]: Array<
-				EventWatcherListener<TEventDataTypes[TEventType], TOptions>
+				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
+			>
+		};
+
+		protected events: {
+			[TEventType in TEventTypes]: Array<
+				EventWatcherEvent<TEventDataTypes[TEventType], TEventOptions>
 			>
 		};
 
@@ -731,8 +744,8 @@ type ApiProfileData = {
 			this.events     = {} as typeof this.events;
 
 			this.eventTypes.map((eventType) => {
-				this.listeners[eventType] = [];
 				this.events[eventType]    = [];
+				this.listeners[eventType] = [];
 			});
 		}
 
@@ -741,22 +754,28 @@ type ApiProfileData = {
 		protected filter<TEventType extends TEventTypes>(
 			listeners: typeof this.listeners[TEventType],
 			_filterData: {
-				eventType: TEventType,
-				eventOptions: TOptions
+				eventOptions?: TEventOptions
 			},
-		): EventWatcherListener<TEventDataTypes[TEventType], TOptions>[] {
+		): typeof this.listeners[TEventType] {
 			return listeners;
 		}
 
 		private trigger<TEventType extends TEventTypes>(
 			listeners: typeof this.listeners[TEventType],
-			{ eventType, eventData, eventOptions }: {
-				eventType: TEventType,
+			{ eventData, eventOptions }: {
 				eventData: TEventDataTypes[TEventType],
-				eventOptions: TOptions
+				eventOptions: TEventOptions
 			},
 		) {
-			this.filter(listeners, { eventType, eventOptions }).map((listener) => {
+			this.filter(listeners, { eventOptions }).map((listener) => {
+				if (!listener.enabled) {
+					return;
+				}
+
+				if (listener.listenerOptions.once) {
+					listener.enabled = false;
+				}
+
 				listener.handler(eventData);
 			});
 		}
@@ -764,22 +783,33 @@ type ApiProfileData = {
 		emit<TEventType extends TEventTypes>(
 			eventType: TEventType,
 			eventData: TEventDataTypes[TEventType],
-			eventOptions: TOptions,
+			eventOptions: TEventOptions,
 		) {
+			this.trigger(this.listeners[eventType], { eventData, eventOptions });
 			this.events[eventType].push({ eventData, eventOptions });
-			this.trigger(this.listeners[eventType], { eventType, eventData, eventOptions });
 		}
 
 		on<TEventType extends TEventTypes>(
 			eventType: TEventType,
 			handler: (eventData: TEventDataTypes[TEventType]) => void,
-			listenerOptions: TOptions,
+			listenerOptions: TListenerOptions,
 		) {
-			const listener = { handler, listenerOptions };
+			const listener = { handler, listenerOptions, enabled : true };
 			this.listeners[eventType].push(listener);
 
-			this.events[eventType].map(({ eventData, eventOptions }) => {
-				this.trigger([ listener ], { eventType, eventData, eventOptions });
+			if (listenerOptions.previous) {
+				this.events[eventType].map(({ eventData, eventOptions }) => {
+					this.trigger([ listener ], { eventData, eventOptions });
+				});
+			}
+		}
+
+		off<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			eventOptions?: TEventOptions,
+		) {
+			this.filter(this.listeners[eventType], { eventOptions }).map((listener) => {
+				listener.enabled = false;
 			});
 		}
 	}
@@ -1039,7 +1069,8 @@ type ApiProfileData = {
 
 	class Features extends EventWatcher<
 		typeof featuresEventTypes[number],
-		FeaturesEventDataTypes
+		FeaturesEventDataTypes,
+		EventWatcherListenerOptions
 	> {
 		keys = {} as Record<string, AnyFeatureBase>;
 		groups = {} as Record<FeatureGroup, AnyFeatureBase[]>;
@@ -1058,11 +1089,11 @@ type ApiProfileData = {
 			this.keys[feature.key] = feature;
 			this.groups[feature.group].push(feature);
 			this.triggers[feature.trigger].push(feature);
-			this.emit('add', feature);
+			this.emit('add', feature, {});
 		}
 
 		check({ feature, value } : FeaturesEventDataTypes['check']) {
-			this.emit('check', { feature, value });
+			this.emit('check', { feature, value }, {});
 		}
 
 		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
@@ -1128,7 +1159,11 @@ type ApiProfileData = {
 		{ public : true, group, trigger : 'cuiTransform' });
 
 	new Transformer(alwaysClearInventory,
-		{ ru : 'Авто-очищать инвентарь после каждого дискавера', en : 'Auto-delete inventory after every discover' },
+		{ ru : 'Запускать авточистку инвентаря после каждого дискавера', en : 'Launch inventory cleanup after every discover' },
+		{ public : true, group, trigger : 'cuiTransform', unchecked : true });
+
+	new Transformer(waitClearInventory,
+		{ ru : 'Дожидаться получения предметов перед запуском авточистки', en : 'Wait for updating inventory before cleanup' },
 		{ public : true, group, trigger : 'cuiTransform' });
 
 	new Feature(fixSortButton,
@@ -1534,7 +1569,8 @@ type ApiProfileData = {
 
 	class VersionWatcher extends EventWatcher<
 		typeof versionWatcherEventTypes[number],
-		VersionWatcherEventDataTypes
+		VersionWatcherEventDataTypes,
+		EventWatcherListenerOptions
 	> {
 		private storageKey: string;
 		private getter: () => ReadableVariable<string>;
@@ -1563,7 +1599,7 @@ type ApiProfileData = {
 				localStorage[this.storageKey] = currentVersion;
 
 				if (previousVersion !== currentVersion) {
-					this.emit('change', { previousVersion, currentVersion });
+					this.emit('change', { previousVersion, currentVersion }, {});
 				}
 			}, 50);
 		}
@@ -1571,11 +1607,12 @@ type ApiProfileData = {
 
 	const localStorageWatcherEventTypes = [ 'getItem', 'setItem', 'removeItem' ] as const;
 
-	type LocalStorageWatcherOptions = {
+	type LocalStorageWatcherEventOptions = {
 		key: string;
 		when: 'before' | 'after';
-		once?: boolean;
 	}
+
+	type LocalStorageWatcherListenerOptions = LocalStorageWatcherEventOptions & EventWatcherListenerOptions;
 
 	type LocalStorageWatcherEventDataTypes = {
 		getItem: { key: string };
@@ -1586,7 +1623,8 @@ type ApiProfileData = {
 	class LocalStorageWatcher extends EventWatcher<
 		typeof localStorageWatcherEventTypes[number],
 		LocalStorageWatcherEventDataTypes,
-		LocalStorageWatcherOptions
+		LocalStorageWatcherEventOptions,
+		LocalStorageWatcherListenerOptions
 	> {
 		constructor() {
 			super(localStorageWatcherEventTypes);
@@ -1621,17 +1659,10 @@ type ApiProfileData = {
 
 		protected override filter<TEventType extends keyof LocalStorageWatcherEventDataTypes>(
 			listeners: typeof this.listeners[TEventType],
-			{ eventType, eventOptions }: { eventType: TEventType, eventOptions: LocalStorageWatcherOptions },
+			{ eventOptions }: { eventOptions: LocalStorageWatcherEventOptions },
 		) {
 			return listeners
-				.filter((listener) => listener.listenerOptions.key === eventOptions.key && listener.listenerOptions.when === eventOptions.when)
-				.map((listener) => {
-					if (listener.listenerOptions.once) {
-						listeners.splice(this.listeners[eventType].indexOf(listener), 1);
-					}
-
-					return listener;
-				});
+				.filter((listener) => listener.listenerOptions.key === eventOptions.key && listener.listenerOptions.when === eventOptions.when);
 		}
 	}
 
@@ -1941,6 +1972,7 @@ type ApiProfileData = {
 	}
 
 	function transformCUIScript(script: Script): Script {
+		script.transform(exposeCUI);
 		script.transform(fixCompatibility);
 		script.transform(fixGotoReference);
 		script.transform(fixCUIDefaults);
@@ -2210,6 +2242,18 @@ type ApiProfileData = {
 		});
 	}
 
+	function exposeCUI(script: Script): Script {
+		return script
+			.expose('__sbg_cui', {
+				variables : {
+					readable : [ 'USERSCRIPT_VERSION' ],
+				},
+				functions : {
+					readable : [ 'clearInventory' ],
+				},
+			});
+	}
+
 	function fixCompatibility(script: Script): Script {
 		(async () => {
 			log('fix CUI compatibility: wait window.cuiEmbedded');
@@ -2261,9 +2305,6 @@ type ApiProfileData = {
 				'window.cuiEmbedded = true',
 			)
 			.expose('__sbg_cui', {
-				variables : {
-					readable : [ 'USERSCRIPT_VERSION' ],
-				},
 				functions : {
 					readable : [ 'olInjection', 'loadMainScript', 'main' ],
 				},
@@ -2374,6 +2415,21 @@ type ApiProfileData = {
 		;
 	}
 
+	function waitClearInventory(script: Script): Script {
+		$('#discover').on('click', () => {
+			(window.__sbg_plus_localStorage_watcher as LocalStorageWatcher).on('getItem', () => {
+				window.__sbg_cui_function_clearInventory(false);
+			}, { key : 'inventory-cache', when : 'after', once : true });
+		});
+
+		return script
+			.replace(
+				'clearInventory(false, toDelete);',
+				'// clearInventory(false, toDelete);',
+			)
+		;
+	}
+
 	function disableCarouselAnimation() {
 		window.Splide.defaults       = window.Splide.defaults || {};
 		window.Splide.defaults.speed = 0;
@@ -2461,10 +2517,11 @@ type ApiProfileData = {
 	}
 
 	function updateLangCacheAutomatically() {
-		new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION).on('change', ({ currentVersion }) => {
-			log(`update lang cache to ${currentVersion} version`);
-			$('#lang-cache').trigger('click');
-		});
+		new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION)
+			.on('change', ({ currentVersion }) => {
+				log(`update lang cache to ${currentVersion} version`);
+				$('#lang-cache').trigger('click');
+			}, { previous : true });
 	}
 
 	function fixBlurryBackground() {
@@ -2892,14 +2949,15 @@ type ApiProfileData = {
 	}
 
 	function reportCUIUpdates() {
-		new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION).on('change', ({ currentVersion }) => {
-			const message = labels.toasts.cuiUpdated.format({ currentVersion });
-			showToast(message, 2000);
+		new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION)
+			.on('change', ({ currentVersion }) => {
+				const message = labels.toasts.cuiUpdated.format({ currentVersion });
+				showToast(message, 2000);
 
-			if (window.__sbg_local) {
-				alert(message);
-			}
-		});
+				if (window.__sbg_local) {
+					alert(message);
+				}
+			}, { previous : true });
 	}
 
 	function quickRecycleAllRefs(inventoryContent: JQuery<HTMLElement>) {
@@ -4492,8 +4550,8 @@ type ApiProfileData = {
 				groupFeatures.map((feature) => this.addFeature(feature));
 			});
 
-			features.on('add', (feature) => this.addFeature(feature));
-			features.on('check', ({ feature, value }) => this.check(feature, value));
+			features.on('add', (feature) => this.addFeature(feature), {});
+			features.on('check', ({ feature, value }) => this.check(feature, value), {});
 		}
 
 		private render() {
