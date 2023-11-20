@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.37
+// @version        0.9.38
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.37';
+window.__sbg_plus_version = '0.9.38';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -680,6 +680,71 @@ type ApiProfileData = {
 
 	const settings = new Settings();
 
+	type EventWatcherListener<TEventData, TListenerOptions = void> = {
+		handler: (eventData: TEventData) => void, options: TListenerOptions
+	};
+
+	abstract class EventWatcher<TEventTypes extends string, TEventDataTypes extends Record<TEventTypes, any>, TListenerOptions = void> {
+		protected eventTypes: readonly TEventTypes[];
+
+		protected events: {
+			[TEventType in TEventTypes]: Array<
+				TEventDataTypes[TEventType]
+			>
+		};
+
+		protected listeners: {
+			[TEventType in TEventTypes]: Array<
+				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
+			>
+		};
+
+		constructor(eventTypes: readonly TEventTypes[]) {
+			this.init(eventTypes);
+			this.watch();
+		}
+
+		private init(eventTypes: readonly TEventTypes[]) {
+			this.eventTypes = eventTypes;
+			this.listeners  = {} as typeof this.listeners;
+			this.events     = {} as typeof this.events;
+
+			this.eventTypes.map((eventType) => {
+				this.listeners[eventType] = [];
+				this.events[eventType]    = [];
+			});
+		}
+
+		protected abstract watch(): void;
+
+		protected getEmitters<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			_eventData: TEventDataTypes[TEventType],
+		): EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>[] {
+			return this.listeners[eventType];
+		}
+
+		emit<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			eventData: TEventDataTypes[TEventType],
+		) {
+			this.events[eventType].push(eventData);
+
+			this.getEmitters(eventType, eventData).map((listener) => {
+				listener.handler(eventData);
+			});
+		}
+
+		on<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			handler: (eventData: TEventDataTypes[TEventType]) => void,
+			options: TListenerOptions,
+		) {
+			this.listeners[eventType].push({ handler, options });
+			this.events[eventType].map((eventData) => handler(eventData));
+		}
+	}
+
 	const featureGroups = {
 		scripts     : { ru : 'Скрипты', en : 'Scripts' },
 		base        : { ru : 'Основные настройки', en : 'Basic settings' },
@@ -802,7 +867,7 @@ type ApiProfileData = {
 
 			if (this.parent) {
 				const uncheckedChildren = this.parent.children.filter((feature) => !feature.isEnabled());
-				features.check(this.parent, uncheckedChildren.length === 0);
+				features.check({ feature : this.parent, value : uncheckedChildren.length === 0 });
 			}
 		}
 
@@ -868,7 +933,7 @@ type ApiProfileData = {
 			const value = settings.getFeature(this.key);
 
 			if (value !== undefined) {
-				this.children.map((feature) => features.check(feature, value));
+				this.children.map((feature) => features.check({ feature, value }));
 			}
 		}
 	}
@@ -922,45 +987,44 @@ type ApiProfileData = {
 		}
 	}
 
-	const featuresEvents = [
+	const featuresEventTypes = [
 		'add',
 		'check',
 	] as const;
 
-	type FeaturesEvents = {
-		add: [ AnyFeatureBase ],
-		check: [ AnyFeatureBase, boolean ],
+	// TODO: в других вотчерах должен быть такой же способ объявления типов аргументов для каждого метода
+	type FeaturesEventDataTypes = {
+		add: AnyFeatureBase,
+		check: { feature: AnyFeatureBase, value: boolean },
 	};
 
-	class Features {
+	class Features extends EventWatcher<
+		typeof featuresEventTypes[number],
+		FeaturesEventDataTypes
+	> {
 		keys = {} as Record<string, AnyFeatureBase>;
 		groups = {} as Record<FeatureGroup, AnyFeatureBase[]>;
 		triggers = {} as Record<FeatureTrigger, AnyFeatureBase[]>;
-		private listeners = {} as { [K in keyof FeaturesEvents]: Array<(...args: FeaturesEvents[K]) => void> };
 
 		constructor() {
+			super(featuresEventTypes);
 			Object.keys(featureGroups).map((key: FeatureGroup) => this.groups[key] = []);
 			featureTriggers.map((key) => this.triggers[key] = []);
-			featuresEvents.map((type) => this.listeners[type] = []);
+			featuresEventTypes.map((type) => this.listeners[type] = []);
 		}
 
-		on<Type extends keyof FeaturesEvents>(type: Type, listener: (...args: FeaturesEvents[Type]) => void) {
-			this.listeners[type].push(listener);
+		protected override watch() {
 		}
 
-		private emit<Type extends keyof FeaturesEvents>(type: Type, ...args: FeaturesEvents[Type]) {
-			this.listeners[type].map((listener) => listener(...args));
-		}
-
-		add(...[ feature ] : FeaturesEvents['add']) {
+		add(feature : FeaturesEventDataTypes['add']) {
 			this.keys[feature.key] = feature;
 			this.groups[feature.group].push(feature);
 			this.triggers[feature.trigger].push(feature);
 			this.emit('add', feature);
 		}
 
-		check(...args : FeaturesEvents['check']) {
-			this.emit('check', ...args);
+		check({ feature, value } : FeaturesEventDataTypes['check']) {
+			this.emit('check', { feature, value });
 		}
 
 		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
@@ -4276,7 +4340,7 @@ type ApiProfileData = {
 			});
 
 			features.on('add', (feature) => this.addFeature(feature));
-			features.on('check', (feature, value) => this.check(feature, value));
+			features.on('check', ({ feature, value }) => this.check(feature, value));
 		}
 
 		private render() {
