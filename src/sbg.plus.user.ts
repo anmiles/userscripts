@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.39
+// @version        0.9.40
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.39';
+window.__sbg_plus_version = '0.9.40';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -41,9 +41,9 @@ interface Window {
 	__sbg_urls: Urls;
 	__sbg_language: Lng;
 	__sbg_plus_version: string;
+	__sbg_plus_localStorage_watcher: unknown;
 	__sbg_plus_modifyFeatures: Function;
 	__sbg_plus_animation_duration: number;
-	__sbg_plus_unlock_fingers: number;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -695,22 +695,28 @@ type ApiProfileData = {
 
 	const settings = new Settings();
 
-	type EventWatcherListener<TEventData, TListenerOptions = void> = {
-		handler: (eventData: TEventData) => void, options: TListenerOptions
+	type EventWatcherEvent<TEventData, TOptions = void> = {
+		eventData: TEventData;
+		eventOptions: TOptions;
 	};
 
-	abstract class EventWatcher<TEventTypes extends string, TEventDataTypes extends Record<TEventTypes, any>, TListenerOptions = void> {
+	type EventWatcherListener<TEventData, TOptions = void> = {
+		handler: (eventData: TEventData) => void,
+		listenerOptions: TOptions
+	};
+
+	abstract class EventWatcher<TEventTypes extends string, TEventDataTypes extends Record<TEventTypes, any>, TOptions = void> {
 		protected eventTypes: readonly TEventTypes[];
 
 		protected events: {
 			[TEventType in TEventTypes]: Array<
-				TEventDataTypes[TEventType]
+				EventWatcherEvent<TEventDataTypes[TEventType], TOptions>
 			>
 		};
 
 		protected listeners: {
 			[TEventType in TEventTypes]: Array<
-				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
+				EventWatcherListener<TEventDataTypes[TEventType], TOptions>
 			>
 		};
 
@@ -732,31 +738,49 @@ type ApiProfileData = {
 
 		protected abstract watch(): void;
 
-		protected getEmitters<TEventType extends TEventTypes>(
-			eventType: TEventType,
-			_eventData: TEventDataTypes[TEventType],
-		): EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>[] {
-			return this.listeners[eventType];
+		protected filter<TEventType extends TEventTypes>(
+			listeners: typeof this.listeners[TEventType],
+			_filterData: {
+				eventType: TEventType,
+				eventOptions: TOptions
+			},
+		): EventWatcherListener<TEventDataTypes[TEventType], TOptions>[] {
+			return listeners;
+		}
+
+		private trigger<TEventType extends TEventTypes>(
+			listeners: typeof this.listeners[TEventType],
+			{ eventType, eventData, eventOptions }: {
+				eventType: TEventType,
+				eventData: TEventDataTypes[TEventType],
+				eventOptions: TOptions
+			},
+		) {
+			this.filter(listeners, { eventType, eventOptions }).map((listener) => {
+				listener.handler(eventData);
+			});
 		}
 
 		emit<TEventType extends TEventTypes>(
 			eventType: TEventType,
 			eventData: TEventDataTypes[TEventType],
+			eventOptions: TOptions,
 		) {
-			this.events[eventType].push(eventData);
-
-			this.getEmitters(eventType, eventData).map((listener) => {
-				listener.handler(eventData);
-			});
+			this.events[eventType].push({ eventData, eventOptions });
+			this.trigger(this.listeners[eventType], { eventType, eventData, eventOptions });
 		}
 
 		on<TEventType extends TEventTypes>(
 			eventType: TEventType,
 			handler: (eventData: TEventDataTypes[TEventType]) => void,
-			options: TListenerOptions,
+			listenerOptions: TOptions,
 		) {
-			this.listeners[eventType].push({ handler, options });
-			this.events[eventType].map((eventData) => handler(eventData));
+			const listener = { handler, listenerOptions };
+			this.listeners[eventType].push(listener);
+
+			this.events[eventType].map(({ eventData, eventOptions }) => {
+				this.trigger([ listener ], { eventType, eventData, eventOptions });
+			});
 		}
 	}
 
@@ -1025,7 +1049,6 @@ type ApiProfileData = {
 			super(featuresEventTypes);
 			Object.keys(featureGroups).map((key: FeatureGroup) => this.groups[key] = []);
 			featureTriggers.map((key) => this.triggers[key] = []);
-			featuresEventTypes.map((type) => this.listeners[type] = []);
 		}
 
 		protected override watch() {
@@ -1546,6 +1569,72 @@ type ApiProfileData = {
 		}
 	}
 
+	const localStorageWatcherEventTypes = [ 'getItem', 'setItem', 'removeItem' ] as const;
+
+	type LocalStorageWatcherOptions = {
+		key: string;
+		when: 'before' | 'after';
+		once?: boolean;
+	}
+
+	type LocalStorageWatcherEventDataTypes = {
+		getItem: { key: string };
+		setItem: { key: string, value: string };
+		removeItem: { key: string };
+	}
+
+	class LocalStorageWatcher extends EventWatcher<
+		typeof localStorageWatcherEventTypes[number],
+		LocalStorageWatcherEventDataTypes,
+		LocalStorageWatcherOptions
+	> {
+		constructor() {
+			super(localStorageWatcherEventTypes);
+		}
+
+		protected override watch() {
+			((originalMethod) => {
+				localStorage.getItem = (key: string) => {
+					this.emit('getItem', { key }, { key, when : 'before' });
+					const result = originalMethod.call(localStorage, key);
+					this.emit('getItem', { key }, { key, when : 'after' });
+					return result;
+				};
+			})(localStorage.getItem);
+
+			((originalMethod) => {
+				localStorage.setItem = (key: string, value: string) => {
+					this.emit('setItem', { key, value }, { key, when : 'before' });
+					originalMethod.call(localStorage, key, value);
+					this.emit('setItem', { key, value }, { key, when : 'after' });
+				};
+			})(localStorage.setItem);
+
+			((originalMethod) => {
+				localStorage.removeItem = (key: string) => {
+					this.emit('removeItem', { key }, { key, when : 'before' });
+					originalMethod.call(localStorage, key);
+					this.emit('removeItem', { key }, { key, when : 'after' });
+				};
+			})(localStorage.removeItem);
+		}
+
+		protected override filter<TEventType extends keyof LocalStorageWatcherEventDataTypes>(
+			listeners: typeof this.listeners[TEventType],
+			{ eventType, eventOptions }: { eventType: TEventType, eventOptions: LocalStorageWatcherOptions },
+		) {
+			return listeners
+				.filter((listener) => listener.listenerOptions.key === eventOptions.key && listener.listenerOptions.when === eventOptions.when)
+				.map((listener) => {
+					if (listener.listenerOptions.once) {
+						listeners.splice(this.listeners[eventType].indexOf(listener), 1);
+					}
+
+					return listener;
+				});
+		}
+	}
+
 	async function main() {
 		if (location.pathname.startsWith('/login')) {
 			return;
@@ -1566,6 +1655,8 @@ type ApiProfileData = {
 		initSettings();
 		window.__sbg_plus_modifyFeatures && window.__sbg_plus_modifyFeatures(features);
 		execFeatures('pageLoad');
+
+		window.__sbg_plus_localStorage_watcher = new LocalStorageWatcher();
 
 		const nativeScript = await getNativeScript();
 		await loadCUI(nativeScript);
