@@ -1397,6 +1397,26 @@ type ApiProfileData = {
 		}
 	}
 
+	async function resolveOnce(addListener: (resolver: () => any) => void, immediateCondition: () => boolean): Promise<void> {
+		return new Promise((resolve) => {
+			let resolved = false;
+
+			function singleResolver() {
+				if (resolved) {
+					return;
+				}
+				resolved = true;
+				resolve();
+			}
+
+			addListener(singleResolver);
+
+			if (immediateCondition()) {
+				singleResolver();
+			}
+		});
+	}
+
 	async function main() {
 		if (location.pathname.startsWith('/login')) {
 			return;
@@ -1715,17 +1735,9 @@ type ApiProfileData = {
 	}
 
 	async function waitHTMLLoaded(): Promise<void> {
-		return new Promise((resolve) => {
-			let resolved = false;
-
-			function resolveOnce() {
-				if (resolved) {
-					return;
-				}
-				resolved = true;
-				resolve();
-				log('loaded DOM content');
-			}
+		await resolveOnce((resolver) => document.addEventListener('DOMContentLoaded', resolver), () => document.readyState !== 'loading');
+		log('loaded DOM content');
+	}
 
 	async function getNativeScript(): Promise<Script>  {
 		return Script.create({
