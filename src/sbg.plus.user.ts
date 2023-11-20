@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.38
+// @version        0.9.39
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.38';
+window.__sbg_plus_version = '0.9.39';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -65,6 +65,7 @@ interface Window {
 	__sbg_function_takeUnits: (value: number) => [string, string];
 	__sbg_function_timeToString: (seconds: number) => string;
 
+	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
 	__sbg_cui_function_loadMainScript: () => void;
@@ -367,6 +368,7 @@ type ApiProfileData = {
 		toasts: {
 			back: Label;
 			logs: Label;
+			cuiUpdated: Label;
 		}
 		builder: {
 			buttons: Record<BuilderButtons, BuilderButtonLabel>;
@@ -408,11 +410,20 @@ type ApiProfileData = {
 	type LabelValues = Record<Lng, string>;
 
 	class Label {
-		lng: Lng;
 		values: LabelValues;
 
 		constructor(values: LabelValues) {
 			this.values = values;
+		}
+
+		format(data: Record<string, string>): Label {
+			const formattedLabel = new Label(this.values);
+
+			Object.entries(formattedLabel.values).forEach(([ lng, value ]: [ Lng, string ]) => {
+				formattedLabel.values[lng] = value.replace(/\$\{(.+?)\}/g, (_, key) => data[key]);
+			});
+
+			return formattedLabel;
 		}
 
 		toString(): string {
@@ -463,6 +474,10 @@ type ApiProfileData = {
 			logs : new Label({
 				ru : 'Логи скопированы в буфер обмена',
 				en : 'Logs has been copied into the clipboard',
+			}),
+			cuiUpdated : new Label({
+				ru : 'Скрипт Николая обновлён до версии ${currentVersion}',
+				en : 'Nicko script has been updated to ${currentVersion}',
 			}),
 		},
 		builder : {
@@ -1096,6 +1111,10 @@ type ApiProfileData = {
 	new Feature(fixSortButton,
 		{ ru : 'Исправить расположение кнопки сортировки', en : 'Fix sort button z-index' },
 		{ public : true, group, trigger : 'mapReady', requires : () => $('.sbgcui_refs-sort-button') });
+
+	new Feature(reportCUIUpdates,
+		{ ru : 'Сообщать об обновлениях скрипта', en : 'Report script updates' },
+		{ public : true, group, trigger : 'mapReady', unchecked : true });
 
 	group = 'eui';
 
@@ -2151,6 +2170,9 @@ type ApiProfileData = {
 				'window.cuiEmbedded = true',
 			)
 			.expose('__sbg_cui', {
+				variables : {
+					readable : [ 'USERSCRIPT_VERSION' ],
+				},
 				functions : {
 					readable : [ 'olInjection', 'loadMainScript', 'main' ],
 				},
@@ -2835,6 +2857,17 @@ type ApiProfileData = {
 				z-index: 100 !important;
 			}
 		`);
+	}
+
+	function reportCUIUpdates() {
+		new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION).on('change', ({ currentVersion }) => {
+			const message = labels.toasts.cuiUpdated.format({ currentVersion });
+			showToast(message, 2000);
+
+			if (window.__sbg_local) {
+				alert(message);
+			}
+		});
 	}
 
 	function quickRecycleAllRefs(inventoryContent: JQuery<HTMLElement>) {
