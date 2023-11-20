@@ -1481,6 +1481,52 @@ type ApiProfileData = {
 		});
 	}
 
+	const versionWatcherEventTypes = [ 'change' ] as const;
+
+	type VersionWatcherEventData = { previousVersion: string, currentVersion: string };
+
+	type VersionWatcherEventDataTypes = Record<
+		typeof versionWatcherEventTypes[number],
+		VersionWatcherEventData
+	>;
+
+	class VersionWatcher extends EventWatcher<
+		typeof versionWatcherEventTypes[number],
+		VersionWatcherEventDataTypes
+	> {
+		private storageKey: string;
+		private getter: () => ReadableVariable<string>;
+
+		constructor(storageKey: string, getter: () => ReadableVariable<string>) {
+			super(versionWatcherEventTypes);
+			this.storageKey = storageKey;
+			this.getter     = getter;
+		}
+
+		protected override watch() {
+			const waitForVersion = setInterval(() => {
+				const variable = this.getter();
+				if (!variable) {
+					return;
+				}
+
+				const currentVersion = variable.get();
+				if (!currentVersion) {
+					return;
+				}
+
+				clearInterval(waitForVersion);
+
+				const previousVersion         = localStorage[this.storageKey];
+				localStorage[this.storageKey] = currentVersion;
+
+				if (previousVersion !== currentVersion) {
+					this.emit('change', { previousVersion, currentVersion });
+				}
+			}, 50);
+		}
+	}
+
 	async function main() {
 		if (location.pathname.startsWith('/login')) {
 			return;
@@ -2361,23 +2407,10 @@ type ApiProfileData = {
 	}
 
 	function updateLangCacheAutomatically() {
-		const waitForVersion = setInterval(() => {
-			const currentVersion = window.__sbg_variable_VERSION.get();
-			if (!currentVersion) {
-				return;
-			}
-
-			clearInterval(waitForVersion);
-
-			const storageKey         = '__sbg_current_version';
-			const previousVersion    = localStorage[storageKey] || 'unknown';
-			localStorage[storageKey] = currentVersion;
-
-			if (previousVersion !== currentVersion) {
-				log(`update lang cache from ${previousVersion} version to ${currentVersion} version`);
-				$('#lang-cache').trigger('click');
-			}
-		}, 50);
+		new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION).on('change', ({ currentVersion }) => {
+			log(`update lang cache to ${currentVersion} version`);
+			$('#lang-cache').trigger('click');
+		});
 	}
 
 	function fixBlurryBackground() {
