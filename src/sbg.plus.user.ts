@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.36
+// @version        0.9.37
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.36';
+window.__sbg_plus_version = '0.9.37';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -26,7 +26,6 @@ interface Window {
 	setCSS: (css: string) => void;
 	cuiStatus: 'loading' | 'loaded';
 	cuiEmbedded: boolean | undefined;
-	egorScript: Function | undefined;
 
 	DeviceOrientationEvent: {
 		prototype: DeviceOrientationEvent;
@@ -39,6 +38,7 @@ interface Window {
 
 	__sbg_local: boolean;
 	__sbg_preset: unknown;
+	__sbg_urls: Urls;
 	__sbg_language: Lng;
 	__sbg_plus_version: string;
 	__sbg_plus_modifyFeatures: Function;
@@ -305,6 +305,13 @@ type I18Next = {
 	t: (key: string, data?: any) => string;
 	translator: unknown;
 }
+
+type UrlType = 'desktop' | 'mobile' | 'script' | 'intel' | 'cui' | 'eui';
+
+type Urls = Record<UrlType, {
+	local: string;
+	remote: string;
+}>;
 
 type Lng = 'ru' | 'en';
 
@@ -1234,6 +1241,27 @@ type ApiProfileData = {
 			this.data = data;
 		}
 
+		static async create({ src, prefix, transformer, data }: { src: string, data?: string, prefix: string, transformer: (script: Script) => void }): Promise<Script> {
+			if (!data) {
+				data = await fetch(src).then((r) => r.text());
+			}
+
+			const script = new Script(data);
+
+			const originalScriptName = `${prefix}_original` as `__sbg_${string}_original`;
+			const modifiedScriptName = `${prefix}_modified` as `__sbg_${string}_modified`;
+
+			window[originalScriptName] = script.data || '';
+			new Script(window[originalScriptName]).log(`started as ${originalScriptName}`, script.transform);
+
+			script.transform(transformer);
+
+			window[modifiedScriptName] = script.data || '';
+			new Script(window[modifiedScriptName]).log(`finished as ${modifiedScriptName}`, script.transform);
+
+			return script;
+		}
+
 		valueOf(): string | undefined {
 			return this.data;
 		}
@@ -1351,10 +1379,10 @@ type ApiProfileData = {
 			this.log('finished', this.embed);
 		}
 
-		static loadScript(src: string): void {
-			log(`load: started, src: ${src}`);
+		static appendScript(src: string): void {
+			log(`append: started, src: ${src}`);
 			Script.append((el) => el.src = src);
-			log(`load: finished, src: ${src}`);
+			log(`append: finished, src: ${src}`);
 		}
 
 		private static append(fill: (el: HTMLScriptElement) => void) {
@@ -1381,6 +1409,7 @@ type ApiProfileData = {
 
 		window.__sbg_language = getLanguage();
 		initFeedback();
+		initUrls();
 		fixPermissionsCompatibility();
 
 		await waitHTMLLoaded();
@@ -1441,15 +1470,15 @@ type ApiProfileData = {
 	}
 
 	function getNativeScriptSrc(): string {
-		return `https://sbg-game.ru/app/${isMobile() ? 'script.js' : 'intel.js'}`;
+		return window.__sbg_urls[isMobile() ? 'script' : 'intel'].remote;
 	}
 
 	function getCUIScriptSrc(): string {
-		return 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js';
+		return window.__sbg_urls['cui'].remote;
 	}
 
 	function getEUIScriptSrc(): string {
-		return 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/index.js';
+		return window.__sbg_urls['eui'].remote;
 	}
 
 	function enhanceEventListeners() {
@@ -1602,6 +1631,40 @@ type ApiProfileData = {
 		});
 	}
 
+	function initUrls() {
+		if (window.__sbg_urls) {
+			return;
+		}
+
+		window.__sbg_urls = {
+			desktop : {
+				local  : 'sbg.plus.user.js',
+				remote : 'https://anmiles.net/userscripts/sbg.plus.user.js',
+			},
+			mobile : {
+				local  : 'sbg.plus.user.min.js',
+				remote : 'https://anmiles.net/userscripts/sbg.plus.user.min.js',
+			},
+			intel : {
+				local  : 'intel.js',
+				remote : 'https://sbg-game.ru/app/intel.js',
+			},
+			script : {
+				local  : 'script.js',
+				remote : 'https://sbg-game.ru/app/script.js',
+			},
+			cui : {
+				local  : 'nicko.js',
+				remote : 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+			},
+			eui : {
+				local  : 'egor.js',
+				remote : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/index.js',
+			},
+		};
+
+	}
+
 	function fixPermissionsCompatibility() {
 		log(`userAgent: ${navigator.userAgent}`);
 
@@ -1626,7 +1689,13 @@ type ApiProfileData = {
 		}
 
 		log('CUI enabled; loading CUI script');
-		const cuiScript = await transformScript(getCUIScriptSrc(), '__sbg_cui_script', transformCUIScript);
+
+		const cuiScript = await Script.create({
+			src         : getCUIScriptSrc(),
+			prefix      : '__sbg_cui_script',
+			transformer : transformCUIScript,
+		});
+
 		cuiScript.embed();
 		await wait(() => window.cuiStatus === 'loaded');
 	}
@@ -1658,16 +1727,12 @@ type ApiProfileData = {
 				log('loaded DOM content');
 			}
 
-			document.addEventListener('DOMContentLoaded', resolveOnce);
-
-			if (document.readyState !== 'loading') {
-				resolveOnce();
-			}
-		});
-	}
-
 	async function getNativeScript(): Promise<Script>  {
-		return transformScript(getNativeScriptSrc(), '__sbg_script', transformNativeScript);
+		return Script.create({
+			src         : getNativeScriptSrc(),
+			prefix      : '__sbg_script',
+			transformer : transformNativeScript,
+		});
 	}
 
 	function isMobile(): boolean {
@@ -1682,37 +1747,9 @@ type ApiProfileData = {
 		}
 	}
 
-	async function transformScript(src: string, prefix: `__sbg_${string}`, transformer: (data: Script) => Script): Promise<Script> {
-		log(`transform script, src: ${src}`);
-		const originalScriptName = `${prefix}_original` as `__sbg_${string}_original`;
-		const modifiedScriptName = `${prefix}_modified` as `__sbg_${string}_modified`;
-
-		return fetch(src)
-			.then((r) => r.text())
-			.then((data) => {
-				let script = new Script(data);
-				script.log('loaded', transformScript);
-
-				window[originalScriptName] = script.valueOf() || '';
-				new Script(window[originalScriptName]).log(`started as ${originalScriptName}`, transformScript);
-
-				script = transformer(script);
-
-				window[modifiedScriptName] = script.valueOf() || '';
-				new Script(window[modifiedScriptName]).log(`finished as ${modifiedScriptName}`, transformScript);
-
-				return script;
-			});
-	}
-
 	function loadEUI() {
 		window.cuiStatus = 'loaded';
-
-		if (window.egorScript) {
-			window.egorScript();
-		} else {
-			Script.loadScript(getEUIScriptSrc());
-		}
+		Script.appendScript(getEUIScriptSrc());
 	}
 
 	function transformNativeScript(script: Script): Script {
