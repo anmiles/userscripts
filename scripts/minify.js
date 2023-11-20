@@ -10,8 +10,12 @@ async function minify(filepath) {
 	return fs.readFile(filepath)
 		.then((buffer) => buffer.toString())
 		.then((code) => terser.minify({ ['script.js'] : code }, {
+			compress        : false,
+			mangle          : false,
 			// eslint-disable-next-line camelcase
-			compress : false, keep_classnames : true, keep_fnames : true,
+			keep_fnames     : true,
+			// eslint-disable-next-line camelcase
+			keep_classnames : true,
 		}))
 		.then((output) => fs.writeFile(minified, output.code));
 }
