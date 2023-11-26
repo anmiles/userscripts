@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.41
+// @version        0.9.42
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.41';
+window.__sbg_plus_version = '0.9.42';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -44,6 +44,7 @@ interface Window {
 	__sbg_plus_localStorage_watcher: unknown;
 	__sbg_plus_modifyFeatures: Function;
 	__sbg_plus_animation_duration: number;
+	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -66,6 +67,7 @@ interface Window {
 	__sbg_function_timeToString: (seconds: number) => string;
 
 	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
+	__sbg_cui_variable_database: ReadableVariable<IDBDatabase>;
 
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
@@ -345,14 +347,23 @@ type ApiProfileData = {
 	const logs = [] as string[];
 
 	function log(message: string, error = false): void {
+		if (error) {
+			message = `!!! ERROR !!! ${message}`;
+		}
+
 		console[error ? 'error' : 'log'](`${message}`);
-		const prefix = error ? '!!! ERROR !!! ' : '';
-		logs.push(`${prefix}${message}`);
+		logs.push(`${message}`);
 	}
 
-	window.onerror = function(message, _url, lineNumber, columnNumber, error) {
+	window.__sbg_onerror_handlers = [];
+
+	window.__sbg_onerror_handlers.push((event, _source, lineno, colno, error) => {
 		const prefix = error ? '!!! ERROR !!! ' : '';
-		logs.push(`${prefix}${message} on ${lineNumber}:${columnNumber} (${error})`);
+		logs.push(`${prefix}${event} on ${lineno}:${colno} (${error})`);
+	});
+
+	window.onerror = function(event, source, lineno, colno, error) {
+		window.__sbg_onerror_handlers.map((handler) => handler(event, source, lineno, colno, error));
 		return false;
 	};
 
@@ -1470,7 +1481,7 @@ type ApiProfileData = {
 
 			this.log('started', this.expose);
 
-			this.replace(/((?:^|\n)\s*)(const|let)\s+(\w+)(?=[\s+,\n$])/g, (text, before, variableType, variableName) => {
+			this.replace(/((?:^|\n)\s*)(const|let)\s+(\w+)(?=[\s+,;\n$])/g, (text, before, variableType, variableName) => {
 				if (variables?.readable?.includes(variableName)) {
 					return `${before}window.${prefix}_variable_${variableName} = { get: () => ${variableName} };\n${before}${variableType} ${variableName}`;
 				}
@@ -1692,7 +1703,10 @@ type ApiProfileData = {
 		const nativeScript = await getNativeScript();
 		await loadCUI(nativeScript);
 
+		log('wait map: started');
 		await wait(() => window.__sbg_variable_map);
+		log('wait map: finished');
+
 		initHome();
 		initLayers();
 		execFeatures('mapReady');
@@ -1968,7 +1982,10 @@ type ApiProfileData = {
 		});
 
 		cuiScript.embed();
+
+		log('wait cuiStatus: started');
 		await wait(() => window.cuiStatus === 'loaded');
+		log('wait cuiStatus: finished');
 	}
 
 	function transformCUIScript(script: Script): Script {
@@ -2246,7 +2263,7 @@ type ApiProfileData = {
 		return script
 			.expose('__sbg_cui', {
 				variables : {
-					readable : [ 'USERSCRIPT_VERSION' ],
+					readable : [ 'USERSCRIPT_VERSION', 'database' ],
 				},
 				functions : {
 					readable : [ 'clearInventory' ],
@@ -2304,6 +2321,10 @@ type ApiProfileData = {
 				/$/,
 				'window.cuiEmbedded = true',
 			)
+			.replace(
+				/window\.onerror = (.*);/,
+				(_match: string, func: string) => `window.__sbg_onerror_handlers.push(${func});`,
+			)
 			.expose('__sbg_cui', {
 				functions : {
 					readable : [ 'olInjection', 'loadMainScript', 'main' ],
@@ -2359,7 +2380,15 @@ type ApiProfileData = {
 	}
 
 	function disableCUIPointNavigation(script: Script): Script {
-		return script.removeCUIBlock('Навигация к точке');
+		$('<div></div>').addClass('sbgcui_jumpToButton').appendTo('.info');
+
+		setCSS(`
+			.sbgcui_jumpToButton {
+				display: none !important;
+			}
+		`);
+
+		return script.removeCUIBlock('Навигация и переход к точке');
 	}
 
 	function disableClusters(script: Script): Script {
@@ -2721,11 +2750,8 @@ type ApiProfileData = {
 	/* toolbar */
 
 	function showQuickAutoSelectButton(toolbar: JQuery<HTMLElement>) {
-		const autoSelect = JSON.parse(localStorage.sbgcui_config).autoSelect;
-		const cssClass   = autoSelect.deploy === 'max' ? 'fa-rotate-180' : '';
-
 		const autoSelectButton = $('<button></button>')
-			.addClass('fa fa-solid-arrow-down-short-wide').addClass(cssClass)
+			.addClass('fa fa-solid-arrow-down-short-wide')
 			.prependTo(toolbar);
 
 		autoSelectButton.on('click', () => {
@@ -2741,6 +2767,15 @@ type ApiProfileData = {
 				transform: scale(-1, 1);
 			}
 		`);
+
+		window.__sbg_cui_variable_database.get()
+			.transaction('config', 'readonly')
+			.objectStore('config').get('autoSelect')
+			.addEventListener('success', (event) => {
+				const autoSelect = (event.target as IDBRequest).result;
+				const cssClass   = autoSelect.deploy === 'max' ? 'fa-rotate-180' : '';
+				autoSelectButton.addClass(cssClass);
+			});
 	}
 
 	function moveAllSidebarsRight(control: JQuery<HTMLElement>) {
