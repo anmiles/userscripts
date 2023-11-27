@@ -1959,7 +1959,7 @@ type ApiProfileData = {
 			};
 		})(EventTarget.prototype.addEventListener, EventTarget.prototype.removeEventListener);
 
-		log('enhanced event listeneres');
+		log('enhanced event listeners');
 	}
 
 	function getLanguage(): Lng {
