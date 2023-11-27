@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.43
+// @version        0.9.44
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.43';
+window.__sbg_plus_version = '0.9.44';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -45,6 +45,7 @@ interface Window {
 	__sbg_plus_modifyFeatures: Function;
 	__sbg_plus_animation_duration: number;
 	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
+	__sbg_logs_push: (message: string, error?: boolean) => void;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -416,27 +417,181 @@ type ApiProfileData = {
 } & Record<string, number>;
 
 (function() {
-	const logs = [] as string[];
+	type EventWatcherListenerOptions = {
+		once?: boolean;
+		previous?: boolean;
+	}
 
-	function log(message: string, error = false): void {
-		if (error) {
-			message = `!!! ERROR !!! ${message}`;
+	type EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> = {
+		handler: (eventData: TEventData) => void;
+		enabled: boolean;
+		listenerOptions: TListenerOptions;
+	};
+
+	type EventWatcherEvent<TEventData, TEventOptions = void> = {
+		eventData: TEventData;
+		eventOptions: TEventOptions;
+	};
+
+	abstract class EventWatcher<
+		TEventTypes extends string,
+		TEventDataTypes extends Record<TEventTypes, any>,
+		TEventOptions = void,
+		TListenerOptions extends EventWatcherListenerOptions & TEventOptions = EventWatcherListenerOptions & TEventOptions
+	> {
+		protected eventTypes: readonly TEventTypes[];
+
+		protected listeners: {
+			[TEventType in TEventTypes]: Array<
+				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
+			>
+		};
+
+		protected events: {
+			[TEventType in TEventTypes]: Array<
+				EventWatcherEvent<TEventDataTypes[TEventType], TEventOptions>
+			>
+		};
+
+		constructor(eventTypes: readonly TEventTypes[]) {
+			this.init(eventTypes);
+			this.watch();
 		}
 
-		console[error ? 'error' : 'log'](`${message}`);
-		logs.push(`${message}`);
+		private init(eventTypes: readonly TEventTypes[]) {
+			this.eventTypes = eventTypes;
+			this.listeners  = {} as typeof this.listeners;
+			this.events     = {} as typeof this.events;
+
+			this.eventTypes.map((eventType) => {
+				this.events[eventType]    = [];
+				this.listeners[eventType] = [];
+			});
+		}
+
+		protected abstract watch(): void;
+
+		protected filter<TEventType extends TEventTypes>(
+			listeners: typeof this.listeners[TEventType],
+			_filterData: {
+				eventOptions?: TEventOptions
+			},
+		): typeof this.listeners[TEventType] {
+			return listeners;
+		}
+
+		private trigger<TEventType extends TEventTypes>(
+			listeners: typeof this.listeners[TEventType],
+			{ eventData, eventOptions }: {
+				eventData: TEventDataTypes[TEventType],
+				eventOptions: TEventOptions
+			},
+		) {
+			this.filter(listeners, { eventOptions }).map((listener) => {
+				if (!listener.enabled) {
+					return;
+				}
+
+				if (listener.listenerOptions.once) {
+					listener.enabled = false;
+				}
+
+				listener.handler(eventData);
+			});
+		}
+
+		emit<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			eventData: TEventDataTypes[TEventType],
+			eventOptions: TEventOptions,
+		) {
+			this.trigger(this.listeners[eventType], { eventData, eventOptions });
+			this.events[eventType].push({ eventData, eventOptions });
+		}
+
+		on<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			handler: (eventData: TEventDataTypes[TEventType]) => void,
+			listenerOptions: TListenerOptions,
+		) {
+			const listener = { handler, listenerOptions, enabled : true };
+			this.listeners[eventType].push(listener);
+
+			if (listenerOptions.previous) {
+				this.events[eventType].map(({ eventData, eventOptions }) => {
+					this.trigger([ listener ], { eventData, eventOptions });
+				});
+			}
+		}
+
+		off<TEventType extends TEventTypes>(
+			eventType: TEventType,
+			eventOptions?: TEventOptions,
+		) {
+			this.filter(this.listeners[eventType], { eventOptions }).map((listener) => {
+				listener.enabled = false;
+			});
+		}
 	}
+
+	const consoleWatcherEventTypes = [ 'log', 'warn', 'error', 'info', 'debug', 'trace' ] as const;
+
+	type ConsoleWatcherEventDataTypes = {
+		log: { message: string };
+		warn: { message: string };
+		error: { message: string };
+		info: { message: string };
+		debug: { message: string };
+		trace: { message: string };
+	}
+
+	class ConsoleWatcher extends EventWatcher<
+		typeof consoleWatcherEventTypes[number],
+		ConsoleWatcherEventDataTypes,
+		EventWatcherListenerOptions
+	> {
+		constructor() {
+			super(consoleWatcherEventTypes);
+		}
+
+		protected override watch() {
+			consoleWatcherEventTypes.map((eventType) => {
+				((originalMethod) => {
+					console[eventType] = (...args: any[]) => {
+						const lines  = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : arg.toString());
+						const result = originalMethod.call(console, ...args);
+						this.emit(eventType, { message : lines.join('\n') }, {});
+						return result;
+					};
+				})(console[eventType]);
+			});
+		}
+	}
+
+	const logs = [] as string[];
+
+	const consoleWatcher = new ConsoleWatcher();
+
+	consoleWatcherEventTypes.map((eventType) => {
+		consoleWatcher.on(eventType, ({ message }) => {
+
+			if (eventType === 'error') {
+				message = `!!! ERROR !!! ${message}`;
+			}
+
+			logs.push(`${message}`);
+		}, {});
+	});
 
 	window.__sbg_onerror_handlers = [];
 
 	window.__sbg_onerror_handlers.push((event, _source, lineno, colno, error) => {
-		const prefix = error ? '!!! ERROR !!! ' : '';
-		logs.push(`${prefix}${event} on ${lineno}:${colno} (${error})`);
+		console.error(`${event} on ${lineno}:${colno}`, error);
 	});
 
 	window.onerror = function(event, source, lineno, colno, error) {
 		window.__sbg_onerror_handlers.map((handler) => handler(event, source, lineno, colno, error));
-		return false;
+		return true;
 	};
 
 	type Labels = {
@@ -780,123 +935,6 @@ type ApiProfileData = {
 
 	const settings = new Settings();
 
-	type EventWatcherListenerOptions = {
-		once?: boolean;
-		previous?: boolean;
-	}
-
-	type EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> = {
-		handler: (eventData: TEventData) => void;
-		enabled: boolean;
-		listenerOptions: TListenerOptions;
-	};
-
-	type EventWatcherEvent<TEventData, TEventOptions = void> = {
-		eventData: TEventData;
-		eventOptions: TEventOptions;
-	};
-
-	abstract class EventWatcher<
-		TEventTypes extends string,
-		TEventDataTypes extends Record<TEventTypes, any>,
-		TEventOptions = void,
-		TListenerOptions extends EventWatcherListenerOptions & TEventOptions = EventWatcherListenerOptions & TEventOptions
-	> {
-		protected eventTypes: readonly TEventTypes[];
-
-		protected listeners: {
-			[TEventType in TEventTypes]: Array<
-				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
-			>
-		};
-
-		protected events: {
-			[TEventType in TEventTypes]: Array<
-				EventWatcherEvent<TEventDataTypes[TEventType], TEventOptions>
-			>
-		};
-
-		constructor(eventTypes: readonly TEventTypes[]) {
-			this.init(eventTypes);
-			this.watch();
-		}
-
-		private init(eventTypes: readonly TEventTypes[]) {
-			this.eventTypes = eventTypes;
-			this.listeners  = {} as typeof this.listeners;
-			this.events     = {} as typeof this.events;
-
-			this.eventTypes.map((eventType) => {
-				this.events[eventType]    = [];
-				this.listeners[eventType] = [];
-			});
-		}
-
-		protected abstract watch(): void;
-
-		protected filter<TEventType extends TEventTypes>(
-			listeners: typeof this.listeners[TEventType],
-			_filterData: {
-				eventOptions?: TEventOptions
-			},
-		): typeof this.listeners[TEventType] {
-			return listeners;
-		}
-
-		private trigger<TEventType extends TEventTypes>(
-			listeners: typeof this.listeners[TEventType],
-			{ eventData, eventOptions }: {
-				eventData: TEventDataTypes[TEventType],
-				eventOptions: TEventOptions
-			},
-		) {
-			this.filter(listeners, { eventOptions }).map((listener) => {
-				if (!listener.enabled) {
-					return;
-				}
-
-				if (listener.listenerOptions.once) {
-					listener.enabled = false;
-				}
-
-				listener.handler(eventData);
-			});
-		}
-
-		emit<TEventType extends TEventTypes>(
-			eventType: TEventType,
-			eventData: TEventDataTypes[TEventType],
-			eventOptions: TEventOptions,
-		) {
-			this.trigger(this.listeners[eventType], { eventData, eventOptions });
-			this.events[eventType].push({ eventData, eventOptions });
-		}
-
-		on<TEventType extends TEventTypes>(
-			eventType: TEventType,
-			handler: (eventData: TEventDataTypes[TEventType]) => void,
-			listenerOptions: TListenerOptions,
-		) {
-			const listener = { handler, listenerOptions, enabled : true };
-			this.listeners[eventType].push(listener);
-
-			if (listenerOptions.previous) {
-				this.events[eventType].map(({ eventData, eventOptions }) => {
-					this.trigger([ listener ], { eventData, eventOptions });
-				});
-			}
-		}
-
-		off<TEventType extends TEventTypes>(
-			eventType: TEventType,
-			eventOptions?: TEventOptions,
-		) {
-			this.filter(this.listeners[eventType], { eventOptions }).map((listener) => {
-				listener.enabled = false;
-			});
-		}
-	}
-
 	const featureGroups = {
 		scripts     : { ru : 'Скрипты', en : 'Scripts' },
 		base        : { ru : 'Основные настройки', en : 'Basic settings' },
@@ -1027,7 +1065,7 @@ type ApiProfileData = {
 
 		exec(argument: TArgument): TArgument {
 			if (!this.isEnabled()) {
-				log(`skipped ${this.func.name}`);
+				console.log(`skipped ${this.func.name}`);
 				return argument;
 			}
 
@@ -1035,10 +1073,10 @@ type ApiProfileData = {
 				const data   = this.getData(argument);
 				const result = this.func(data);
 				this.toggle(true);
-				log(`executed ${this.func.name}`);
+				console.log(`executed ${this.func.name}`);
 				return result;
 			} catch (ex) {
-				log(`failed ${this.func.name}: ${ex.toString()}`, true);
+				console.error(`failed ${this.func.name}: ${ex.toString()}`);
 				return argument;
 			}
 		}
@@ -1516,20 +1554,20 @@ type ApiProfileData = {
 
 		private static replaceData<TSearchValue extends string | RegExp>(data: string | undefined, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): typeof data {
 			if (typeof data === 'undefined') {
-				log(`replace ${searchValue}: data is undefined`, true);
+				console.error(`replace ${searchValue}: data is undefined`);
 				return data;
 			}
 
 			if (searchValue instanceof RegExp ? data.match(searchValue) : data.includes(searchValue)) {
 				if (typeof replacer === 'string') {
-					log(`replace '${searchValue}' with a string: finished`);
+					console.log(`replace '${searchValue}' with a string: finished`);
 					data = data.replace(searchValue, replacer);
 				} else {
-					log(`replace '${searchValue}' with callback: finished`);
+					console.log(`replace '${searchValue}' with callback: finished`);
 					data = data.replace(searchValue, replacer);
 				}
 			} else {
-				log(`replace '${searchValue}': not found`, true);
+				console.error(`replace '${searchValue}': not found`);
 			}
 
 			return data;
@@ -1547,7 +1585,7 @@ type ApiProfileData = {
 			functions?: { readable?: string[], writable?: string[], disabled?: string[] },
 		}): Script {
 			if (!this.data) {
-				log('expose: data is undefined', true);
+				console.error('expose: data is undefined');
 				return this;
 			}
 
@@ -1589,12 +1627,12 @@ type ApiProfileData = {
 		}
 
 		log(state: string, func: Function) {
-			log(`${func.name}: ${state}, ${this.describeData()}`);
+			console.log(`${func.name}: ${state}, ${this.describeData()}`);
 		}
 
 		embed(): void {
 			if (!this.data) {
-				log('embed failed, data is undefined', true);
+				console.error('embed failed, data is undefined');
 				return;
 			}
 
@@ -1604,9 +1642,9 @@ type ApiProfileData = {
 		}
 
 		static appendScript(src: string): void {
-			log(`append: started, src: ${src}`);
+			console.log(`append: started, src: ${src}`);
 			Script.append((el) => el.src = src);
-			log(`append: finished, src: ${src}`);
+			console.log(`append: finished, src: ${src}`);
 		}
 
 		private static append(fill: (el: HTMLScriptElement) => void) {
@@ -1754,7 +1792,7 @@ type ApiProfileData = {
 			return;
 		}
 
-		log('started');
+		console.log('started');
 
 		preventLoadingScript();
 		enhanceEventListeners();
@@ -1775,16 +1813,16 @@ type ApiProfileData = {
 		const nativeScript = await getNativeScript();
 		await loadCUI(nativeScript);
 
-		log('wait map: started');
+		console.log('wait map: started');
 		await wait(() => window.__sbg_variable_map);
-		log('wait map: finished');
+		console.log('wait map: finished');
 
 		initHome();
 		initLayers();
 		execFeatures('mapReady');
 		execFireFeatures();
 
-		log('finished');
+		console.log('finished');
 	}
 
 	async function copyLogs() {
@@ -1823,7 +1861,7 @@ type ApiProfileData = {
 			};
 		})(Element.prototype.append);
 
-		log('prevented loading script');
+		console.log('prevented loading script');
 	}
 
 	function getNativeScriptSrc(): string {
@@ -1959,7 +1997,7 @@ type ApiProfileData = {
 			};
 		})(EventTarget.prototype.addEventListener, EventTarget.prototype.removeEventListener);
 
-		log('enhanced event listeners');
+		console.log('enhanced event listeners');
 	}
 
 	function getLanguage(): Lng {
@@ -1972,7 +2010,7 @@ type ApiProfileData = {
 		}
 
 		const result = [ 'ru', 'uk', 'be', 'kk' ].includes(lang.split('-')[0]) ? 'ru' : 'en';
-		log(`detected language: ${result}`);
+		console.log(`detected language: ${result}`);
 		return result;
 	}
 
@@ -2023,7 +2061,7 @@ type ApiProfileData = {
 	}
 
 	function fixPermissionsCompatibility() {
-		log(`userAgent: ${navigator.userAgent}`);
+		console.log(`userAgent: ${navigator.userAgent}`);
 
 		if (typeof navigator.permissions === 'undefined') {
 			Object.defineProperty(navigator, 'permissions', {
@@ -2040,12 +2078,12 @@ type ApiProfileData = {
 
 	async function loadCUI(nativeScript: Script): Promise<void> {
 		if (!features.get(loadCUI).isEnabled()) {
-			log('CUI disabled; loading native script');
+			console.log('CUI disabled; loading native script');
 			nativeScript.embed();
 			return;
 		}
 
-		log('CUI enabled; loading CUI script');
+		console.log('CUI enabled; loading CUI script');
 
 		const cuiScript = await Script.create({
 			src         : getCUIScriptSrc(),
@@ -2055,9 +2093,9 @@ type ApiProfileData = {
 
 		cuiScript.embed();
 
-		log('wait cuiStatus: started');
+		console.log('wait cuiStatus: started');
 		await wait(() => window.cuiStatus === 'loaded');
-		log('wait cuiStatus: finished');
+		console.log('wait cuiStatus: finished');
 	}
 
 	function transformCUIScript(script: Script): Script {
@@ -2077,7 +2115,7 @@ type ApiProfileData = {
 
 	async function waitHTMLLoaded(): Promise<void> {
 		await resolveOnce((resolver) => document.addEventListener('DOMContentLoaded', resolver), () => document.readyState !== 'loading');
-		log('loaded DOM content');
+		console.log('loaded DOM content');
 	}
 
 	async function getNativeScript(): Promise<Script>  {
@@ -2240,7 +2278,7 @@ type ApiProfileData = {
 			}
 		`);
 
-		log('initialized CSS');
+		console.log('initialized CSS');
 	}
 
 	function wait<T>(func: (...args: any[]) => T | null | undefined): Promise<T> {
@@ -2259,7 +2297,7 @@ type ApiProfileData = {
 
 	function initSettings() {
 		new SettingsPopup();
-		log('initialized settings');
+		console.log('initialized settings');
 	}
 
 	function createPopup(cssClass: string, options: { roundClose: boolean } = { roundClose : true }): JQuery<HTMLElement> {
@@ -2291,7 +2329,7 @@ type ApiProfileData = {
 
 		const center = JSON.parse(localStorage.homeCoords);
 		window.__sbg_variable_map.get().getView().setCenter(center);
-		log('initialized home location');
+		console.log('initialized home location');
 	}
 
 	function initLayers() {
@@ -2307,7 +2345,7 @@ type ApiProfileData = {
 			layers.set(key, layer);
 		}
 
-		log('initialized layers');
+		console.log('initialized layers');
 	}
 
 	function execFeatures(trigger: FeatureTrigger) {
@@ -2317,7 +2355,7 @@ type ApiProfileData = {
 			}
 		});
 
-		log(`executed all features on ${trigger}`);
+		console.log(`executed all features on ${trigger}`);
 	}
 
 	function execFireFeatures() {
@@ -2345,28 +2383,31 @@ type ApiProfileData = {
 
 	function fixCompatibility(script: Script): Script {
 		(async () => {
-			log('fix CUI compatibility: wait window.cuiEmbedded');
+			console.log('fix CUI compatibility: wait window.cuiEmbedded');
 			await wait(() => window.cuiEmbedded);
 
-			log('fix CUI compatibility: wait window.ol');
+			console.log('fix CUI compatibility: wait window.ol');
 			await wait(() => window.ol);
 
-			log('fix CUI compatibility: set view animation duration');
+			console.log('fix CUI compatibility: set view animation duration');
 			setViewAnimationDuration();
 
-			log('fix CUI compatibility: subscribe to mapReady');
+			console.log('fix CUI compatibility: subscribe to mapReady');
 			window.addEventListener('mapReady', window.__sbg_cui_function_main);
 
-			log('fix CUI compatibility: call olInjection');
+			console.log('fix CUI compatibility: call olInjection');
 			window.__sbg_cui_function_olInjection();
 
-			log('fix CUI compatibility: call loadMainScript');
+			console.log('fix CUI compatibility: call loadMainScript');
 			window.__sbg_cui_function_loadMainScript();
 
-			log('fix CUI compatibility: loaded');
+			console.log('fix CUI compatibility: loaded');
 		})();
 
 		script.log('replace', fixCompatibility);
+
+		// TODO: temporary fix
+		script.replaceCUIBlock('Стили', /^/, 'console.log(\'CUI show config before setting styles\'); console.log(config);');
 
 		return script
 			.replace(
@@ -2620,7 +2661,7 @@ type ApiProfileData = {
 	function updateLangCacheAutomatically() {
 		new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION)
 			.on('change', ({ currentVersion }) => {
-				log(`update lang cache to ${currentVersion} version`);
+				console.log(`update lang cache to ${currentVersion} version`);
 				$('#lang-cache').trigger('click');
 			}, { previous : true });
 	}
@@ -3792,7 +3833,7 @@ type ApiProfileData = {
 
 		private mapClick(ev: OlMapClickEvent) {
 			window.__sbg_variable_map.get().forEachFeatureAtPixel<'points'>(ev.pixel, async (feature, layer) => {
-				log(`BUILDER click layer: ${layer.getProperties().name}`);
+				console.log(`BUILDER click layer: ${layer.getProperties().name}`);
 
 				if (layer.getProperties().name !== 'points') {
 					return;
@@ -3803,7 +3844,7 @@ type ApiProfileData = {
 				this.setPointDrawing(point, true);
 
 				if (!this.startPoint) {
-					log(`BUILDER clicked: start coords: ${JSON.stringify(pointCoords)}`);
+					console.log(`BUILDER clicked: start coords: ${JSON.stringify(pointCoords)}`);
 					this.startPoint = point;
 					return;
 				}
@@ -3814,7 +3855,7 @@ type ApiProfileData = {
 					return;
 				}
 
-				log(`BUILDER clicked: end coords: ${JSON.stringify(pointCoords)}`);
+				console.log(`BUILDER clicked: end coords: ${JSON.stringify(pointCoords)}`);
 
 				const lineData  = await LineData.load([ this.startPoint, endPoint ], this);
 				const lineBuilt = this.buildLine(lineData);
@@ -3979,13 +4020,13 @@ type ApiProfileData = {
 
 			if (existingLine) {
 				if (this.features.allLines.getState() || existingLine.getProperties().mine) {
-					log(`BUILDER buildLine cancelled, already exists, coords: ${JSON.stringify(lineCoords)}`);
+					console.log(`BUILDER buildLine cancelled, already exists, coords: ${JSON.stringify(lineCoords)}`);
 					return;
 				} else {
-					log(`BUILDER buildLine duplicated, layer: ${layerName}, coords: ${JSON.stringify(lineCoords)}`);
+					console.log(`BUILDER buildLine duplicated, layer: ${layerName}, coords: ${JSON.stringify(lineCoords)}`);
 				}
 			} else {
-				log(`BUILDER buildLine, layer: ${layerName}, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
+				console.log(`BUILDER buildLine, layer: ${layerName}, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
 			}
 
 			const arcFlatCoordinates = this.getArcFlatCoordinates(lineCoords);
@@ -4002,7 +4043,7 @@ type ApiProfileData = {
 
 			if (source.getFeatures().length === featuresCount) {
 				attempt++;
-				log(`BUILDER buildLine failed, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
+				console.log(`BUILDER buildLine failed, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
 
 				if (attempt >= this.maxDrawAttempts) {
 					return;
@@ -4026,13 +4067,13 @@ type ApiProfileData = {
 
 			if (existingRegion) {
 				if (!this.features.allLines.getState() && !shared && (!existingRegion.getProperties().mine || existingRegion.getProperties().shared)) {
-					log(`BUILDER buildRegion duplicated, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
+					console.log(`BUILDER buildRegion duplicated, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
 				} else {
-					log(`BUILDER buildRegion cancelled, already exists, coords: ${JSON.stringify(regionCoords)}`);
+					console.log(`BUILDER buildRegion cancelled, already exists, coords: ${JSON.stringify(regionCoords)}`);
 					return;
 				}
 			} else {
-				log(`BUILDER buildRegion, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
+				console.log(`BUILDER buildRegion, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
 			}
 
 			const arcFlatCoordinates = this.getArcFlatCoordinates(regionCoords);
@@ -4050,7 +4091,7 @@ type ApiProfileData = {
 
 			if (source.getFeatures().length === featuresCount) {
 				attempt++;
-				log(`BUILDER buildRegion failed, attempt: ${attempt}, coords: ${JSON.stringify(regionCoords)}`);
+				console.error(`BUILDER buildRegion failed, attempt: ${attempt}, coords: ${JSON.stringify(regionCoords)}`);
 
 				if (attempt >= this.maxDrawAttempts) {
 					return;
@@ -4127,7 +4168,7 @@ type ApiProfileData = {
 				const lastLine = this.lines.get(lineCoords);
 
 				if (!lastLine) {
-					log(`undo: line not found, coords: ${JSON.stringify(lineCoords)}`);
+					console.log(`undo: line not found, coords: ${JSON.stringify(lineCoords)}`);
 					return false;
 				}
 
@@ -4303,7 +4344,7 @@ type ApiProfileData = {
 
 		save() {
 			localStorage[this.storageKey] = JSON.stringify(BuilderData.pack(this.data));
-			log(`BUILDER saved lines: ${this.data.length}`);
+			console.log(`BUILDER saved lines: ${this.data.length}`);
 		}
 
 		load() {
