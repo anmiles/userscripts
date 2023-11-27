@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.42
+// @version        0.9.43
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.42';
+window.__sbg_plus_version = '0.9.43';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -67,7 +67,7 @@ interface Window {
 	__sbg_function_timeToString: (seconds: number) => string;
 
 	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
-	__sbg_cui_variable_database: ReadableVariable<IDBDatabase>;
+	__sbg_cui_variable_config: ReadableVariable<CUIConfig>;
 
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
@@ -319,6 +319,78 @@ type Urls = Record<UrlType, {
 }>;
 
 type Lng = 'ru' | 'en';
+
+type Level = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+type CUIPointHighlighting =
+	| 'fav'
+	| 'ref'
+	| 'uniqc'
+	| 'uniqv'
+	| 'cores'
+	| 'highlevel'
+	| 'off';
+
+type CUIConfig = {
+	maxAmountInBag: {
+		cores: Record<Level, number>,
+		catalysers: Record<Level, number>,
+		references: { allied: number, hostile: number },
+	},
+	autoSelect: {
+		deploy: 'min' | 'max' | 'off',
+		upgrade: 'min' | 'max' | 'off',
+		attack: 'max' | 'latest',
+	},
+	mapFilters: {
+		invert: number,
+		hueRotate: number,
+		brightness: number,
+		grayscale: number,
+		sepia: number,
+		blur: number,
+		branding: 'default' | 'custom',
+		brandingColor: string,
+	},
+	tinting: {
+		map: 0 | 1,
+		point: 'level' | 'team' | 'off',
+		profile: 0 | 1,
+	},
+	vibration: {
+		buttons: 0 | 1,
+		notifications: 0 | 1,
+	},
+	ui: {
+		doubleClickZoom: 0 | 1,
+		pointBgImage: 0 | 1,
+		pointBtnsRtl: 0 | 1,
+		pointBgImageBlur: 0 | 1,
+		pointDischargeTimeout: 0 | 1,
+		speedometer: 0 | 1,
+	},
+	pointHighlighting: {
+		inner: CUIPointHighlighting,
+		outer: CUIPointHighlighting,
+		outerTop: CUIPointHighlighting,
+		outerBottom: CUIPointHighlighting,
+		text: 'energy' | 'level' | 'lines' | 'refsAmount' | 'off',
+		innerColor: string,
+		outerColor: string,
+		outerTopColor: string,
+		outerBottomColor: string,
+	},
+	drawing: {
+		minDistance: number,
+		maxDistance: number,
+	},
+	notifications: {
+		status: 'all' | 'fav' | 'off',
+		onClick: 'close' | 'jumpto',
+		interval: number,
+		duration: number,
+	},
+}
 
 type ReadableVariable<T> = { get: () => T };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -2263,7 +2335,7 @@ type ApiProfileData = {
 		return script
 			.expose('__sbg_cui', {
 				variables : {
-					readable : [ 'USERSCRIPT_VERSION', 'database' ],
+					readable : [ 'USERSCRIPT_VERSION', 'config' ],
 				},
 				functions : {
 					readable : [ 'clearInventory' ],
@@ -2750,8 +2822,12 @@ type ApiProfileData = {
 	/* toolbar */
 
 	function showQuickAutoSelectButton(toolbar: JQuery<HTMLElement>) {
+		const autoSelect = window.__sbg_cui_variable_config.get().autoSelect;
+		const cssClass   = autoSelect.deploy === 'max' ? 'fa-rotate-180' : '';
+
 		const autoSelectButton = $('<button></button>')
 			.addClass('fa fa-solid-arrow-down-short-wide')
+			.addClass(cssClass)
 			.prependTo(toolbar);
 
 		autoSelectButton.on('click', () => {
@@ -2767,15 +2843,6 @@ type ApiProfileData = {
 				transform: scale(-1, 1);
 			}
 		`);
-
-		window.__sbg_cui_variable_database.get()
-			.transaction('config', 'readonly')
-			.objectStore('config').get('autoSelect')
-			.addEventListener('success', (event) => {
-				const autoSelect = (event.target as IDBRequest).result;
-				const cssClass   = autoSelect.deploy === 'max' ? 'fa-rotate-180' : '';
-				autoSelectButton.addClass(cssClass);
-			});
 	}
 
 	function moveAllSidebarsRight(control: JQuery<HTMLElement>) {
