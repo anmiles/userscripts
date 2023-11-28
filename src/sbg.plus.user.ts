@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.46
+// @version        0.9.47
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.46';
+window.__sbg_plus_version = '0.9.47';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -557,14 +557,15 @@ type ApiProfileData = {
 
 		protected override watch() {
 			consoleWatcherEventTypes.map((eventType) => {
-				((originalMethod) => {
+				((originalMethod, originalError) => {
 					console[eventType] = (...args: any[]) => {
-						const lines  = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : arg.toString());
-						const result = originalMethod.call(console, ...args);
-						this.emit(eventType, { message : lines.join('\n') }, {});
+						const isError = eventType === 'error' || args.filter((arg) => arg instanceof Error).length > 0;
+						const lines   = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : arg.toString());
+						const result  = (isError ? originalError : originalMethod).call(console, ...args);
+						this.emit(isError ? 'error' : eventType, { message : lines.join('\n') }, {});
 						return result;
 					};
-				})(console[eventType]);
+				})(console[eventType], console.error);
 			});
 		}
 	}
@@ -2456,6 +2457,10 @@ type ApiProfileData = {
 			.replace(
 				'notifs = await getNotifs();',
 				'notifs = await getNotifs(); window.__sbg_debug_object(\'debug CUI: notifs\', { notifs, first: notifs[0] });',
+			)
+			.replace(
+				'objectToPopulate[cursor.key] = cursor.value;',
+				'objectToPopulate[cursor.key] = cursor.value; if (storeName === \'config\') window.__sbg_debug_object(`debug CUI: set config.${cursor.key}`, { value : cursor.value });',
 			)
 		;
 
