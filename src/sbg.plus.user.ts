@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.44
+// @version        0.9.45
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.44';
+window.__sbg_plus_version = '0.9.45';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -45,6 +45,7 @@ interface Window {
 	__sbg_plus_modifyFeatures: Function;
 	__sbg_plus_animation_duration: number;
 	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
+	__sbg_log_object: (message: string, obj: Record<string, unknown>) => void;
 	__sbg_logs_push: (message: string, error?: boolean) => void;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
@@ -582,6 +583,26 @@ type ApiProfileData = {
 			logs.push(`${message}`);
 		}, {});
 	});
+
+	window.__sbg_log_object = (message: string, obj: Record<string, unknown>) => {
+		const lines = [ message ];
+
+		for (const key in obj) {
+			lines.push(`| ${key}:`);
+			const arg = obj[key];
+
+			if (arg === null || arg === undefined) {
+				lines.push(typeof arg);
+			} else {
+				lines.push(arg.toString());
+				lines.push(typeof arg === 'object'
+					? `with keys: [${Object.keys(arg).join(', ')}];`
+					: 'is not an object;');
+			}
+		}
+
+		console.log(...lines);
+	};
 
 	window.__sbg_onerror_handlers = [];
 
@@ -2407,7 +2428,31 @@ type ApiProfileData = {
 		script.log('replace', fixCompatibility);
 
 		// TODO: temporary fix
-		script.replaceCUIBlock('Стили', /^/, 'console.log(\'CUI show config before setting styles\'); console.log(config);');
+		script
+			.replaceCUIBlock(
+				'Стили',
+				/^/,
+				'window.__sbg_log_object(\'debug CUI: show config before setting styles\', { config });',
+			)
+			.replace(
+				'function loadTile(tile, src) {',
+				`function loadTile(tile, src) {
+					if (!database) {
+						console.error('debug CUI: loadTile requires undefined database');
+					}
+				`,
+			)
+			.replace(
+				/database = /g,
+				(_match: string, index: number) => `
+				window.__sbg_log_object('debug CUI: assign database on position ${index}', { result: event.target.result });
+				database = `,
+			)
+			.replace(
+				'notifs = await getNotifs();',
+				'notifs = await getNotifs(); window.__sbg_log_object(\'debug CUI: notifs\', { notifs, first: notifs[0] });',
+			)
+		;
 
 		return script
 			.replace(
