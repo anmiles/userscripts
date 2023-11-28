@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.47
+// @version        0.9.48
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.47';
+window.__sbg_plus_version = '0.9.48';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -46,7 +46,6 @@ interface Window {
 	__sbg_plus_animation_duration: number;
 	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
 	__sbg_debug_object: (message: string, obj: Record<string, unknown>) => void;
-	__sbg_logs_push: (message: string, error?: boolean) => void;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
@@ -606,7 +605,6 @@ type ApiProfileData = {
 		}
 
 		lines.push(stack);
-
 		console.log(...lines);
 	};
 
@@ -1103,7 +1101,7 @@ type ApiProfileData = {
 				console.log(`executed ${this.func.name}`);
 				return result;
 			} catch (ex) {
-				console.error(`failed ${this.func.name}: ${ex.toString()}`);
+				console.error(`failed ${this.func.name}`, ex);
 				return argument;
 			}
 		}
@@ -1530,9 +1528,12 @@ type ApiProfileData = {
 			this.data = data;
 		}
 
-		static async create({ src, prefix, transformer, data }: { src: string, data?: string, prefix: string, transformer: (script: Script) => void }): Promise<Script> {
+		static async create({ src, prefix, transformer, data }: { src: string, data?: string, prefix: `__sbg_${string}`, transformer: (script: Script) => void }): Promise<Script> {
 			if (!data) {
+				console.log(`load script: ${src}`);
 				data = await fetch(src).then((r) => r.text());
+			} else {
+				console.log(`use script: ${src}`);
 			}
 
 			const script = new Script(data);
@@ -1541,12 +1542,8 @@ type ApiProfileData = {
 			const modifiedScriptName = `${prefix}_modified` as `__sbg_${string}_modified`;
 
 			window[originalScriptName] = script.data || '';
-			new Script(window[originalScriptName]).log(`started as ${originalScriptName}`, script.transform);
-
 			script.transform(transformer);
-
 			window[modifiedScriptName] = script.data || '';
-			new Script(window[modifiedScriptName]).log(`finished as ${modifiedScriptName}`, script.transform);
 
 			return script;
 		}
@@ -1587,10 +1584,8 @@ type ApiProfileData = {
 
 			if (searchValue instanceof RegExp ? data.match(searchValue) : data.includes(searchValue)) {
 				if (typeof replacer === 'string') {
-					console.log(`replace '${searchValue}' with a string: finished`);
 					data = data.replace(searchValue, replacer);
 				} else {
-					console.log(`replace '${searchValue}' with callback: finished`);
 					data = data.replace(searchValue, replacer);
 				}
 			} else {
@@ -1601,9 +1596,8 @@ type ApiProfileData = {
 		}
 
 		transform(func: (script: Script) => void) {
-			this.log('started', func);
+			console.log(`transform: ${func.name}`);
 			func(this);
-			this.log('finished', func);
 			return this;
 		}
 
@@ -1615,8 +1609,6 @@ type ApiProfileData = {
 				console.error('expose: data is undefined');
 				return this;
 			}
-
-			this.log('started', this.expose);
 
 			this.replace(/((?:^|\n)\s*)(const|let)\s+(\w+)(?=[\s+,;\n$])/g, (text, before, variableType, variableName) => {
 				if (variables?.readable?.includes(variableName)) {
@@ -1648,13 +1640,7 @@ type ApiProfileData = {
 				return text;
 			});
 
-			this.log('finished', this.expose);
-
 			return this;
-		}
-
-		log(state: string, func: Function) {
-			console.log(`${func.name}: ${state}, ${this.describeData()}`);
 		}
 
 		embed(): void {
@@ -1663,15 +1649,15 @@ type ApiProfileData = {
 				return;
 			}
 
-			this.log('started', this.embed);
+			console.log('embed script: started');
 			Script.append((el) => el.textContent = this.data || '');
-			this.log('finished', this.embed);
+			console.log('embed script: finished');
 		}
 
 		static appendScript(src: string): void {
-			console.log(`append: started, src: ${src}`);
+			console.log(`append script: started, src: ${src}`);
 			Script.append((el) => el.src = src);
-			console.log(`append: finished, src: ${src}`);
+			console.log(`append script: finished, src: ${src}`);
 		}
 
 		private static append(fill: (el: HTMLScriptElement) => void) {
@@ -1679,10 +1665,6 @@ type ApiProfileData = {
 			el.type  = 'text/javascript';
 			fill(el);
 			document.head.appendChild(el);
-		}
-
-		private describeData() {
-			return `data is ${typeof this.data === 'string' ? `${this.data.length} bytes length` : typeof this.data}`;
 		}
 	}
 
@@ -2105,12 +2087,12 @@ type ApiProfileData = {
 
 	async function loadCUI(nativeScript: Script): Promise<void> {
 		if (!features.get(loadCUI).isEnabled()) {
-			console.log('CUI disabled; loading native script');
+			console.log('skipped loadCUI; loading native script');
 			nativeScript.embed();
 			return;
 		}
 
-		console.log('CUI enabled; loading CUI script');
+		console.log('loadCUI: started');
 
 		const cuiScript = await Script.create({
 			src         : getCUIScriptSrc(),
@@ -2120,13 +2102,33 @@ type ApiProfileData = {
 
 		cuiScript.embed();
 
-		console.log('wait cuiStatus: started');
-		await wait(() => window.cuiStatus === 'loaded');
-		console.log('wait cuiStatus: finished');
+		console.log('loadCUI: wait window.cuiEmbedded');
+		await wait(() => window.cuiEmbedded);
+
+		console.log('loadCUI: wait window.ol');
+		await wait(() => window.ol);
+
+		console.log('loadCUI: set view animation duration');
+		setViewAnimationDuration();
+
+		return new Promise((resolve) => {
+			window.addEventListener('mapReady', async () => {
+				console.log('loadCUI: wait cuiStatus === loaded');
+				await wait(() => window.cuiStatus === 'loaded');
+				console.log('loadCUI: done');
+				resolve();
+			});
+
+			console.log('loadCUI: wait dbReady');
+			window.addEventListener('dbReady', () => {
+				console.log('loadCUI: trigger olReady');
+				window.dispatchEvent(new Event('olReady'));
+			});
+		});
 	}
 
 	function transformCUIScript(script: Script): Script {
-		script.transform(exposeCUI);
+		script.transform(exposeCUIScript);
 		script.transform(fixCompatibility);
 		script.transform(fixGotoReference);
 		script.transform(fixCUIDefaults);
@@ -2172,17 +2174,21 @@ type ApiProfileData = {
 
 	function transformNativeScript(script: Script): Script {
 		return script
-			.transform(includeYMaps)
-			.expose('__sbg', {
-				variables : {
-					readable : [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
-				},
-				functions : {
-					readable : [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
-					writable : [ 'drawLeaderboard', 'manageDrawing', 'movePlayer', 'showInfo', 'timeToString' ],
-					disabled : !isMobile() && localStorage['homeCoords'] ? [ 'movePlayer' ] : undefined,
-				},
-			});
+			.transform(exposeNativeScript)
+			.transform(includeYMaps);
+	}
+
+	function exposeNativeScript(script: Script): Script {
+		return script.expose('__sbg', {
+			variables : {
+				readable : [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
+			},
+			functions : {
+				readable : [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
+				writable : [ 'drawLeaderboard', 'manageDrawing', 'movePlayer', 'showInfo', 'timeToString' ],
+				disabled : !isMobile() && localStorage['homeCoords'] ? [ 'movePlayer' ] : undefined,
+			},
+		});
 	}
 
 	function includeYMaps(script: Script): Script {
@@ -2396,7 +2402,7 @@ type ApiProfileData = {
 		});
 	}
 
-	function exposeCUI(script: Script): Script {
+	function exposeCUIScript(script: Script): Script {
 		return script
 			.expose('__sbg_cui', {
 				variables : {
@@ -2409,61 +2415,6 @@ type ApiProfileData = {
 	}
 
 	function fixCompatibility(script: Script): Script {
-		(async () => {
-			console.log('fix CUI compatibility: wait window.cuiEmbedded');
-			await wait(() => window.cuiEmbedded);
-
-			console.log('fix CUI compatibility: wait window.ol');
-			await wait(() => window.ol);
-
-			console.log('fix CUI compatibility: set view animation duration');
-			setViewAnimationDuration();
-
-			console.log('fix CUI compatibility: subscribe to mapReady');
-			window.addEventListener('mapReady', window.__sbg_cui_function_main);
-
-			console.log('fix CUI compatibility: call olInjection');
-			window.__sbg_cui_function_olInjection();
-
-			console.log('fix CUI compatibility: call loadMainScript');
-			window.__sbg_cui_function_loadMainScript();
-
-			console.log('fix CUI compatibility: loaded');
-		})();
-
-		script.log('replace', fixCompatibility);
-
-		// TODO: temporary fix
-		script
-			.replaceCUIBlock(
-				'Стили',
-				/^/,
-				'window.__sbg_debug_object(\'debug CUI: show config before setting styles\', { config });',
-			)
-			.replace(
-				'function loadTile(tile, src) {',
-				`function loadTile(tile, src) {
-					if (!database) {
-						console.error('debug CUI: loadTile requires undefined database');
-					}
-				`,
-			)
-			.replace(
-				/database = /g,
-				(_match: string, index: number) => `
-				window.__sbg_debug_object('debug CUI: assign database on position ${index}', { result: event.target.result });
-				database = `,
-			)
-			.replace(
-				'notifs = await getNotifs();',
-				'notifs = await getNotifs(); window.__sbg_debug_object(\'debug CUI: notifs\', { notifs, first: notifs[0] });',
-			)
-			.replace(
-				'objectToPopulate[cursor.key] = cursor.value;',
-				'objectToPopulate[cursor.key] = cursor.value; if (storeName === \'config\') window.__sbg_debug_object(`debug CUI: set config.${cursor.key}`, { value : cursor.value });',
-			)
-		;
-
 		return script
 			.replace(
 				'fetch(\'/app/script.js\')',
@@ -2519,8 +2470,6 @@ type ApiProfileData = {
 			ev.stopPropagation();
 			return false;
 		});
-
-		script.log('replace', fixGotoReference);
 
 		return script
 			.replace(
