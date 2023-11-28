@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.45
+// @version        0.9.46
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.45';
+window.__sbg_plus_version = '0.9.46';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -45,7 +45,7 @@ interface Window {
 	__sbg_plus_modifyFeatures: Function;
 	__sbg_plus_animation_duration: number;
 	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
-	__sbg_log_object: (message: string, obj: Record<string, unknown>) => void;
+	__sbg_debug_object: (message: string, obj: Record<string, unknown>) => void;
 	__sbg_logs_push: (message: string, error?: boolean) => void;
 
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
@@ -584,15 +584,18 @@ type ApiProfileData = {
 		}, {});
 	});
 
-	window.__sbg_log_object = (message: string, obj: Record<string, unknown>) => {
-		const lines = [ message ];
+	window.__sbg_debug_object = (message: string, obj: Record<string, unknown>) => {
+		const lines: Array<string | null | undefined > = [];
+		lines.push(message);
+
+		const stack = new Error().stack?.replace(/^Error/, '');
 
 		for (const key in obj) {
 			lines.push(`| ${key}:`);
 			const arg = obj[key];
 
 			if (arg === null || arg === undefined) {
-				lines.push(typeof arg);
+				lines.push(arg);
 			} else {
 				lines.push(arg.toString());
 				lines.push(typeof arg === 'object'
@@ -600,6 +603,8 @@ type ApiProfileData = {
 					: 'is not an object;');
 			}
 		}
+
+		lines.push(stack);
 
 		console.log(...lines);
 	};
@@ -2432,7 +2437,7 @@ type ApiProfileData = {
 			.replaceCUIBlock(
 				'Стили',
 				/^/,
-				'window.__sbg_log_object(\'debug CUI: show config before setting styles\', { config });',
+				'window.__sbg_debug_object(\'debug CUI: show config before setting styles\', { config });',
 			)
 			.replace(
 				'function loadTile(tile, src) {',
@@ -2445,12 +2450,12 @@ type ApiProfileData = {
 			.replace(
 				/database = /g,
 				(_match: string, index: number) => `
-				window.__sbg_log_object('debug CUI: assign database on position ${index}', { result: event.target.result });
+				window.__sbg_debug_object('debug CUI: assign database on position ${index}', { result: event.target.result });
 				database = `,
 			)
 			.replace(
 				'notifs = await getNotifs();',
-				'notifs = await getNotifs(); window.__sbg_log_object(\'debug CUI: notifs\', { notifs, first: notifs[0] });',
+				'notifs = await getNotifs(); window.__sbg_debug_object(\'debug CUI: notifs\', { notifs, first: notifs[0] });',
 			)
 		;
 
