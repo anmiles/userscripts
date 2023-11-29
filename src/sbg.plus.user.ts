@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.48
+// @version        0.9.49
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.48';
+window.__sbg_plus_version = '0.9.49';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -504,16 +504,17 @@ type ApiProfileData = {
 			eventType: TEventType,
 			eventData: TEventDataTypes[TEventType],
 			eventOptions: TEventOptions,
-		) {
+		): typeof this {
 			this.trigger(this.listeners[eventType], { eventData, eventOptions });
 			this.events[eventType].push({ eventData, eventOptions });
+			return this;
 		}
 
 		on<TEventType extends TEventTypes>(
 			eventType: TEventType,
 			handler: (eventData: TEventDataTypes[TEventType]) => void,
 			listenerOptions: TListenerOptions,
-		) {
+		): typeof this {
 			const listener = { handler, listenerOptions, enabled : true };
 			this.listeners[eventType].push(listener);
 
@@ -522,15 +523,19 @@ type ApiProfileData = {
 					this.trigger([ listener ], { eventData, eventOptions });
 				});
 			}
+
+			return this;
 		}
 
 		off<TEventType extends TEventTypes>(
 			eventType: TEventType,
 			eventOptions?: TEventOptions,
-		) {
+		): typeof this {
 			this.filter(this.listeners[eventType], { eventOptions }).map((listener) => {
 				listener.enabled = false;
 			});
+
+			return this;
 		}
 	}
 
@@ -569,9 +574,8 @@ type ApiProfileData = {
 		}
 	}
 
-	const logs = [] as string[];
-
 	const consoleWatcher = new ConsoleWatcher();
+	const logs           = [] as string[];
 
 	consoleWatcherEventTypes.map((eventType) => {
 		consoleWatcher.on(eventType, ({ message }) => {
@@ -609,7 +613,6 @@ type ApiProfileData = {
 	};
 
 	window.__sbg_onerror_handlers = [];
-
 	window.__sbg_onerror_handlers.push((event, _source, lineno, colno, error) => {
 		console.error(`${event} on ${lineno}:${colno}`, error);
 	});
@@ -618,6 +621,8 @@ type ApiProfileData = {
 		window.__sbg_onerror_handlers.map((handler) => handler(event, source, lineno, colno, error));
 		return true;
 	};
+
+	console.log(`SBG plus, version ${window.__sbg_plus_version}`);
 
 	type Labels = {
 		save: Label;
@@ -919,6 +924,8 @@ type ApiProfileData = {
 		},
 	};
 
+	console.log('created labels');
+
 	class Settings {
 		private storageKey = 'sbg-plus-settings';
 		private features: Record<string, boolean>;
@@ -959,6 +966,8 @@ type ApiProfileData = {
 	}
 
 	const settings = new Settings();
+
+	console.log('created settings');
 
 	const featureGroups = {
 		scripts     : { ru : 'Скрипты', en : 'Scripts' },
@@ -1505,6 +1514,8 @@ type ApiProfileData = {
 
 	presets['full'] = [];
 
+	console.log('created features');
+
 	class Layers {
 		layers = {} as {[ key in LayerName ] : OlLayer<any> };
 
@@ -1518,6 +1529,8 @@ type ApiProfileData = {
 	}
 
 	const layers = new Layers();
+
+	console.log('created layers');
 
 	type ScriptReplacer<TSearchValue extends string | RegExp> = TSearchValue extends string ? string : (string | ((substring: string, ...args: any[]) => string));
 
@@ -1668,34 +1681,14 @@ type ApiProfileData = {
 		}
 	}
 
-	async function resolveOnce(addListener: (resolver: () => any) => void, immediateCondition: () => boolean): Promise<void> {
-		return new Promise((resolve) => {
-			let resolved = false;
+	console.log('created script class');
 
-			function singleResolver() {
-				if (resolved) {
-					return;
-				}
-				resolved = true;
-				resolve();
-			}
+	const versionWatcherEventTypes = [ 'init', 'update' ] as const;
 
-			addListener(singleResolver);
-
-			if (immediateCondition()) {
-				singleResolver();
-			}
-		});
-	}
-
-	const versionWatcherEventTypes = [ 'change' ] as const;
-
-	type VersionWatcherEventData = { previousVersion: string, currentVersion: string };
-
-	type VersionWatcherEventDataTypes = Record<
-		typeof versionWatcherEventTypes[number],
-		VersionWatcherEventData
-	>;
+	type VersionWatcherEventDataTypes = {
+		init: { currentVersion: string },
+		update: { previousVersion: string, currentVersion: string },
+	};
 
 	class VersionWatcher extends EventWatcher<
 		typeof versionWatcherEventTypes[number],
@@ -1711,6 +1704,10 @@ type ApiProfileData = {
 			this.getter     = getter;
 		}
 
+		get(): string {
+			return this.getter().get();
+		}
+
 		protected override watch() {
 			const waitForVersion = setInterval(() => {
 				const variable = this.getter();
@@ -1724,16 +1721,24 @@ type ApiProfileData = {
 				}
 
 				clearInterval(waitForVersion);
+				this.emit('init', { currentVersion }, {});
 
 				const previousVersion         = localStorage[this.storageKey];
 				localStorage[this.storageKey] = currentVersion;
 
 				if (previousVersion !== currentVersion) {
-					this.emit('change', { previousVersion, currentVersion }, {});
+					this.emit('update', { previousVersion, currentVersion }, {});
 				}
 			}, 50);
 		}
 	}
+
+	const versionWatchers: Record<'native' | 'cui', VersionWatcher> = {
+		native : new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION),
+		cui    : new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION),
+	};
+
+	console.log('created version watchers');
 
 	const localStorageWatcherEventTypes = [ 'getItem', 'setItem', 'removeItem' ] as const;
 
@@ -1796,12 +1801,14 @@ type ApiProfileData = {
 		}
 	}
 
+	console.log('created storage watcher');
+
 	async function main() {
 		if (location.pathname.startsWith('/login')) {
 			return;
 		}
 
-		console.log('started');
+		console.log('started main');
 
 		preventLoadingScript();
 		enhanceEventListeners();
@@ -1831,7 +1838,7 @@ type ApiProfileData = {
 		execFeatures('mapReady');
 		execFireFeatures();
 
-		console.log('finished');
+		console.log('finished main');
 	}
 
 	async function copyLogs() {
@@ -2115,7 +2122,7 @@ type ApiProfileData = {
 			window.addEventListener('mapReady', async () => {
 				console.log('loadCUI: wait cuiStatus === loaded');
 				await wait(() => window.cuiStatus === 'loaded');
-				console.log('loadCUI: done');
+				console.log(`SBG Custom UI, version ${versionWatchers['cui'].get()}`);
 				resolve();
 			});
 
@@ -2145,6 +2152,26 @@ type ApiProfileData = {
 	async function waitHTMLLoaded(): Promise<void> {
 		await resolveOnce((resolver) => document.addEventListener('DOMContentLoaded', resolver), () => document.readyState !== 'loading');
 		console.log('loaded DOM content');
+	}
+
+	async function resolveOnce(addListener: (resolver: () => any) => void, immediateCondition: () => boolean): Promise<void> {
+		return new Promise((resolve) => {
+			let resolved = false;
+
+			function singleResolver() {
+				if (resolved) {
+					return;
+				}
+				resolved = true;
+				resolve();
+			}
+
+			addListener(singleResolver);
+
+			if (immediateCondition()) {
+				singleResolver();
+			}
+		});
 	}
 
 	async function getNativeScript(): Promise<Script>  {
@@ -2449,6 +2476,11 @@ type ApiProfileData = {
 					readable : [ 'olInjection', 'loadMainScript', 'main' ],
 				},
 			})
+			// TODO: debug
+			.replace(
+				'notifs = await getNotifs();',
+				'notifs = await getNotifs(); window.__sbg_debug_object(\'CUI debug: notifs[0]\', { notifs_0: notifs[0], notifs: JSON.stringify(notifs) });',
+			)
 		;
 	}
 
@@ -2663,11 +2695,10 @@ type ApiProfileData = {
 	}
 
 	function updateLangCacheAutomatically() {
-		new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION)
-			.on('change', ({ currentVersion }) => {
-				console.log(`update lang cache to ${currentVersion} version`);
-				$('#lang-cache').trigger('click');
-			}, { previous : true });
+		versionWatchers['native'].on('update', ({ currentVersion }) => {
+			console.log(`update lang cache to ${currentVersion} version`);
+			$('#lang-cache').trigger('click');
+		}, { previous : true });
 	}
 
 	function fixBlurryBackground() {
@@ -3096,15 +3127,14 @@ type ApiProfileData = {
 	}
 
 	function reportCUIUpdates() {
-		new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION)
-			.on('change', ({ currentVersion }) => {
-				const message = labels.toasts.cuiUpdated.format({ currentVersion });
-				showToast(message, 2000);
+		versionWatchers['cui'].on('update', ({ currentVersion }) => {
+			const message = labels.toasts.cuiUpdated.format({ currentVersion });
+			showToast(message, 2000);
 
-				if (window.__sbg_local) {
-					alert(message);
-				}
-			}, { previous : true });
+			if (window.__sbg_local) {
+				alert(message);
+			}
+		}, { previous : true });
 	}
 
 	function quickRecycleAllRefs(inventoryContent: JQuery<HTMLElement>) {
