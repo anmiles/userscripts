@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.49
+// @version        0.9.50
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.49';
+window.__sbg_plus_version = '0.9.50';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -566,7 +566,7 @@ type ApiProfileData = {
 						const isError = eventType === 'error' || args.filter((arg) => arg instanceof Error).length > 0;
 						const lines   = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : arg.toString());
 						const result  = (isError ? originalError : originalMethod).call(console, ...args);
-						this.emit(isError ? 'error' : eventType, { message : lines.join('\n') }, {});
+						this.emit(isError ? 'error' : eventType, { message : lines.map((line) => line.trim()).join('\n') }, {});
 						return result;
 					};
 				})(console[eventType], console.error);
@@ -576,15 +576,38 @@ type ApiProfileData = {
 
 	const consoleWatcher = new ConsoleWatcher();
 	const logs           = [] as string[];
+	const logParts       = [ 'time', 'eventType', 'message' ] as const;
+
+	type LogBuilderPart = {
+		enabled: boolean,
+		format: (eventType: typeof consoleWatcherEventTypes[number], message: string) => string
+	};
+
+	const logBuilder: Record<typeof logParts[number], LogBuilderPart> = {
+		time : {
+			enabled : false,
+			format  : () => getLogDate(),
+		},
+		eventType : {
+			enabled : false,
+			format  : (eventType, _message) => eventType === 'error' ? 'ERROR' : eventType,
+		},
+		message : {
+			enabled : true,
+			format  : (_eventType, message) => message,
+		},
+	} as const;
+
+	function getLogDate() {
+		const date = new Date();
+		const time = [ date.getHours(), date.getMinutes(), date.getSeconds() ].map((value) => value.toString().padStart(2, '0')).join('.');
+		return `${time}:${date.getMilliseconds()}`;
+	}
 
 	consoleWatcherEventTypes.map((eventType) => {
 		consoleWatcher.on(eventType, ({ message }) => {
-
-			if (eventType === 'error') {
-				message = `!!! ERROR !!! ${message}`;
-			}
-
-			logs.push(`${message}`);
+			const parts = logParts.filter((logPart) => logBuilder[logPart].enabled).map((logPart) => logBuilder[logPart].format(eventType, message));
+			logs.push(parts.join(' '));
 		}, {});
 	});
 
@@ -595,17 +618,19 @@ type ApiProfileData = {
 		const stack = new Error().stack?.replace(/^Error/, '');
 
 		for (const key in obj) {
-			lines.push(`| ${key}:`);
+			const line = [];
+			line.push(`> ${key}:`);
 			const arg = obj[key];
 
 			if (arg === null || arg === undefined) {
-				lines.push(arg);
+				line.push(arg);
 			} else {
-				lines.push(arg.toString());
-				lines.push(typeof arg === 'object'
+				line.push(arg.toString());
+				line.push(typeof arg === 'object'
 					? `with keys: [${Object.keys(arg).join(', ')}];`
 					: 'is not an object;');
 			}
+			lines.push(line.join(' '));
 		}
 
 		lines.push(stack);
@@ -623,6 +648,7 @@ type ApiProfileData = {
 	};
 
 	console.log(`SBG plus, version ${window.__sbg_plus_version}`);
+	console.log(`userAgent: ${navigator.userAgent}`);
 
 	type Labels = {
 		save: Label;
@@ -1543,13 +1569,15 @@ type ApiProfileData = {
 
 		static async create({ src, prefix, transformer, data }: { src: string, data?: string, prefix: `__sbg_${string}`, transformer: (script: Script) => void }): Promise<Script> {
 			if (!data) {
-				console.log(`load script: ${src}`);
+				console.log('load script: started');
 				data = await fetch(src).then((r) => r.text());
+				console.log('load script: finished');
 			} else {
-				console.log(`use script: ${src}`);
+				console.log('used build-in script');
 			}
 
 			const script = new Script(data);
+			console.log(`before: ${script.data?.length || '0'} bytes`);
 
 			const originalScriptName = `${prefix}_original` as `__sbg_${string}_original`;
 			const modifiedScriptName = `${prefix}_modified` as `__sbg_${string}_modified`;
@@ -1558,6 +1586,7 @@ type ApiProfileData = {
 			script.transform(transformer);
 			window[modifiedScriptName] = script.data || '';
 
+			console.log(`after: ${script.data?.length || '0'} bytes`);
 			return script;
 		}
 
@@ -1668,9 +1697,9 @@ type ApiProfileData = {
 		}
 
 		static appendScript(src: string): void {
-			console.log(`append script: started, src: ${src}`);
+			console.log('append script: started');
 			Script.append((el) => el.src = src);
-			console.log(`append script: finished, src: ${src}`);
+			console.log('append script: finished');
 		}
 
 		private static append(fill: (el: HTMLScriptElement) => void) {
@@ -2077,8 +2106,6 @@ type ApiProfileData = {
 	}
 
 	function fixPermissionsCompatibility() {
-		console.log(`userAgent: ${navigator.userAgent}`);
-
 		if (typeof navigator.permissions === 'undefined') {
 			Object.defineProperty(navigator, 'permissions', {
 				value : {
@@ -2122,13 +2149,14 @@ type ApiProfileData = {
 			window.addEventListener('mapReady', async () => {
 				console.log('loadCUI: wait cuiStatus === loaded');
 				await wait(() => window.cuiStatus === 'loaded');
+				console.log('loadCUI: finished');
 				console.log(`SBG Custom UI, version ${versionWatchers['cui'].get()}`);
 				resolve();
 			});
 
 			console.log('loadCUI: wait dbReady');
 			window.addEventListener('dbReady', () => {
-				console.log('loadCUI: trigger olReady');
+				console.log('loadCUI: emit olReady');
 				window.dispatchEvent(new Event('olReady'));
 			});
 		});
@@ -2478,7 +2506,7 @@ type ApiProfileData = {
 			})
 			// TODO: debug
 			.replace(
-				'notifs = await getNotifs();',
+				/notifs = await getNotifs\(\);/g,
 				'notifs = await getNotifs(); window.__sbg_debug_object(\'CUI debug: notifs[0]\', { notifs_0: notifs[0], notifs: JSON.stringify(notifs) });',
 			)
 		;
