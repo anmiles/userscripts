@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.51
+// @version        0.9.52
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.51';
+window.__sbg_plus_version = '0.9.52';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -611,30 +611,31 @@ type ApiProfileData = {
 		}, {});
 	});
 
-	window.__sbg_debug_object = (message: string, obj: Record<string, unknown>) => {
-		const lines: Array<string | null | undefined > = [];
-		lines.push(message);
+	const stringifyModes = [ 'json', 'keys', 'string' ] as const;
 
-		const stack = new Error().stack?.replace(/^Error/, '');
-
-		for (const key in obj) {
-			const line = [];
-			line.push(`> ${key}:`);
-			const arg = obj[key];
-
-			if (arg === null || arg === undefined) {
-				line.push(arg);
-			} else {
-				line.push(arg.toString());
-				line.push(typeof arg === 'object'
-					? `with keys: [${Object.keys(arg).join(', ')}];`
-					: 'is not an object;');
-			}
-			lines.push(line.join(' '));
+	function stringify(obj: unknown, mode : typeof stringifyModes[number]): string {
+		if (obj === null || obj === undefined) {
+			return typeof obj;
 		}
 
-		lines.push(stack);
-		console.log(...lines);
+		switch (mode) {
+			case 'json':
+				return JSON.stringify(obj);
+			case 'keys':
+				return `[${Object.keys(obj).join(', ')}]`;
+			case 'string':
+				return obj.toString();
+			default:
+				return `unknown mode '${mode}', expected one of [${stringifyModes.join(', ')}]`;
+		}
+	}
+
+	window.__sbg_debug_object = (message: string, obj: Record<string, unknown>, mode : 'json' | 'keys' | 'string' = 'json') => {
+		const stack = new Error().stack?.replace(/^Error/, '');
+		for (const key in obj) {
+			console.debug(`${message}: ${key} = ${stringify(obj[key], mode)}`);
+			console.debug(stack);
+		}
 	};
 
 	window.__sbg_onerror_handlers = [];
@@ -1440,7 +1441,7 @@ type ApiProfileData = {
 		{ ru : 'Заменить сортировку Егора на сортировку Николая', en : 'Replace Egor sort with Nicko sort' },
 		{ public : true, simple : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('.inventory__content') });
 
-	new Feature(moveRerefenceButtonsDown,
+	new Feature(moveReferenceButtonsDown,
 		{ ru : 'Сдвинуть ниже кнопки направления сортировки и закрытия', en : 'Move down sort direction button and close button' },
 		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
 
@@ -1600,6 +1601,11 @@ type ApiProfileData = {
 			return this;
 		}
 
+		replaceAll(searchValue: string, replacement: string): Script {
+			this.data = Script.replaceData(this.data, searchValue, replacement, { global : true });
+			return this;
+		}
+
 		replaceCUIBlock<TSearchValue extends string | RegExp>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
 			this.data = this.data
 				?.replace(
@@ -1619,7 +1625,12 @@ type ApiProfileData = {
 			return str.replace(/[.\-$^*?+\\/\\|[\]{}()]/g, '\\$&');
 		}
 
-		private static replaceData<TSearchValue extends string | RegExp>(data: string | undefined, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): typeof data {
+		private static replaceData<TSearchValue extends string | RegExp>(
+			data: string | undefined,
+			searchValue: TSearchValue,
+			replacer: ScriptReplacer<TSearchValue>,
+			options?: TSearchValue extends string ? { global: boolean } : never,
+		): typeof data {
 			if (typeof data === 'undefined') {
 				console.error(`replace ${searchValue}: data is undefined`);
 				return data;
@@ -1627,7 +1638,11 @@ type ApiProfileData = {
 
 			if (searchValue instanceof RegExp ? data.match(searchValue) : data.includes(searchValue)) {
 				if (typeof replacer === 'string') {
-					data = data.replace(searchValue, replacer);
+					if (options?.global) {
+						data = data.split(searchValue).join(replacer);
+					} else {
+						data = data.replace(searchValue, replacer);
+					}
 				} else {
 					data = data.replace(searchValue, replacer);
 				}
@@ -2506,9 +2521,19 @@ type ApiProfileData = {
 				},
 			})
 			// TODO: debug
+			.replaceAll(
+				'notifs = await getNotifs();',
+				`notifs = await getNotifs();
+				window.__sbg_debug_object('CUI debug', { notifications: config.notifications });
+				window.__sbg_debug_object('CUI debug', { notifs_0: notifs[0] });
+				window.__sbg_debug_object('CUI debug', { notifs });
+				`,
+			)
 			.replace(
-				/notifs = await getNotifs\(\);/g,
-				'notifs = await getNotifs(); window.__sbg_debug_object(\'CUI debug: notifs[0]\', { notifs_0: notifs[0], notifs: JSON.stringify(notifs) });',
+				'await getNotifs(latestNotifId);',
+				`await getNotifs(latestNotifId);
+				window.__sbg_debug_object('CUI debug', { notifsCount }, 'string');
+				`,
 			)
 		;
 	}
@@ -3011,16 +3036,16 @@ type ApiProfileData = {
 			});
 	}
 
-	function moveRerefenceButtonsDown() {
+	function moveReferenceButtonsDown() {
 		// TODO: split from hideManualClearButtons
 		setCSS(`
-			[data-feat-moveRerefenceButtonsDown] .inventory__controls {
+			[data-feat-moveReferenceButtonsDown] .inventory__controls {
 				height: 0;
 				min-height: 0;
 				overflow: hidden;
 			}
 
-			[data-feat-moveRerefenceButtonsDown] .inventory__content[data-tab="3"] ~ .inventory__controls > select {
+			[data-feat-moveReferenceButtonsDown] .inventory__content[data-tab="3"] ~ .inventory__controls > select {
 				position: fixed;
 				right: 0;
 				bottom: 51px;
@@ -3032,7 +3057,7 @@ type ApiProfileData = {
 				text-align: center;
 			}
 
-			[data-feat-moveRerefenceButtonsDown] .inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button {
+			[data-feat-moveReferenceButtonsDown] .inventory__content[data-tab="3"] ~ .inventory__controls > .sbgcui_refs-sort-button {
 				border-width: revert;
 				border-radius: 0;
 				bottom: 51px;
@@ -3043,11 +3068,11 @@ type ApiProfileData = {
 				font-size: 20px;
 			}
 
-			[data-feat-moveRerefenceButtonsDown] #inventory__close {
+			[data-feat-moveReferenceButtonsDown] #inventory__close {
 				bottom: 102px;
 			}
 
-			[data-feat-moveRerefenceButtonsDown] .inventory__content[data-tab="3"] {
+			[data-feat-moveReferenceButtonsDown] .inventory__content[data-tab="3"] {
 				margin-bottom: 41px;
 			}
 		`);
@@ -3593,7 +3618,7 @@ type ApiProfileData = {
 			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
 
 			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
-			{ container : 'inventory', title : 'BUT', feature : features.get(moveRerefenceButtonsDown) },
+			{ container : 'inventory', title : 'BUT', feature : features.get(moveReferenceButtonsDown) },
 			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
 		];
 
