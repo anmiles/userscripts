@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.50
+// @version        0.9.51
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.50';
+window.__sbg_plus_version = '0.9.51';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -648,6 +648,7 @@ type ApiProfileData = {
 	};
 
 	console.log(`SBG plus, version ${window.__sbg_plus_version}`);
+	console.log(`started at ${new Date().toISOString()}`);
 	console.log(`userAgent: ${navigator.userAgent}`);
 
 	type Labels = {
@@ -1867,7 +1868,7 @@ type ApiProfileData = {
 		execFeatures('mapReady');
 		execFireFeatures();
 
-		console.log('finished main');
+		console.log(`finished at ${new Date().toISOString()}`);
 	}
 
 	async function copyLogs() {
