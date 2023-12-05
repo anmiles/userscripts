@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.52
+// @version        0.9.53
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.52';
+window.__sbg_plus_version = '0.9.53';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -2493,19 +2493,19 @@ type ApiProfileData = {
 			)
 			.replace(
 				'window.stop',
-				'if (false) window.stop',
+				'false && window.stop',
 			)
 			.replace(
 				'window.navigator.geolocation.clearWatch',
-				'if (false) window.navigator.geolocation.clearWatch',
+				'false && window.navigator.geolocation.clearWatch',
 			)
 			.replace(
 				'document.open',
-				'if (false) document.open',
+				'false && document.open',
 			)
 			.replace(
 				'fetch(\'/app\')',
-				'if (false) fetch(\'/\')',
+				'false && fetch(\'/app\')',
 			)
 			.replace(
 				/$/,
@@ -2520,21 +2520,6 @@ type ApiProfileData = {
 					readable : [ 'olInjection', 'loadMainScript', 'main' ],
 				},
 			})
-			// TODO: debug
-			.replaceAll(
-				'notifs = await getNotifs();',
-				`notifs = await getNotifs();
-				window.__sbg_debug_object('CUI debug', { notifications: config.notifications });
-				window.__sbg_debug_object('CUI debug', { notifs_0: notifs[0] });
-				window.__sbg_debug_object('CUI debug', { notifs });
-				`,
-			)
-			.replace(
-				'await getNotifs(latestNotifId);',
-				`await getNotifs(latestNotifId);
-				window.__sbg_debug_object('CUI debug', { notifsCount }, 'string');
-				`,
-			)
 		;
 	}
 
@@ -2656,8 +2641,8 @@ type ApiProfileData = {
 
 		return script
 			.replace(
-				'clearInventory(false, toDelete);',
-				'// clearInventory(false, toDelete);',
+				'await clearInventory(false, toDelete);',
+				'// await clearInventory(false, toDelete);',
 			)
 		;
 	}
