@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.53
+// @version        0.9.54
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.53';
+window.__sbg_plus_version = '0.9.54';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -1347,7 +1347,7 @@ type ApiProfileData = {
 
 	new Transformer(waitClearInventory,
 		{ ru : 'Дожидаться получения предметов перед запуском авточистки', en : 'Wait for updating inventory before cleanup' },
-		{ public : true, group, trigger : 'cuiTransform' });
+		{ public : false, group, trigger : 'cuiTransform' });
 
 	new Feature(fixSortButton,
 		{ ru : 'Исправить расположение кнопки сортировки', en : 'Fix sort button z-index' },
@@ -2633,18 +2633,21 @@ type ApiProfileData = {
 	}
 
 	function waitClearInventory(script: Script): Script {
-		$('#discover').on('click', () => {
-			(window.__sbg_plus_localStorage_watcher as LocalStorageWatcher).on('getItem', () => {
-				window.__sbg_cui_function_clearInventory(false);
-			}, { key : 'inventory-cache', when : 'after', once : true });
-		});
+		return script;
 
-		return script
-			.replace(
-				'await clearInventory(false, toDelete);',
-				'// await clearInventory(false, toDelete);',
-			)
-		;
+		// TODO: fix
+		// $('#discover').on('click', () => {
+		// 	(window.__sbg_plus_localStorage_watcher as LocalStorageWatcher).on('getItem', () => {
+		// 		window.__sbg_cui_function_clearInventory(false);
+		// 	}, { key : 'inventory-cache', when : 'after', once : true });
+		// });
+
+		// return script
+		// 	.replace(
+		// 		'await clearInventory(false, toDelete);',
+		// 		'// await clearInventory(false, toDelete);',
+		// 	)
+		// ;
 	}
 
 	function disableCarouselAnimation() {
