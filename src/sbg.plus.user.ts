@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.52
+// @version        0.9.53
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.52';
+window.__sbg_plus_version = '0.9.53';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -1002,13 +1002,13 @@ type ApiProfileData = {
 		base        : { ru : 'Основные настройки', en : 'Basic settings' },
 		cui         : { ru : 'Скрипт Николая', en : 'Nicko script' },
 		eui         : { ru : 'Скрипт Егора', en : 'Egor script' },
-		windows     : { ru : 'Окна', en : 'Windows' },
 		animations  : { ru : 'Анимации', en : 'Animations' },
 		toolbar     : { ru : 'Боковая панель', en : 'Toolbar' },
 		fire        : { ru : 'Атака', en : 'Fire' },
 		inventory   : { ru : 'Инвентарь', en : 'Inventory' },
 		leaderboard : { ru : 'Лидеры', en : 'Leaderboard' },
 		info        : { ru : 'Информация о точке', en : 'Point info' },
+		buttons     : { ru : 'Кнопки', en : 'Buttons' },
 		draw        : { ru : 'Рисование', en : 'Draw' },
 		other       : { ru : 'Прочие настройки', en : 'Other settings' },
 		custom      : { ru : 'Мои настройки', en : 'My settings' },
@@ -1019,33 +1019,42 @@ type ApiProfileData = {
 	type FeatureGroup = keyof typeof featureGroups;
 	type FeatureTrigger = typeof featureTriggers[number];
 
-	interface AnyFeatureOptions {
+	type FeatureChildren = {
+		group: FeatureGroup;
+		dependency: 'any' | 'all';
+	};
+
+	interface FeatureOptions {
 		group: FeatureGroup;
 		trigger: FeatureTrigger;
 		public?: boolean;
 		simple?: boolean;
 		desktop?: boolean;
 		unchecked?: boolean;
+		children?: FeatureChildren;
 	}
 
-	abstract class AnyFeatureBase {
+	abstract class FeatureBase<TArgument, TData> {
 		key: string;
 		label: Label;
 		group: FeatureGroup;
 		trigger: FeatureTrigger;
+		abstract func: ((data: TData) => TArgument);
 		private public: boolean;
 		private simple: boolean;
 		private desktop: boolean;
 		private unchecked: boolean;
+		children?: FeatureChildren;
 		private toggleValue = false;
 
 		constructor(
-			key: string,
+			func: ((data: TData) => TArgument),
 			labelValues: LabelValues,
-			options : AnyFeatureOptions,
+			options : FeatureOptions,
 		) {
-			this.key     = key;
-			this.label   = new Label(labelValues);
+			this.key   = func.name;
+			this.label = new Label(labelValues);
+
 			this.group   = options.group;
 			this.trigger = options.trigger;
 
@@ -1054,10 +1063,66 @@ type ApiProfileData = {
 			this.desktop   = options.desktop || false;
 			this.unchecked = options.unchecked || false;
 
+			if (options.children) {
+				features.parents[this.group] = {
+					parent   : this,
+					children : options.children,
+				};
+			}
+
+			this.getPeers().forEach(({ feature, value }) => {
+				// для родительской нужно инхеритить в существующих чайлдах
+				// для чайлдовых нужно инхеритить от существующего парента
+				features.emit('inherit', { feature, value }, {});
+			});
+
 			features.add(this);
 		}
 
-		abstract setEnabled(value: boolean): void;
+		private createChildren(children? : FeatureChildren): void {
+			if (!children) {
+				return;
+			}
+
+			const features = children.get().filter((feature) => feature.key !== this.key);
+			features.forEach((feature) => feature.parent = this);
+
+			this.children = {
+				dependency : children.dependency,
+				get        : () => features,
+			};
+		}
+
+		private getPeers(): Array<{ feature: FeatureBase<any, any>, value: boolean}> {
+			const peers: Array<{ feature: FeatureBase<any, any>, value: boolean}> = [];
+
+			if (this.children) {
+				const value = settings.getFeature(this.key);
+
+				if (value !== undefined) {
+					this.children.get().map((feature) => peers.push({ feature, value }));
+				}
+			}
+
+			if (this.parent && this.parent.children) {
+				const value = this.parent.children.dependency === 'all'
+					? this.parent.children.get().filter((feature) => !feature.isEnabled()).length === 0
+					: this.parent.children.get().filter((feature) => feature.isEnabled()).length > 0;
+
+				peers.push({ feature : this.parent, value });
+			}
+
+			return peers;
+		}
+
+		setEnabled(value: boolean): void {
+			settings.setFeature(this.key, value);
+
+			this.getPeers().forEach(({ feature, value }) => {
+				features.emit('inherit', { feature, value }, {});
+				feature.toggle(value);
+			});
+		}
 
 		isEnabled(): boolean {
 			return this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled();
@@ -1079,6 +1144,8 @@ type ApiProfileData = {
 			return this.simple;
 		}
 
+		protected abstract getData(argument: TArgument): TData;
+
 		toggle(value: boolean = !this.toggleValue): boolean {
 			const attributeKey = `data-feat-${this.key}`;
 			this.toggleValue   = value;
@@ -1089,41 +1156,9 @@ type ApiProfileData = {
 				document.body.removeAttribute(attributeKey);
 			}
 
+			features.emit('toggle', { feature : this, value }, {});
 			return value;
 		}
-
-		private isIncluded(presetName: Presets): boolean {
-			const preset = presets[presetName] || presets['base'];
-			return preset.length === 0 || preset.includes(this);
-		}
-
-		private getPreset(): Presets {
-			return window.__sbg_preset as Presets;
-		}
-	}
-
-	abstract class FeatureBase<TArgument, TData> extends AnyFeatureBase {
-		abstract func: ((data: TData) => TArgument);
-		parent?: ParentFeature;
-
-		constructor(
-			func: ((data: TData) => TArgument),
-			labelValues: LabelValues,
-			options : AnyFeatureOptions,
-		) {
-			super(func.name, labelValues, options);
-		}
-
-		setEnabled(value: boolean): void {
-			settings.setFeature(this.key, value);
-
-			if (this.parent) {
-				const uncheckedChildren = this.parent.children.filter((feature) => !feature.isEnabled());
-				features.check({ feature : this.parent, value : uncheckedChildren.length === 0 });
-			}
-		}
-
-		protected abstract getData(argument: TArgument): TData;
 
 		exec(argument: TArgument): TArgument {
 			if (!this.isEnabled()) {
@@ -1142,51 +1177,14 @@ type ApiProfileData = {
 				return argument;
 			}
 		}
-	}
 
-	class ParentFeature extends AnyFeatureBase {
-		children: AnyFeatureBase[] = [];
-		parent?: AnyFeatureBase;
-
-		constructor(
-			key: string,
-			labelValues: LabelValues,
-			options : AnyFeatureOptions & {
-				children: AnyFeatureBase[]
-			},
-		) {
-			super(key, labelValues, options);
-
-			options.children.forEach((feature) => {
-				if (feature.key === this.key) {
-					return;
-				}
-
-				this.children.push(feature);
-
-				if (feature instanceof FeatureBase) {
-					feature.parent = this;
-				}
-			});
-
-			this.propagate();
+		private isIncluded(presetName: Presets): boolean {
+			const preset = presets[presetName] || presets['base'];
+			return preset.length === 0 || preset.includes(this);
 		}
 
-		setEnabled(value: boolean): void {
-			settings.setFeature(this.key, value);
-			this.propagate();
-		}
-
-		isEnabled(): boolean {
-			return this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled();
-		}
-
-		private propagate() {
-			const value = settings.getFeature(this.key);
-
-			if (value !== undefined) {
-				this.children.map((feature) => features.check({ feature, value }));
-			}
+		private getPreset(): Presets {
+			return window.__sbg_preset as Presets;
 		}
 	}
 
@@ -1197,7 +1195,7 @@ type ApiProfileData = {
 		constructor(
 			func: (element: TRequiredElement) => void,
 			labelValues: LabelValues,
-			options : AnyFeatureOptions & {
+			options : FeatureOptions & {
 				requires?: (() => TRequiredElement)
 		}) {
 			super(func, labelValues, options);
@@ -1228,7 +1226,7 @@ type ApiProfileData = {
 		constructor(
 			func: (script: Script) => Script,
 			labelValues: LabelValues,
-			options : AnyFeatureOptions,
+			options : FeatureOptions,
 		) {
 			super(func, labelValues, options);
 			this.func = func;
@@ -1241,23 +1239,31 @@ type ApiProfileData = {
 
 	const featuresEventTypes = [
 		'add',
-		'check',
+		'inherit',
+		'toggle',
 	] as const;
 
 	// TODO: в других вотчерах должен быть такой же способ объявления типов аргументов для каждого метода
 	type FeaturesEventDataTypes = {
-		add: AnyFeatureBase,
-		check: { feature: AnyFeatureBase, value: boolean },
+		add: FeatureBase<any, any>,
+		inherit: { feature: FeatureBase<any, any>, value: boolean },
+		toggle: { feature: FeatureBase<any, any>, value: boolean },
 	};
+
+	type FeatureParent = {
+		parent: FeatureBase<any, any>;
+		children: FeatureChildren;
+	}
 
 	class Features extends EventWatcher<
 		typeof featuresEventTypes[number],
 		FeaturesEventDataTypes,
 		EventWatcherListenerOptions
 	> {
-		keys = {} as Record<string, AnyFeatureBase>;
-		groups = {} as Record<FeatureGroup, AnyFeatureBase[]>;
-		triggers = {} as Record<FeatureTrigger, AnyFeatureBase[]>;
+		keys = {} as Record<string, FeatureBase<any, any>>;
+		groups = {} as Record<FeatureGroup, FeatureBase<any, any>[]>;
+		triggers = {} as Record<FeatureTrigger, FeatureBase<any, any>[]>;
+		parents = {} as Record<FeatureGroup, FeatureParent>;
 
 		constructor() {
 			super(featuresEventTypes);
@@ -1273,10 +1279,6 @@ type ApiProfileData = {
 			this.groups[feature.group].push(feature);
 			this.triggers[feature.trigger].push(feature);
 			this.emit('add', feature, {});
-		}
-
-		check({ feature, value } : FeaturesEventDataTypes['check']) {
-			this.emit('check', { feature, value }, {});
 		}
 
 		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
@@ -1320,7 +1322,7 @@ type ApiProfileData = {
 		{ public : true, group, trigger : 'mapReady', desktop : true });
 
 	new Feature(alignSettingsButtonsVertically,
-		{ ru : 'Выровнять кнопки в настройках по ширине', en : 'Align settings buttons vertically' },
+		{ ru : 'Выровнять кнопки настроек по ширине', en : 'Align settings buttons vertically' },
 		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => $('.settings') });
 
 	new Feature(fixCompass,
@@ -1367,12 +1369,6 @@ type ApiProfileData = {
 		{ ru : 'Показать кнопку перезагрузки в компактном режиме', en : 'Show reload button in compact mode' },
 		{ public : true, group, trigger : 'mapReady' });
 
-	group = 'windows';
-
-	new Feature(hideCloseButton,
-		{ ru : 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en : 'Hide close button, close only by pressing Back' },
-		{ group, trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
-
 	group = 'animations';
 
 	new Feature(disableCarouselAnimation,
@@ -1395,9 +1391,9 @@ type ApiProfileData = {
 		{ ru : 'Закрывать всплывающие сообщения через 1 секунду', en : 'Close toasts after 1 second' },
 		{ public : true, group, trigger : 'pageLoad', requires : () => window.Toastify });
 
-	new ParentFeature('disableAllAnimations',
+	new Feature(disableAllAnimations,
 		{ ru : 'Отключить все анимации', en : 'Disable all animations' },
-		{ public : true, simple : true, group, trigger : 'pageLoad', children : features.groups['animations'] });
+		{ public : true, simple : true, group, trigger : 'pageLoad', children : { group, dependency : 'all' } });
 
 	group = 'toolbar';
 
@@ -1473,17 +1469,23 @@ type ApiProfileData = {
 		{ ru : 'Увеличить размер коров', en : 'Enlarge core slots' },
 		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
 
-	new Feature(alignCloseButtonVertically,
-		{ ru : 'Выровнять кнопку закрытия по вертикали', en : 'Align close button vertically' },
-		{ group, trigger : 'mapReady', requires : () => $('.info.popup > .popup-close') });
+	group = 'buttons';
 
-	new Feature(colorizeTimer,
-		{ ru : 'Менять цвет таймера в зависимости от количества оставшихся дискаверов', en : 'Change color of timer depending on remaining discovers' },
-		{ group, trigger : 'mapReady', requires : () => $('#discover') });
+	new Feature(arrangeButtons,
+		{ ru : 'Привести в порядок кнопки', en : 'Arrange buttons' },
+		{ group, trigger : 'mapReady', children : { group, dependency : 'any' } });
+
+	new Feature(hideCloseButton,
+		{ ru : 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en : 'Hide close button, close only by pressing Back' },
+		{ group, trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
 
 	new Feature(hideRepairButton,
 		{ ru : 'Спрятать кнопку зарядки', en : 'Hide repair button' },
 		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
+
+	new Feature(colorizeTimer,
+		{ ru : 'Менять цвет таймера в зависимости от количества оставшихся дискаверов', en : 'Change color of timer depending on remaining discovers' },
+		{ group, trigger : 'mapReady', requires : () => $('#discover') });
 
 	new Feature(replaceSwipeWithButton,
 		{ ru : 'Показать кнопку для переключения между точками', en : 'Show button to swipe between points' },
@@ -1512,7 +1514,7 @@ type ApiProfileData = {
 	settings.cleanupFeatures();
 
 	type Presets = 'base' | 'nicoscript' | 'egorscript' | 'allscripts' | 'full';
-	const presets = {} as Record<Presets, AnyFeatureBase[]>;
+	const presets = {} as Record<Presets, FeatureBase<any, any>[]>;
 
 	presets['base'] = [
 		...features.groups.base,
@@ -2583,15 +2585,12 @@ type ApiProfileData = {
 	}
 
 	function disableCUIPointNavigation(script: Script): Script {
-		$('<div></div>').addClass('sbgcui_jumpToButton').appendTo('.info');
-
-		setCSS(`
-			.sbgcui_jumpToButton {
-				display: none !important;
-			}
-		`);
-
-		return script.removeCUIBlock('Навигация и переход к точке');
+		return script
+			.replace(
+				'throw new Error(\'Навигационные ссылки не поддерживаются в APK.\')',
+				'',
+			)
+		;
 	}
 
 	function disableClusters(script: Script): Script {
@@ -2702,6 +2701,9 @@ type ApiProfileData = {
 		})(window.Toastify.prototype.init);
 	}
 
+	function disableAllAnimations() {
+	}
+
 	function enableBackButton() {
 		const backClickTimeout = 1000;
 
@@ -2746,6 +2748,62 @@ type ApiProfileData = {
 
 	function showBuilderPanel() {
 		wait(() => $('.topleft-container')).then((buttonsSection) => new Builder(buttonsSection));
+	}
+
+	function showFeatureToggles() {
+		const containers = {
+			info      : $('.info.popup .i-image-box'),
+			inventory : $('.inventory.popup'),
+		} as const;
+
+		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
+
+		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<any, any> }> = [
+			{ container : 'info', title : 'ARR', feature : features.get(arrangeButtons) },
+			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
+			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
+			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
+			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
+
+			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
+			{ container : 'inventory', title : 'BUT', feature : features.get(moveReferenceButtonsDown) },
+			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
+		];
+
+		for (const { container, title, feature } of featureToggles) {
+			const button = $('<button></button>')
+				.html(title)
+				.toggleClass('off', !feature.isEnabled())
+				.appendTo(containers[container].find('.i-buttons'));
+
+			button.on('click', () => {
+				const toggleValue = feature.toggle();
+				button.toggleClass('off', !toggleValue);
+			});
+		}
+
+		setCSS(`
+			.i-feature-toggles {
+				position: absolute !important;
+				left: 0;
+				bottom: 0;
+				justify-content: flex-start;
+				direction: ltr;
+			}
+
+			.i-feature-toggles button {
+				width: auto;
+				position: relative;
+				z-index: 1;
+				font-size: 0.85em;
+				min-height: 0px;
+				line-height: 1;
+			}
+
+			.i-feature-toggles button.off {
+				filter: saturate(0.15);
+			}
+		`);
 	}
 
 	function updateLangCacheAutomatically() {
@@ -3333,60 +3391,87 @@ type ApiProfileData = {
 		`);
 	}
 
-	function alignCloseButtonVertically() {
-		setCSS(`
-			.info.popup > .popup-close {
-				margin-top: -0.5em;
-				margin-bottom: calc(0.5em - 10px);
+	function arrangeButtons() {
+		function toggle(value: boolean) {
+			$('.sbgcui_jumpToButton, .info .popup-close, .sbgcui_navbutton').appendTo(value ? '.i-stat .i-buttons' : '.info.popup');
+		}
+
+		features.on('toggle', ({ feature, value }) => {
+			if (feature.key === arrangeButtons.name) {
+				toggle(value);
 			}
-		`);
-	}
+		}, {});
 
-	function rearrangeButtons() {
+		toggle(true);
+
 		setCSS(`
-			.i-stat .i-buttons {
-				--discover-left: 0/6;
-				--discover-right: 0/6;
+			[data-feat-arrangeButtons] .i-stat .i-buttons {
+				--buttons-container: 90vw;
+				--buttons-gap: 0.25em;
+				--buttons-border: 1.9px;
+				--buttons-cols: 7;
 
-				--discover-gap: 0.25em;
-				--discover-border: 1.9px;
-				--discover-parent: calc(0.9 * (100vw - 2 * var(--discover-border)) + 2 * var(--discover-gap));
-				--discover-font-size: 1.1em;
+				--buttons-col-width: calc((var(--buttons-container) - (var(--buttons-cols) - 1) * var(--buttons-gap)) / var(--buttons-cols));
 
-				--discover-left-offset: calc(var(--discover-left) * (var(--discover-parent) + var(--discover-gap)));
-				--discover-right-offset: calc(var(--discover-right) * (var(--discover-parent) + var(--discover-gap)));
+				--discover-left: 0;
+				--discover-right: 0;
 
-				--discover-width: calc(var(--discover-parent) - var(--discover-left-offset) - var(--discover-right-offset));
+				--discover-left-offset: calc(var(--discover-left) * (var(--buttons-col-width) + var(--buttons-gap)));
+				--discover-right-offset: calc(var(--discover-right) * (var(--buttons-col-width) + var(--buttons-gap)));
 
-				--discover-sibling-left-width: calc(var(--discover-left) * var(--discover-parent) - var(--discover-gap));
-				--discover-sibling-right-width: calc(var(--discover-right) * var(--discover-parent) - var(--discover-gap));
+				--discover-sibling-left-width: calc(var(--discover-left-offset) - var(--buttons-gap));
+				--discover-sibling-right-width: calc(var(--discover-right-offset) - var(--buttons-gap));
 
-				--discover-sibling-left-offset: calc(-1 * var(--discover-left-offset) - var(--discover-border));
-				--discover-sibling-right-offset: calc(-1 * var(--discover-right-offset) - var(--discover-border));
+				--discover-sibling-left-offset: calc(-1 * (var(--discover-left-offset) + var(--buttons-border)));
+				--discover-sibling-right-offset: calc(-1 * (var(--discover-right-offset) + var(--buttons-border)));
 
-				--discover-alt-button-width: calc(1/6 * (var(--discover-parent) - 2 * var(--discover-gap)) - 0.5 * var(--discover-border));
+				--discover-alt-button-width: calc(var(--buttons-col-width) + 0.5 * (var(--buttons-gap) + var(--buttons-border)));
 			}
 
-			.i-buttons button {
+			[data-feat-arrangeButtons] .i-stat .i-buttons {
+				gap: var(--buttons-gap) !important;
+				direction: rtl !important;
+			}
+
+			[data-feat-arrangeButtons] .i-stat .i-buttons button {
 				border-width: 2px;
+				min-height: var(--buttons-col-width) !important;
 			}
 
-			#discover {
-				margin-left: var(--discover-left-offset);
-				margin-right: var(--discover-right-offset);
-				width: var(--discover-width);
+			[data-feat-arrangeButtons] #discover {
+				width: var(--buttons-container);
 			}
 
-			.sbgcui_no_loot,
-			.sbgcui_no_refs {
+			[data-feat-arrangeButtons] #deploy,
+			[data-feat-arrangeButtons] #draw {
+				width: calc(2 * var(--buttons-col-width) + var(--buttons-gap));
+			}
+
+			[data-feat-arrangeButtons] #repair {
+				width: calc(3 * var(--buttons-col-width) + 2 * var(--buttons-gap));
+			}
+
+			[data-feat-arrangeButtons] .sbgcui_no_loot,
+			[data-feat-arrangeButtons] .sbgcui_no_refs {
 				width: var(--discover-alt-button-width);
-				padding: 0 calc(0.5 * var(--discover-gap));
+				padding: 0 calc(0.5 * var(--buttons-gap));
 				border-color: currentColor !important;
 			}
 
-			.sbgcui_no_loot:before,
-			.sbgcui_no_refs:before {
+			[data-feat-arrangeButtons] .sbgcui_no_loot:before,
+			[data-feat-arrangeButtons] .sbgcui_no_refs:before {
 				max-width: 1.5em;
+			}
+
+			[data-feat-arrangeButtons] .sbgcui_jumpToButton,
+			[data-feat-arrangeButtons] .popup-close,
+			[data-feat-arrangeButtons] .sbgcui_navbutton {
+				position: relative;
+				order: 1;
+			}
+
+			[data-feat-arrangeButtons] .popup-close:before {
+				display: none;
 			}
 		`);
 	}
@@ -3411,30 +3496,39 @@ type ApiProfileData = {
 				padding: 6px;
 				font-size: 1.1em;
 			}
+		`);
+	}
 
-			[data-feat-hideCloseButton] .i-stat .i-buttons {
-				margin: 0;
+	function hideRepairButton() {
+		setCSS(`
+			[data-feat-hideRepairButton] #repair,
+			[data-feat-hideRepairButton] #eui-repair {
+				display: none;
 			}
+
+			[data-feat-hideRepairButton] #deploy,
+			[data-feat-hideRepairButton] #draw {
+				width: calc((var(--buttons-container) - var(--buttons-gap)) / 2);
+			}
+
 		`);
 	}
 
 	function colorizeTimer() {
-		rearrangeButtons();
-
 		setCSS(`
 			[data-feat-colorizeTimer] .i-stat .i-buttons {
-				--discover-left: 1/6;
+				--discover-left: 1;
 			}
 
 			[data-feat-colorizeTimer] #discover:after {
 				transform: none;
 				width: var(--discover-sibling-left-width);
 				left: var(--discover-sibling-left-offset);
-				height: calc(100% + 2 * var(--discover-border));
-				top: calc(-1 * var(--discover-border));
+				height: calc(100% + 2 * var(--buttons-border));
+				top: calc(-1 * var(--buttons-border));
 				box-sizing: border-box;
 				line-height: 40px;
-				border: var(--discover-border) solid currentColor;
+				border: var(--buttons-border) solid currentColor;
 				color: var(--ingress-btn-border-color);
 				border-color: currentColor;
 				content: ' ';
@@ -3476,24 +3570,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function hideRepairButton() {
-		rearrangeButtons();
-
-		setCSS(`
-			[data-feat-hideRepairButton] #repair,
-			[data-feat-hideRepairButton] #eui-repair {
-				display: none;
-			}
-
-			[data-feat-hideRepairButton] .i-stat .i-buttons > button:not(#discover) {
-				width: calc(45% + 0.125em);
-			}
-		`);
-	}
-
 	function replaceSwipeWithButton(arrow: JQuery<HTMLElement>) {
-		rearrangeButtons();
-
 		arrow.hide();
 
 		function createTouch(touchData: Partial<Touch> & { target: EventTarget }): { touches: TouchEvent['touches'] } {
@@ -3566,7 +3643,7 @@ type ApiProfileData = {
 			}
 
 			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons {
-				--discover-right: 1/6;
+				--discover-right: 1;
 			}
 
 			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next {
@@ -3574,8 +3651,8 @@ type ApiProfileData = {
 				position: absolute;
 				width: var(--discover-sibling-right-width);
 				right: var(--discover-sibling-right-offset);
-				height: calc(100% + 2 * var(--discover-border));
-				top: calc(-1 * var(--discover-border));
+				height: calc(100% + 2 * var(--buttons-border));
+				top: calc(-1 * var(--buttons-border));
 				color: var(--ingress-btn-color);
 				background: linear-gradient(to top, var(--ingress-btn-glow-color) 0%, var(--ingress-btn-bg-color) 30%, var(--ingress-btn-bg-color) 70%, var(--ingress-btn-glow-color) 100%), var(--ingress-btn-bg-color);
 				border: 2px solid var(--ingress-btn-border-color);
@@ -3599,61 +3676,6 @@ type ApiProfileData = {
 
 			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next svg path {
 				fill: currentColor;
-			}
-		`);
-	}
-
-	function showFeatureToggles() {
-		const containers = {
-			info      : $('.info.popup .i-image-box'),
-			inventory : $('.inventory.popup'),
-		} as const;
-
-		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
-
-		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: AnyFeatureBase }> = [
-			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
-			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
-			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
-			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
-
-			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
-			{ container : 'inventory', title : 'BUT', feature : features.get(moveReferenceButtonsDown) },
-			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
-		];
-
-		for (const { container, title, feature } of featureToggles) {
-			const button = $('<button></button>')
-				.html(title)
-				.toggleClass('off', !feature.isEnabled())
-				.appendTo(containers[container].find('.i-buttons'));
-
-			button.on('click', () => {
-				const toggleValue = feature.toggle();
-				button.toggleClass('off', !toggleValue);
-			});
-		}
-
-		setCSS(`
-			.i-feature-toggles {
-				position: absolute !important;
-				left: 0;
-				bottom: 0;
-				justify-content: flex-start;
-				direction: ltr;
-			}
-
-			.i-feature-toggles button {
-				width: auto;
-				position: relative;
-				z-index: 1;
-				font-size: 0.85em;
-				min-height: 0px;
-				line-height: 1;
-			}
-
-			.i-feature-toggles button.off {
-				filter: saturate(0.15);
 			}
 		`);
 	}
@@ -4782,7 +4804,7 @@ type ApiProfileData = {
 			});
 
 			features.on('add', (feature) => this.addFeature(feature), {});
-			features.on('check', ({ feature, value }) => this.check(feature, value), {});
+			features.on('inherit', ({ feature, value }) => this.check(feature, value), {});
 		}
 
 		private render() {
@@ -4840,14 +4862,14 @@ type ApiProfileData = {
 			this.container.append(section);
 		}
 
-		addFeature(feature: AnyFeatureBase) {
+		addFeature(feature: FeatureBase<any, any>) {
 			const checkbox = this.renderFeatureCheckbox(feature);
 			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
 			this.sections[feature.group].find('h4').before(setting);
 			this.checkboxes[feature.key] = checkbox;
 		}
 
-		check(feature: AnyFeatureBase, value: boolean) {
+		check(feature: FeatureBase<any, any>, value: boolean) {
 			settings.setFeature(feature.key, value);
 			this.checkboxes[feature.key].prop('checked', value);
 		}
@@ -4863,7 +4885,7 @@ type ApiProfileData = {
 			return settingLabel;
 		}
 
-		private renderFeatureCheckbox(feature: AnyFeatureBase) {
+		private renderFeatureCheckbox(feature: FeatureBase<any, any>) {
 			return ($('<input type="checkbox" />') as JQuery<HTMLInputElement>)
 				.prop('checked', feature.isEnabled())
 				.on('change', (ev) => {
