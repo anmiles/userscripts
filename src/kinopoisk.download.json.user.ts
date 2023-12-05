@@ -23,7 +23,8 @@ const perPage       = 100;
 const pageInterval  = parseInt(localStorage.pageInterval) || 1000;
 const trashCategory = 'Корзина';
 
-const typeNames = [ 'Film', 'TvSeries' ] as const;
+const filmTypeNames = [ 'Film', 'TvSeries' ] as const;
+type FilmTypeName = typeof filmTypeNames[number];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Number {
@@ -116,11 +117,13 @@ String.prototype.toFilename = function() {
 	type FilmData = FilmBaseData & {
 		lists: string[];
 		genres: string[];
-		related: Array<{
-			id: number;
-			fillName: string;
-		}>;
+		related: RelatedFilms;
 	}
+
+	type RelatedFilms = Array<{
+		id: number;
+		fullName: string;
+	}>;
 
 	class FilmBase implements FilmBaseData {
 		id: number;
@@ -160,8 +163,8 @@ String.prototype.toFilename = function() {
 
 	type JSONRoles = '"DIRECTOR"';
 
-	type JSONFilmData<TTypeName extends typeof typeNames[number]> = {
-		__typename: TTypeName;
+	type JSONFilmData<TFilmTypeName extends FilmTypeName> = {
+		__typename: TFilmTypeName;
 		title: {
 			__typename: 'Title';
 			original: string | null;
@@ -526,17 +529,7 @@ String.prototype.toFilename = function() {
 	}
 
 	function parseJSONData(data: JSONData): FilmData {
-		const related = Object.keys(json.props.apolloState.data)
-			.filter((key) => typeNames.filter((typeName) => key.startsWith(typeName)).length > 0)
-			.reduce((obj, key) => {
-				for (const typeName of typeNames) {
-					if (key.startsWith(typeName)) {
-						const id = parseInt(key.replace(`${typeName}:`, ''));
-						obj[id]  = { id, key, data : json.props.apolloState.data };
-					}
-				}
-				return obj;
-			}, {});
+		const related = getRelated(data);
 
 		const currentKey = related[film.id].key;
 
@@ -585,10 +578,6 @@ String.prototype.toFilename = function() {
 		film.description = (data.synopsis || data.shortDescription || '').beautify();
 		film.note        = data.userData.note && data.userData.note.value;
 
-		const directorKey  = Object.keys(data).filter((key) => key.startsWith('members') && key.includes('DIRECTOR')).pop();
-		const directorRefs = data[directorKey].items.map((item) => item.person.__ref);
-		film.directors     = directorRefs.map((ref) => json.props.apolloState.data[ref].name || json.props.apolloState.data[ref].originalName);
-
 		if (!film.lists.includes(trashCategory)) {
 			for (const id in related) {
 				film.related[id]                = related[id];
@@ -597,7 +586,39 @@ String.prototype.toFilename = function() {
 		}
 	}
 
-	function getFilmYear(data: JSONFilmData<typeof typeNames[number]>): string {
+	function getRelated(data: JSONData): RelatedFilms {
+		const related: RelatedFilms = [];
+
+		Object.keys(data).map((key) => {
+			const { typeName, id } = parseFilmKey(key);
+			if (!typeName) {
+				return;
+			}
+
+			const index    = `${typeName}:${id}`;
+			const item     = data[index];
+			const fullName = '';
+			related.push({ id, fullName });
+		});
+
+		return related;
+	}
+
+	function parseFilmKey(key: string): { typeName: FilmTypeName | undefined, id: number } {
+		const [ typeName, idString ] = key.split(':');
+
+		if (!isFilmTypeName(typeName)) {
+			return { typeName : undefined, id : 0 };
+		}
+
+		return { typeName, id : parseInt(idString) };
+	}
+
+	function isFilmTypeName(typeName: string): typeName is FilmTypeName {
+		return filmTypeNames.includes(typeName as any);
+	}
+
+	function getFilmYear(data: JSONFilmData<FilmTypeName>): string {
 		if (!data.releaseYears || data.releaseYears.length === 0) {
 			return data.productionYear ? data.productionYear.toString() : '';
 		}
@@ -625,7 +646,7 @@ String.prototype.toFilename = function() {
 	}
 
 	const parseJSONData = (data) => Object.keys(json.props.apolloState.data)
-		.filter((key) => typeNames.filter((typeName) => key.startsWith(typeName)).length > 0)
+		.filter((key) => filmTypeNames.filter((filmTypeName) => key.startsWith(filmTypeName)).length > 0)
 		.map((key) => {
 
 		});
