@@ -670,6 +670,7 @@ type ApiProfileData = {
 			back: Label;
 			logs: Label;
 			cuiUpdated: Label;
+			localWarning: Label;
 		}
 		builder: {
 			buttons: Record<BuilderButtons, BuilderButtonLabel>;
@@ -779,6 +780,10 @@ type ApiProfileData = {
 			cuiUpdated : new Label({
 				ru : 'Скрипт Николая обновлён до версии ${currentVersion}',
 				en : 'Nicko script has been updated to ${currentVersion}',
+			}),
+			localWarning : new Label({
+				ru : 'ВНИМАНИЕ!\nВы используете тестовую версию.\nВсе обновления скриптов отключены.\nОбратитесь на форум за стабильной версией приложения.',
+				en : 'WARNING!\nYou are using a test version.\nAll script updates are off.\nRefer to forums for a stable version.',
 			}),
 		},
 		builder : {
@@ -1878,6 +1883,7 @@ type ApiProfileData = {
 		enhanceEventListeners();
 
 		window.__sbg_language = getLanguage();
+		detectLocal();
 		initFeedback();
 		initUrls();
 		fixPermissionsCompatibility();
@@ -1942,6 +1948,12 @@ type ApiProfileData = {
 		})(Element.prototype.append);
 
 		console.log('prevented loading script');
+	}
+
+	function detectLocal() {
+		if ('__sbg_local' in window && window.__sbg_preset !== 'full') {
+			alert(labels.toasts.localWarning.toString());
+		}
 	}
 
 	function getNativeScriptSrc(): string {
