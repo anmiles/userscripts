@@ -1019,8 +1019,12 @@ type ApiProfileData = {
 	type FeatureGroup = keyof typeof featureGroups;
 	type FeatureTrigger = typeof featureTriggers[number];
 
-	type FeatureChildren = {
-		group: FeatureGroup;
+	type FeatureParent = {
+		dependency: 'any' | 'all';
+	};
+
+	type FeatureParents = {
+		parent: FeatureBase<unknown, unknown>,
 		dependency: 'any' | 'all';
 	};
 
@@ -1031,7 +1035,7 @@ type ApiProfileData = {
 		simple?: boolean;
 		desktop?: boolean;
 		unchecked?: boolean;
-		children?: FeatureChildren;
+		parent?: FeatureParent;
 	}
 
 	abstract class FeatureBase<TArgument, TData> {
@@ -1044,7 +1048,7 @@ type ApiProfileData = {
 		private simple: boolean;
 		private desktop: boolean;
 		private unchecked: boolean;
-		children?: FeatureChildren;
+		parent?: FeatureParent;
 		private toggleValue = false;
 
 		constructor(
@@ -1063,65 +1067,12 @@ type ApiProfileData = {
 			this.desktop   = options.desktop || false;
 			this.unchecked = options.unchecked || false;
 
-			if (options.children) {
-				features.parents[this.group] = {
-					parent   : this,
-					children : options.children,
-				};
-			}
-
-			this.getPeers().forEach(({ feature, value }) => {
-				// для родительской нужно инхеритить в существующих чайлдах
-				// для чайлдовых нужно инхеритить от существующего парента
-				features.emit('inherit', { feature, value }, {});
-			});
-
-			features.add(this);
-		}
-
-		private createChildren(children? : FeatureChildren): void {
-			if (!children) {
-				return;
-			}
-
-			const features = children.get().filter((feature) => feature.key !== this.key);
-			features.forEach((feature) => feature.parent = this);
-
-			this.children = {
-				dependency : children.dependency,
-				get        : () => features,
-			};
-		}
-
-		private getPeers(): Array<{ feature: FeatureBase<any, any>, value: boolean}> {
-			const peers: Array<{ feature: FeatureBase<any, any>, value: boolean}> = [];
-
-			if (this.children) {
-				const value = settings.getFeature(this.key);
-
-				if (value !== undefined) {
-					this.children.get().map((feature) => peers.push({ feature, value }));
-				}
-			}
-
-			if (this.parent && this.parent.children) {
-				const value = this.parent.children.dependency === 'all'
-					? this.parent.children.get().filter((feature) => !feature.isEnabled()).length === 0
-					: this.parent.children.get().filter((feature) => feature.isEnabled()).length > 0;
-
-				peers.push({ feature : this.parent, value });
-			}
-
-			return peers;
+			features.add(this, options);
 		}
 
 		setEnabled(value: boolean): void {
 			settings.setFeature(this.key, value);
-
-			this.getPeers().forEach(({ feature, value }) => {
-				features.emit('inherit', { feature, value }, {});
-				feature.toggle(value);
-			});
+			features.inherit(this, value);
 		}
 
 		isEnabled(): boolean {
@@ -1245,25 +1196,20 @@ type ApiProfileData = {
 
 	// TODO: в других вотчерах должен быть такой же способ объявления типов аргументов для каждого метода
 	type FeaturesEventDataTypes = {
-		add: FeatureBase<any, any>,
-		inherit: { feature: FeatureBase<any, any>, value: boolean },
-		toggle: { feature: FeatureBase<any, any>, value: boolean },
+		add: FeatureBase<unknown, unknown>,
+		inherit: { feature: FeatureBase<unknown, unknown>, value: boolean },
+		toggle: { feature: FeatureBase<unknown, unknown>, value: boolean },
 	};
-
-	type FeatureParent = {
-		parent: FeatureBase<any, any>;
-		children: FeatureChildren;
-	}
 
 	class Features extends EventWatcher<
 		typeof featuresEventTypes[number],
 		FeaturesEventDataTypes,
 		EventWatcherListenerOptions
 	> {
-		keys = {} as Record<string, FeatureBase<any, any>>;
-		groups = {} as Record<FeatureGroup, FeatureBase<any, any>[]>;
-		triggers = {} as Record<FeatureTrigger, FeatureBase<any, any>[]>;
-		parents = {} as Record<FeatureGroup, FeatureParent>;
+		keys = {} as Record<string, FeatureBase<unknown, unknown>>;
+		groups = {} as Record<FeatureGroup, FeatureBase<unknown, unknown>[]>;
+		triggers = {} as Record<FeatureTrigger, FeatureBase<unknown, unknown>[]>;
+		parents = {} as Partial<Record<FeatureGroup, FeatureParents>>;
 
 		constructor() {
 			super(featuresEventTypes);
@@ -1274,15 +1220,81 @@ type ApiProfileData = {
 		protected override watch() {
 		}
 
-		add(feature : FeaturesEventDataTypes['add']) {
+		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
+			return this.keys[func.name];
+		}
+
+		add(feature : FeaturesEventDataTypes['add'], { parent } : FeatureOptions) {
 			this.keys[feature.key] = feature;
 			this.groups[feature.group].push(feature);
 			this.triggers[feature.trigger].push(feature);
+
+			if (parent) {
+				this.parents[feature.group] = {
+					parent     : feature,
+					dependency : parent.dependency,
+				};
+			}
+
 			this.emit('add', feature, {});
 		}
 
-		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
-			return this.keys[func.name];
+		inheritAll() {
+			Object.entries(this.parents).forEach(([ _group, { parent, dependency } ]: [FeatureGroup, FeatureParents]) => {
+				const children = this.getChildren(parent);
+
+				if (dependency === 'all' && parent.isExplicitlyEnabled()) {
+					children.forEach((child) => this.emit('inherit', { feature : child, value : true }, {}));
+				}
+
+				if (dependency === 'any' && !parent.isExplicitlyEnabled() && children.filter((child) => child.isEnabled()).length > 0) {
+					this.emit('inherit', { feature : parent, value : true }, {});
+				}
+			});
+		}
+
+		inherit(feature: FeatureBase<unknown, unknown>, value: boolean) {
+			const featureParent = this.parents[feature.group];
+
+			if (!featureParent) {
+				return;
+			}
+
+			const { dependency } = featureParent;
+
+			const parent = this.getParent(feature);
+
+			if (parent) {
+				const children = this.getChildren(parent);
+
+				if (value === !parent.isEnabled() && ((dependency === 'any') === value || children.filter((child) => child.isEnabled() !== value).length === 0)) {
+					this.emit('inherit', { feature : parent, value }, {});
+				}
+			} else {
+				const children = this.getChildren(feature);
+
+				if ((dependency === 'all') === value) {
+					children.forEach((child) =>  this.emit('inherit', { feature : child, value }, {}));
+				}
+			}
+		}
+
+		private getParent(feature: FeatureBase<unknown, unknown>): FeatureBase<unknown, unknown> | undefined {
+			const parents = this.parents[feature.group];
+			const parent  = parents?.parent;
+
+			return parent && parent.func !== feature.func
+				? parent
+				: undefined;
+		}
+
+		private getChildren(feature: FeatureBase<unknown, unknown>): FeatureBase<unknown, unknown>[] {
+			const parents = this.parents[feature.group];
+			const parent  = parents?.parent;
+
+			return parent && parent.func === feature.func
+				? this.groups[feature.group].filter((child) => child.func !== feature.func)
+				: [];
 		}
 	}
 
@@ -1393,7 +1405,7 @@ type ApiProfileData = {
 
 	new Feature(disableAllAnimations,
 		{ ru : 'Отключить все анимации', en : 'Disable all animations' },
-		{ public : true, simple : true, group, trigger : 'pageLoad', children : { group, dependency : 'all' } });
+		{ public : true, simple : true, group, trigger : 'pageLoad', parent : { dependency : 'all' } });
 
 	group = 'toolbar';
 
@@ -1473,15 +1485,7 @@ type ApiProfileData = {
 
 	new Feature(arrangeButtons,
 		{ ru : 'Привести в порядок кнопки', en : 'Arrange buttons' },
-		{ group, trigger : 'mapReady', children : { group, dependency : 'any' } });
-
-	new Feature(hideCloseButton,
-		{ ru : 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en : 'Hide close button, close only by pressing Back' },
-		{ group, trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
-
-	new Feature(hideRepairButton,
-		{ ru : 'Спрятать кнопку зарядки', en : 'Hide repair button' },
-		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ group, trigger : 'mapReady', parent : { dependency : 'any' } });
 
 	new Feature(colorizeTimer,
 		{ ru : 'Менять цвет таймера в зависимости от количества оставшихся дискаверов', en : 'Change color of timer depending on remaining discovers' },
@@ -1490,6 +1494,14 @@ type ApiProfileData = {
 	new Feature(replaceSwipeWithButton,
 		{ ru : 'Показать кнопку для переключения между точками', en : 'Show button to swipe between points' },
 		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_swipe-cards-arrow') });
+
+	new Feature(hideCloseButton,
+		{ ru : 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en : 'Hide close button, close only by pressing Back' },
+		{ group, trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
+
+	new Feature(hideRepairButton,
+		{ ru : 'Спрятать кнопку зарядки', en : 'Hide repair button' },
+		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
 
 	group = 'draw';
 
@@ -1514,7 +1526,7 @@ type ApiProfileData = {
 	settings.cleanupFeatures();
 
 	type Presets = 'base' | 'nicoscript' | 'egorscript' | 'allscripts' | 'full';
-	const presets = {} as Record<Presets, FeatureBase<any, any>[]>;
+	const presets = {} as Record<Presets, FeatureBase<unknown, unknown>[]>;
 
 	presets['base'] = [
 		...features.groups.base,
@@ -1543,6 +1555,8 @@ type ApiProfileData = {
 	];
 
 	presets['full'] = [];
+
+	features.inheritAll();
 
 	console.log('created features');
 
@@ -2746,7 +2760,7 @@ type ApiProfileData = {
 
 		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
 
-		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<any, any> }> = [
+		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<unknown, unknown> }> = [
 			{ container : 'info', title : 'ARR', feature : features.get(arrangeButtons) },
 			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
 			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
@@ -3665,6 +3679,57 @@ type ApiProfileData = {
 			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next svg path {
 				fill: currentColor;
 			}
+		`);
+	}
+
+	function hideCloseButton() {
+		$('#draw').on('click', (ev) => $('.draw-slider-buttons button').css({ height : `${$(ev.target).outerHeight()}px` }));
+
+		setCSS(`
+			[data-feat-hideCloseButton] .popup-close,
+			[data-feat-hideCloseButton] #inventory__close,
+			[data-feat-hideCloseButton] #draw-slider-close {
+				display: none !important;
+			}
+
+			[data-feat-hideCloseButton] .draw-slider-buttons {
+				padding: 0 calc(5%);
+				gap: 0.25em;
+			}
+
+			[data-feat-hideCloseButton] .draw-slider-buttons button {
+				max-width: none !important;
+				padding: 6px;
+				font-size: 1.1em;
+			}
+
+			[data-feat-hideCloseButton] .sbgcui_navbutton {
+				left: calc(-2.5 * var(--buttons-col-width) - 2.5 * var(--buttons-gap));
+			}
+
+			[data-feat-hideCloseButton] .sbgcui_jumpToButton {
+				right: calc(-2.5 * var(--buttons-col-width) - 2.5 * var(--buttons-gap));
+			}
+
+			[data-feat-hideCloseButton] .i-stat .i-buttons .next,
+			[data-feat-hideCloseButton] #discover:after {
+				width: calc(2.5 * var(--buttons-col-width) + 1.5 * var(--buttons-gap));
+			}
+		`);
+	}
+
+	function hideRepairButton() {
+		setCSS(`
+			[data-feat-hideRepairButton] #repair,
+			[data-feat-hideRepairButton] #eui-repair {
+				display: none;
+			}
+
+			[data-feat-hideRepairButton] #deploy,
+			[data-feat-hideRepairButton] #draw {
+				width: calc((var(--buttons-container) - var(--buttons-gap)) / 2);
+			}
+
 		`);
 	}
 
@@ -4850,14 +4915,14 @@ type ApiProfileData = {
 			this.container.append(section);
 		}
 
-		addFeature(feature: FeatureBase<any, any>) {
+		addFeature(feature: FeatureBase<unknown, unknown>) {
 			const checkbox = this.renderFeatureCheckbox(feature);
 			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
 			this.sections[feature.group].find('h4').before(setting);
 			this.checkboxes[feature.key] = checkbox;
 		}
 
-		check(feature: FeatureBase<any, any>, value: boolean) {
+		check(feature: FeatureBase<unknown, unknown>, value: boolean) {
 			settings.setFeature(feature.key, value);
 			this.checkboxes[feature.key].prop('checked', value);
 		}
@@ -4873,7 +4938,7 @@ type ApiProfileData = {
 			return settingLabel;
 		}
 
-		private renderFeatureCheckbox(feature: FeatureBase<any, any>) {
+		private renderFeatureCheckbox(feature: FeatureBase<unknown, unknown>) {
 			return ($('<input type="checkbox" />') as JQuery<HTMLInputElement>)
 				.prop('checked', feature.isEnabled())
 				.on('change', (ev) => {
