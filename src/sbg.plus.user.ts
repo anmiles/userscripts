@@ -1964,7 +1964,7 @@ type ApiProfileData = {
 	}
 
 	function detectLocal() {
-		if ('__sbg_local' in window && window.__sbg_preset !== 'full') {
+		if (window.__sbg_local && window.__sbg_preset !== 'full') {
 			alert(labels.toasts.localWarning.toString());
 		}
 	}
