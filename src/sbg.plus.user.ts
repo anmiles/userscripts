@@ -564,7 +564,10 @@ type ApiProfileData = {
 				((originalMethod, originalError) => {
 					console[eventType] = (...args: any[]) => {
 						const isError = eventType === 'error' || args.filter((arg) => arg instanceof Error).length > 0;
-						const lines   = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : arg.toString());
+						const lines   = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : !arg ? ((arg) => {
+							console.error('null argument', { arg, args });
+							return 'null';
+						})(arg) : arg.toString());
 						const result  = (isError ? originalError : originalMethod).call(console, ...args);
 						this.emit(isError ? 'error' : eventType, { message : lines.map((line) => line.trim()).join('\n') }, {});
 						return result;
