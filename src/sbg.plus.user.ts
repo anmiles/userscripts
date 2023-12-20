@@ -47,6 +47,11 @@ interface Window {
 	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
 	__sbg_debug_object: (message: string, obj: Record<string, unknown>) => void;
 
+	__sbg_share: {
+		open: (url: string) => boolean;
+		navigate: (coords: OlCoordsString) => boolean;
+	};
+
 	__sbg_variable_draw_slider: ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
 	__sbg_variable_is_dark: ReadableVariable<boolean>;
@@ -69,11 +74,13 @@ interface Window {
 
 	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
 	__sbg_cui_variable_config: ReadableVariable<CUIConfig>;
+	__sbg_cui_variable_lastOpenedPoint: ReadableVariable<{ coords: OlCoords }>;
 
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
 	__sbg_cui_function_loadMainScript: () => void;
 	__sbg_cui_function_clearInventory: (forceClear?: boolean, filteredLoot?: any[]) => Promise<void>;
+	__sbg_cui_function_toggleNavPopup: () => void;
 }
 
 interface EventTarget {
@@ -206,6 +213,7 @@ type OlFlatCoordinates = number[];
 type OlCoords = [number, number];
 type OlLineCoords = [OlCoords, OlCoords];
 type OlRegionCoords = [OlCoords, OlCoords, OlCoords, OlCoords];
+type OlCoordsString = `${OlCoords[0]},${OlCoords[1]}`;
 
 type OlGuid = string;
 type Team = 0 | 1 | 2 | 3 | 4;
@@ -671,6 +679,7 @@ type ApiProfileData = {
 			logs: Label;
 			cuiUpdated: Label;
 			localWarning: Label;
+			noGeoApp: Label;
 		}
 		builder: {
 			buttons: Record<BuilderButtons, BuilderButtonLabel>;
@@ -784,6 +793,10 @@ type ApiProfileData = {
 			localWarning : new Label({
 				ru : 'ВНИМАНИЕ!\nВы используете тестовую версию.\nВсе обновления скриптов отключены.\nОбратитесь на форум за стабильной версией приложения.',
 				en : 'WARNING!\nYou are using a test version.\nAll script updates are off.\nRefer to forums for a stable version.',
+			}),
+			noGeoApp : new Label({
+				ru : 'Не найдено ни одного приложения карт. Координаты скопированы в буфер обмена.',
+				en : 'No any map application found. Coordinates has been copied to the clipboard.',
 			}),
 		},
 		builder : {
@@ -2215,7 +2228,7 @@ type ApiProfileData = {
 		script.transform(fixGotoReference);
 		script.transform(fixCUIDefaults);
 		script.transform(fixCUIWarnings);
-		script.transform(disableCUIPointNavigation);
+		script.transform(fixPointNavigation);
 
 		features.triggers['cuiTransform'].map((transformer: Transformer) => {
 			script = transformer.exec(script);
@@ -2508,10 +2521,11 @@ type ApiProfileData = {
 		return script
 			.expose('__sbg_cui', {
 				variables : {
-					readable : [ 'USERSCRIPT_VERSION', 'config' ],
+					readable : [ 'USERSCRIPT_VERSION', 'config', 'lastOpenedPoint' ],
 				},
 				functions : {
 					readable : [ 'clearInventory' ],
+					writable : [ 'toggleNavPopup' ],
 				},
 			});
 	}
@@ -2598,13 +2612,34 @@ type ApiProfileData = {
 		;
 	}
 
-	function disableCUIPointNavigation(script: Script): Script {
+	function fixPointNavigation(script: Script) {
+		const obj: keyof Window              = '__sbg_share';
+		const func: keyof Window[typeof obj] = 'open';
+
+		if (!(obj in window) || !(func in window[obj])) {
+			return;
+		}
+
 		return script
-			.replace(
-				'throw new Error(\'Навигационные ссылки не поддерживаются в APK.\')',
-				'',
+			.replaceCUIBlock(
+				'Навигация и переход к точке',
+				'window.location.href = url',
+				`if (window['${obj}']['${func}'](url) === false) {
+					createToast('Приложение не установлено').showToast();
+				}`,
 			)
 		;
+
+		// window.__sbg_cui_function_toggleNavPopup = function() {
+		// 	const [ lng, lat ]           = window.__sbg_cui_variable_lastOpenedPoint.get().coords;
+		// 	const coords: OlCoordsString = `${lat},${lng}`;
+		// 	const result                 = window[obj][func](coords);
+
+		// 	if (result === false) {
+		// 		navigator.clipboard.writeText(coords);
+		// 		showToast(labels.toasts.noGeoApp, 3000);
+		// 	}
+		// };
 	}
 
 	function disableClusters(script: Script): Script {
