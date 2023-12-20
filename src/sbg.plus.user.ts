@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.54
+// @version        0.9.55
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.54';
+window.__sbg_plus_version = '0.9.55';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -3445,7 +3445,11 @@ type ApiProfileData = {
 
 	function arrangeButtons() {
 		function toggle(value: boolean) {
-			$('.sbgcui_jumpToButton, .info .popup-close, .sbgcui_navbutton').appendTo(value ? '.i-stat .i-buttons' : '.info.popup');
+			[
+				'.sbgcui_jumpToButton',
+				'.info .popup-close',
+				'.sbgcui_navbutton',
+			].map((selector) => $(selector).appendTo(value ? '.i-stat .i-buttons' : '.info.popup'));
 		}
 
 		features.on('toggle', ({ feature, value }) => {
@@ -3459,25 +3463,12 @@ type ApiProfileData = {
 		setCSS(`
 			[data-feat-arrangeButtons] .i-stat .i-buttons {
 				--buttons-container: 90vw;
-				--buttons-gap: 0.25em;
+				--buttons-gap: 4px;
 				--buttons-border: 1.9px;
 				--buttons-cols: 7;
 
 				--buttons-col-width: calc((var(--buttons-container) - (var(--buttons-cols) - 1) * var(--buttons-gap)) / var(--buttons-cols));
-
-				--discover-left: 0;
-				--discover-right: 0;
-
-				--discover-left-offset: calc(var(--discover-left) * (var(--buttons-col-width) + var(--buttons-gap)));
-				--discover-right-offset: calc(var(--discover-right) * (var(--buttons-col-width) + var(--buttons-gap)));
-
-				--discover-sibling-left-width: calc(var(--discover-left-offset) - var(--buttons-gap));
-				--discover-sibling-right-width: calc(var(--discover-right-offset) - var(--buttons-gap));
-
-				--discover-sibling-left-offset: calc(-1 * (var(--discover-left-offset) + var(--buttons-border)));
-				--discover-sibling-right-offset: calc(-1 * (var(--discover-right-offset) + var(--buttons-border)));
-
-				--discover-alt-button-width: calc(var(--buttons-col-width) + 0.5 * (var(--buttons-gap) + var(--buttons-border)));
+				--discover-alt-button-width: calc(var(--buttons-col-width) + 0.5 * var(--buttons-border));
 			}
 
 			[data-feat-arrangeButtons] .i-stat .i-buttons {
@@ -3494,12 +3485,24 @@ type ApiProfileData = {
 				width: var(--buttons-container);
 			}
 
+			[data-feat-arrangeButtons] #discover:after {
+				content: '';
+				width: calc(2 * var(--buttons-col-width) + var(--buttons-gap));
+				height: var(--buttons-col-width);
+				transform: none;
+				left: calc(var(--buttons-col-width) + var(--buttons-gap) - var(--buttons-border));
+				top: calc(-1 * var(--buttons-border) + var(--buttons-col-width) + var(--buttons-gap));
+				box-sizing: border-box;
+				line-height: calc(var(--buttons-col-width) - 2 * var(--buttons-border));
+			}
+
 			[data-feat-arrangeButtons] #deploy,
 			[data-feat-arrangeButtons] #draw {
 				width: calc(2 * var(--buttons-col-width) + var(--buttons-gap));
 			}
 
-			[data-feat-arrangeButtons] #repair {
+			[data-feat-arrangeButtons] #repair,
+			[data-feat-arrangeButtons] #eui-repair {
 				width: calc(3 * var(--buttons-col-width) + 2 * var(--buttons-gap));
 			}
 
@@ -3520,6 +3523,35 @@ type ApiProfileData = {
 			[data-feat-arrangeButtons] .sbgcui_navbutton {
 				position: relative;
 				order: 1;
+				bottom: auto;
+				right: auto;
+				left: auto;
+				width: var(--buttons-col-width);
+				height: var(--buttons-col-width) !important;
+			}
+
+			[data-feat-arrangeButtons] .sbgcui_navbutton {
+				left: calc(-2 * var(--buttons-col-width) - 2 * var(--buttons-gap));
+			}
+
+			[data-feat-arrangeButtons] .sbgcui_jumpToButton {
+				right: calc(-2 * var(--buttons-col-width) - 2 * var(--buttons-gap));
+			}
+
+			[data-feat-arrangeButtons] .sbgcui_jumpToButton:before,
+			[data-feat-arrangeButtons] .sbgcui_navbutton:before {
+				bottom: 0;
+				right: 0;
+				width: 50%;
+				height: 50%;
+				transform: translate(-50%, -50%);border: none;
+				border-radius: 0;
+				box-shadow: none;
+			}
+
+			[data-feat-arrangeButtons] .popup-close {
+				width: var(--buttons-col-width) !important;
+				height: var(--buttons-col-width) !important;
 			}
 
 			[data-feat-arrangeButtons] .popup-close:before {
@@ -3528,70 +3560,13 @@ type ApiProfileData = {
 		`);
 	}
 
-	function hideCloseButton() {
-		$('#draw').on('click', (ev) => $('.draw-slider-buttons button').css({ height : `${$(ev.target).outerHeight()}px` }));
-
-		setCSS(`
-			[data-feat-hideCloseButton] .popup-close,
-			[data-feat-hideCloseButton] #inventory__close,
-			[data-feat-hideCloseButton] #draw-slider-close {
-				display: none !important;
-			}
-
-			[data-feat-hideCloseButton] .draw-slider-buttons {
-				padding: 0 calc(5%);
-				gap: 0.25em;
-			}
-
-			[data-feat-hideCloseButton] .draw-slider-buttons button {
-				max-width: none !important;
-				padding: 6px;
-				font-size: 1.1em;
-			}
-		`);
-	}
-
-	function hideRepairButton() {
-		setCSS(`
-			[data-feat-hideRepairButton] #repair,
-			[data-feat-hideRepairButton] #eui-repair {
-				display: none;
-			}
-
-			[data-feat-hideRepairButton] #deploy,
-			[data-feat-hideRepairButton] #draw {
-				width: calc((var(--buttons-container) - var(--buttons-gap)) / 2);
-			}
-
-		`);
-	}
-
 	function colorizeTimer() {
 		setCSS(`
-			[data-feat-colorizeTimer] .i-stat .i-buttons {
-				--discover-left: 1;
-			}
-
 			[data-feat-colorizeTimer] #discover:after {
-				transform: none;
-				width: var(--discover-sibling-left-width);
-				left: var(--discover-sibling-left-offset);
-				height: calc(100% + 2 * var(--buttons-border));
-				top: calc(-1 * var(--buttons-border));
-				box-sizing: border-box;
-				line-height: 40px;
 				border: var(--buttons-border) solid currentColor;
 				color: var(--ingress-btn-border-color);
 				border-color: currentColor;
-				content: ' ';
-			}
-
-			[data-feat-colorizeTimer] #discover[data-time]:after {
-				content: attr(data-time);
-			}
-
-			[data-feat-colorizeTimer] #discover[data-time][data-remain]:after {
-				content: attr(data-time) ' #' attr(data-remain);
+				line-height: calc(var(--buttons-col-width) - 3 * var(--buttons-border));
 			}
 
 			[data-feat-colorizeTimer] #discover[data-time]:after {
@@ -3694,17 +3669,13 @@ type ApiProfileData = {
 				display: none;
 			}
 
-			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons {
-				--discover-right: 1;
-			}
-
 			[data-feat-replaceSwipeWithButton] .i-stat .i-buttons .next {
 				display: block;
 				position: absolute;
-				width: var(--discover-sibling-right-width);
-				right: var(--discover-sibling-right-offset);
-				height: calc(100% + 2 * var(--buttons-border));
-				top: calc(-1 * var(--buttons-border));
+				width: calc(2 * var(--buttons-col-width) + var(--buttons-gap));
+				height: var(--buttons-col-width);
+				right: calc(var(--buttons-col-width) + var(--buttons-gap) - var(--buttons-border));
+				top: calc(-1 * var(--buttons-border) + var(--buttons-col-width) + var(--buttons-gap));
 				color: var(--ingress-btn-color);
 				background: linear-gradient(to top, var(--ingress-btn-glow-color) 0%, var(--ingress-btn-bg-color) 30%, var(--ingress-btn-bg-color) 70%, var(--ingress-btn-glow-color) 100%), var(--ingress-btn-bg-color);
 				border: 2px solid var(--ingress-btn-border-color);
