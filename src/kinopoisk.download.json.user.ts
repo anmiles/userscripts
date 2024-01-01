@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        5.0.0
+// @version        5.1.0
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -135,6 +135,7 @@ String.prototype.toFilename = function() {
 		poster: string | null;
 		description: string;
 		note: string | null;
+		directors: string[];
 	};
 
 	abstract class FilmBase {
@@ -290,6 +291,7 @@ String.prototype.toFilename = function() {
 		poster: string | null;
 		description: string;
 		note: string | null;
+		directors: string[];
 
 		private constructor(data: FilmData) {
 			super(data);
@@ -302,6 +304,7 @@ String.prototype.toFilename = function() {
 			this.poster      = data.poster;
 			this.description = data.description;
 			this.note        = data.note;
+			this.directors   = data.directors;
 		}
 
 		private static create(id: number, getData: () => FilmData) {
@@ -343,9 +346,10 @@ String.prototype.toFilename = function() {
 				const poster       = Film.getPoster(jsonFilmData);
 				const description  = Film.getDescription(jsonFilmData);
 				const note         = Film.getNote(jsonFilmData);
+				const directors    = Film.getMembers(jsonFilmData, jsonData, '"DIRECTOR"');
 				const kind         = 'film';
 
-				return { related, genres, lists, poster, description, note, kind, key, ...FilmBase.parseJSON(jsonFilmData) };
+				return { related, genres, lists, poster, description, note, directors, kind, key, ...FilmBase.parseJSON(jsonFilmData) };
 			});
 		}
 
@@ -404,6 +408,17 @@ String.prototype.toFilename = function() {
 
 		private static getNote(jsonFilmData: JSONFilmData<FilmTypeName>): string | null {
 			return jsonFilmData.userData.note && jsonFilmData.userData.note.value;
+		}
+
+		private static getMembers<JSONRole extends JSONRoles>(
+			jsonFilmData: JSONFilmData<FilmTypeName>,
+			jsonData: JSONData,
+			jsonRole: JSONRole,
+		): string[]  {
+			const key   = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole)) as `members({"limit":${number},"role":${JSONRole}})`;
+			const refs  = jsonFilmData[key].items.map((item) => item.person.__ref);
+			const names = refs.map((ref) => jsonData[ref].name || jsonData[ref].originalName);
+			return names;
 		}
 	}
 
