@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        5.1.0
+// @version        5.1.1
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -21,6 +21,9 @@ const debug = {
 const defaultListID = 6; // favorites
 const perPage       = 100;
 const pageInterval  = parseInt(localStorage.pageInterval) || 1000;
+
+const boxWidth = 1000;
+const boxItem  = 24;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Number {
@@ -639,9 +642,9 @@ String.prototype.toFilename = function() {
 			}
 
 			console.debug('render', this);
-			const width    = `${this.value * 100}%`;
+			const left     = `-${(1 - this.value) * 100}%`;
 			const percents = `${Math.floor(this.value * 100)}%`;
-			this.progressBar.css({ width });
+			this.progressBar.css({ left });
 			this.percentLabel.html(percents);
 
 			if (this.value !== 0 && this.value !== 1) {
@@ -775,7 +778,7 @@ String.prototype.toFilename = function() {
 						ListItem.fromListItem(item.id, item);
 					}
 				} catch (ex) {
-					listsProgress.error(ex.message);
+					listsProgress.error(ex.toString());
 					return;
 				}
 
@@ -913,7 +916,7 @@ String.prototype.toFilename = function() {
 			}
 
 			const url = `/film/${listItem.id}/`;
-			filmsProgress.increment(listItem.fullName, url);
+			filmsProgress.increment(listItem.name, url);
 			const html = await get(url);
 			Film.fromHTML(listItem.id, html);
 		}
@@ -1028,98 +1031,114 @@ String.prototype.toFilename = function() {
 
 	function setCSS() {
 		const css = `
-            .download-container {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                z-index: 65535;
-                pointer-events: none;
-                gap: 1em;
-                font-family: 'Graphik Kinopoisk LC Web', Arial, sans-serif;
-                font-size: 13px;
-                background: rgba(0, 0, 0, 0.5);
-            }
+			.download-container {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				z-index: 65535;
+				pointer-events: none;
+				gap: 1em;
+				font-family: 'Graphik Kinopoisk LC Web', Arial, sans-serif;
+				font-size: 15px;
+				background: rgba(0, 0, 0, 0.5);
+			}
 
-            .download-container .box {
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: stretch;
-                gap: 1em;
-                padding: 1em;
-                background: white;
-                border: 1px solid black;
-                width: 80vw;
-                box-shadow: 0px 0px 8px 0px black;
-                pointer-events: all;
-            }
+			.download-container .box {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: stretch;
+				gap: ${boxItem}px;
+				padding: ${boxItem}px;
+				background: white;
+				border: 1px solid black;
+				width: ${boxWidth}px;
+				box-shadow: 0px 0px 8px 0px black;
+				pointer-events: all;
+				border-radius: ${boxItem}px;
+			}
 
-            .download-container .progress-box {
-                border: 1px solid black;
-                border-radius: 4px;
-                line-height: 32px;
-                position: relative;
-            }
+			.download-container .progress-box {
+				border: 1px solid black;
+				border-radius: ${boxItem}px;
+				height: 48px;
+				line-height: 48px;
+				position: relative;
+				overflow: hidden;
+			}
 
-            .download-container .progress-bar {
-                border-radius: inherit;
-                background: #ff8800;
-                transition: width 0.2s;
-                width: 0;
-                height: 32px;
-            }
+			.download-container .progress-bar {
+				background: #ff8800;
+				transition: left 0.3s;
+				width: 100%;
+				height: 100%;
+				position: absolute;
+				left: -100%;
+			}
 
-            .download-container .percent-label {
-                position: absolute;
-                left: 10px;
-                top: 0;
-            }
+			.download-container .percent-label {
+				position: absolute;
+				left: 10px;
+				top: 0;
+			}
 
-            .download-container .remain-label {
-                position: absolute;
-                right: 10px;
-                top: 0;
-            }
+			.download-container .remain-label {
+				position: absolute;
+				right: 10px;
+				top: 0;
+			}
 
-            .download-container .logs {
-            }
+			.download-container .logs {
+			}
 
-            .download-container .buttons {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 1em;
-            }
+			.download-container .buttons {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 1em;
+			}
 
-            .download-container .button {
-                display: block;
-                border: 1px solid black;
-                border-radius: 4px;
-                min-width: 120px;
-                padding: 0 1em;
-                background: #ff8800;
-                color: #000000;
-                text-align: center;
-                line-height: 32px;
-                text-transform: uppercase;
-                text-decoration: none;
-                box-shadow: 0px 0px 8px 0px black;
-            }
+			.download-container .button {
+				position: relative;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				box-sizing: border-box;
+				font-family: inherit;
+				font-style: normal;
+				text-decoration: none;
+				border: none;
+				outline: none;
+				width: 200px;
+				color: #ffffff;
+				text-align: center;
+				box-shadow: 0px 0px 8px 0px black;
+				cursor: pointer;
+				height: 48px;
+				margin-right: 8px;
+				padding: 14px 28px;
+				font-size: 15px;
+				font-weight: 500;
+				line-height: 20px;
+				border-radius: ${boxItem}px;
+				background: linear-gradient(135deg, #f50 69.93%, #d6bb00);
+				transition: background .2s ease, transform .2s ease;
+			}
 
-            .download-container .button:hover {
-                background: #ffa033;
-            }
+			.download-container .button:hover {
+				background: linear-gradient(135deg, #eb4e00 69.91%, #c5ac00);
+			}
 
-            .download-container input[type="file"] {
-                display: none;
-            }
-        `;
+			.download-container input[type="file"] {
+				display: none;
+			}
+		`;
 
 		$('<style></style>')
 			.attr('type', 'text/css')
