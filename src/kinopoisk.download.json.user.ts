@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        5.1.1
+// @version        5.1.2
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -250,7 +250,7 @@ String.prototype.toFilename = function() {
 			});
 		}
 
-		static fromListItem(id: number, film: ListItem) {
+		static fromJSON(id: number, film: ListItem) {
 			return ListItem.create(id, () => film);
 		}
 	}
@@ -764,9 +764,13 @@ String.prototype.toFilename = function() {
 		const fileInput = createFileInput({
 			success : (contents: string) => {
 				try {
-					const data = JSON.parse(contents) as Record<number, unknown>;
+					const data = JSON.parse(contents) as { lists: Record<number, unknown> };
 
-					for (const item of Object.values(data)) {
+					if (!('lists' in data)) {
+						throw 'Загруженный файл не является корректным файлом списков';
+					}
+
+					for (const item of Object.values(data.lists)) {
 						if (!ListItem.is(item)) {
 							return;
 						}
@@ -775,7 +779,7 @@ String.prototype.toFilename = function() {
 							return;
 						}
 
-						ListItem.fromListItem(item.id, item);
+						ListItem.fromJSON(item.id, item);
 					}
 				} catch (ex) {
 					listsProgress.error(ex.toString());
@@ -852,7 +856,7 @@ String.prototype.toFilename = function() {
 		listsProgress.pop();
 		listsProgress.finish();
 
-		createDownloadButton({ download : 'lists.json', json : ListItem.map, title : 'Скачать списки' })
+		createDownloadButton({ download : 'lists.json', json : { lists : ListItem.map }, title : 'Скачать списки' })
 			.appendTo(listsProgress.buttonPanel)
 			.get(0)
 			?.click();
@@ -924,7 +928,7 @@ String.prototype.toFilename = function() {
 		filmsProgress.pop();
 		filmsProgress.finish();
 
-		createDownloadButton({ download : 'films.json', json : { ...Related.map, ...Film.map }, title : 'Скачать фильмы' })
+		createDownloadButton({ download : 'films.json', json : { films : Film.map, related : Related.map }, title : 'Скачать фильмы' })
 			.appendTo(filmsProgress.buttonPanel)
 			.get(0)
 			?.click();
@@ -952,7 +956,7 @@ String.prototype.toFilename = function() {
 		return $('<a></a>')
 			.addClass('button')
 			.text(title)
-			.attr('href', `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(json))}`)
+			.attr('href', `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(json, null, '    '))}`)
 			.attr('download', download);
 	}
 
@@ -971,6 +975,26 @@ String.prototype.toFilename = function() {
 
 	function getCurrentFilmId(): number {
 		return parseInt(regex(location.pathname, /^\/(film|series)\/(\d+)/)[2]);
+	}
+
+	function createTestFilm(id: number): FilmData {
+		return {
+			id,
+			kind         : 'film',
+			key          : `Film:${id}`,
+			name         : `Test film ${id}`,
+			originalName : '',
+			fullName     : `Test film ${id} [200${id}]`,
+			year         : `200${id}`,
+			time         : 90 + id,
+			related      : [ 100 + id ],
+			description  : `Test film ${id} description\nNext line\n\nEnd`,
+			genres       : [ 'genre1', 'genre2', `genre${id}` ],
+			lists        : [ 'First list', 'Second list' ],
+			note         : `User note ${id}\nNext line\n\nEnd`,
+			poster       : `https://example.com/poster_${id}.jpg`,
+			directors    : [ 'Ivan Ivanov', 'John Smith' ],
+		};
 	}
 
 	async function test() {
@@ -1005,7 +1029,16 @@ String.prototype.toFilename = function() {
 		filmsProgress.pop();
 		filmsProgress.finish();
 
-		createDownloadButton({ download : 'films.test.json', json : {}, title : 'Скачать фильмы' })
+		createDownloadButton({
+			download : 'films.test.json',
+			json     : {
+				films : {
+					['1'] : createTestFilm(1),
+					['2'] : createTestFilm(2),
+				},
+			},
+			title : 'Скачать фильмы',
+		})
 			.appendTo(filmsProgress.buttonPanel)
 			.get(0)
 			?.click();
