@@ -111,7 +111,7 @@ String.prototype.toFilename = function() {
 	const filmTypeNames = [ 'Film', 'TvSeries' ] as const;
 	type FilmTypeName = typeof filmTypeNames[number];
 
-	type FilmDataBase = {
+	type Data = {
 		id: number;
 		name: string;
 		originalName: string;
@@ -120,18 +120,7 @@ String.prototype.toFilename = function() {
 		time: number;
 	};
 
-	type ListItemData = FilmDataBase & {
-		kind: 'listItem';
-	};
-
-	type RelatedData = FilmDataBase & {
-		kind: 'related';
-		key: `${FilmTypeName}:${number}`;
-	};
-
-	type FilmData = FilmDataBase & {
-		kind: 'film';
-		key: `${FilmTypeName}:${number}`;
+	type ExtendedData = {
 		related: number[];
 		genres: string[];
 		lists: string[];
@@ -139,26 +128,32 @@ String.prototype.toFilename = function() {
 		description: string;
 		note: string | null;
 		directors: string[];
+	}
+
+	type ListItemData = {
+		kind: 'listItem';
+		data: Data;
+	};
+
+	type RelatedData = {
+		kind: 'related';
+		key: `${FilmTypeName}:${number}`;
+		data: Data;
+	};
+
+	type FilmData = {
+		kind: 'film';
+		key: `${FilmTypeName}:${number}`;
+		data: Data;
+		extendedData: ExtendedData;
 	};
 
 	abstract class FilmBase {
-		id: number;
-		name: string;
-		originalName: string;
-		fullName: string;
-		year: string;
-		time: number;
+		protected constructor(
+			public data: Data,
+		) {}
 
-		protected constructor(data: FilmDataBase) {
-			this.id           = data.id;
-			this.name         = data.name;
-			this.originalName = data.originalName;
-			this.fullName     = data.fullName;
-			this.year         = data.year;
-			this.time         = data.time;
-		}
-
-		protected static parseJSON(jsonFilmData: JSONFilmData<FilmTypeName>): FilmDataBase {
+		protected static parseJSON(jsonFilmData: JSONFilmData<FilmTypeName>): Data {
 			const id           = jsonFilmData.id;
 			const name         = jsonFilmData.title.russian || '';
 			const originalName = jsonFilmData.title.original || '';
@@ -216,17 +211,19 @@ String.prototype.toFilename = function() {
 	}
 
 	class ListItem extends FilmBase implements ListItemData {
-		kind: 'listItem';
 		static map: Record<number, ListItem> = {};
 
-		private constructor(data: ListItemData) {
+		private constructor(
+			public kind: 'listItem',
+			data: Data,
+		) {
 			super(data);
-			this.kind = data.kind;
 		}
 
 		private static create(id: number, getData: () => ListItemData) {
 			if (!ListItem.map[id]) {
-				ListItem.map[id] = new ListItem(getData());
+				const { kind, data } = getData();
+				ListItem.map[id]     = new ListItem(kind, data);
 			}
 
 			return ListItem.map[id];
@@ -246,7 +243,7 @@ String.prototype.toFilename = function() {
 				const year         = desc.length >= 2 ? desc[1].trim().replace(/^-$/, '') : '';
 				const time         = desc.length >= 3 && /^\d+$/.test(desc[2]) ? parseInt(desc[2]) : 0;
 
-				return { id, year, time, kind : 'listItem', ...FilmBase.getNames({ name, originalName, year }) };
+				return { kind : 'listItem', data : { id, year, time, ...FilmBase.getNames({ name, originalName, year }) } };
 			});
 		}
 
@@ -256,19 +253,20 @@ String.prototype.toFilename = function() {
 	}
 
 	class Related extends FilmBase implements RelatedData {
-		kind: 'related';
-		key: `${FilmTypeName}:${number}`;
 		static map: Record<number, Related> = {};
 
-		private constructor(data: RelatedData) {
+		private constructor(
+			public kind: 'related',
+			public key: `${FilmTypeName}:${number}`,
+			data: Data,
+		) {
 			super(data);
-			this.kind = data.kind;
-			this.key  = data.key;
 		}
 
 		private static create(id: number, getData: () => RelatedData) {
 			if (!Related.map[id]) {
-				Related.map[id] = new Related(getData());
+				const { kind, key, data } = getData();
+				Related.map[id]           = new Related(kind, key, data);
 			}
 
 			return Related.map[id];
@@ -279,40 +277,30 @@ String.prototype.toFilename = function() {
 		}
 
 		static fromJSON(key: `${FilmTypeName}:${number}`, jsonFilmData: JSONFilmData<FilmTypeName>): Related {
-			return Related.create(jsonFilmData.id, () => ({ kind : 'related', key, ...FilmBase.parseJSON(jsonFilmData) }));
+			return Related.create(jsonFilmData.id, () => ({
+				kind : 'related',
+				key,
+				data : FilmBase.parseJSON(jsonFilmData),
+			}));
 		}
 	}
 
 	class Film extends FilmBase implements FilmData {
-		kind: 'film';
-		key: `${FilmTypeName}:${number}`;
 		static map: Record<number, Film> = {};
 
-		related: number[];
-		genres: string[];
-		lists: string[];
-		poster: string | null;
-		description: string;
-		note: string | null;
-		directors: string[];
-
-		private constructor(data: FilmData) {
+		private constructor(
+			public kind: 'film',
+			public key: `${FilmTypeName}:${number}`,
+			data: Data,
+			public extendedData: ExtendedData,
+		) {
 			super(data);
-			this.kind = data.kind;
-			this.key  = data.key;
-
-			this.related     = data.related;
-			this.genres      = data.genres;
-			this.lists       = data.lists;
-			this.poster      = data.poster;
-			this.description = data.description;
-			this.note        = data.note;
-			this.directors   = data.directors;
 		}
 
 		private static create(id: number, getData: () => FilmData) {
 			if (!Film.map[id]) {
-				Film.map[id] = new Film(getData());
+				const { kind, key, data, extendedData } = getData();
+				Film.map[id]                            = new Film(kind, key, data, extendedData);
 			}
 
 			return Film.map[id];
@@ -350,9 +338,13 @@ String.prototype.toFilename = function() {
 				const description  = Film.getDescription(jsonFilmData);
 				const note         = Film.getNote(jsonFilmData);
 				const directors    = Film.getMembers(jsonFilmData, jsonData, '"DIRECTOR"');
-				const kind         = 'film';
 
-				return { related, genres, lists, poster, description, note, directors, kind, key, ...FilmBase.parseJSON(jsonFilmData) };
+				return {
+					kind         : 'film',
+					key,
+					data         : FilmBase.parseJSON(jsonFilmData),
+					extendedData : { related, genres, lists, poster, description, note, directors },
+				};
 			});
 		}
 
@@ -503,8 +495,6 @@ String.prototype.toFilename = function() {
 	};
 
 	class Progress {
-		title: string;
-
 		private container: JQuery<HTMLElement>;
 		private box: JQuery<HTMLElement>;
 		private progressBox: JQuery<HTMLElement>;
@@ -524,8 +514,9 @@ String.prototype.toFilename = function() {
 		bases: number[];
 		value: number;
 
-		constructor(title: string) {
-			this.title        = title;
+		constructor(
+			public title: string,
+		) {
 			this.container    = Progress.getContainer();
 			this.box          = $('<div></div>').addClass('box').appendTo(this.container);
 			this.progressBox  = $('<div></div>').addClass('progress-box').appendTo(this.box);
@@ -775,11 +766,11 @@ String.prototype.toFilename = function() {
 							return;
 						}
 
-						if (shouldSkipFilm(item.id)) {
+						if (shouldSkipFilm(item.data.id)) {
 							return;
 						}
 
-						ListItem.fromJSON(item.id, item);
+						ListItem.fromJSON(item.data.id, item);
 					}
 				} catch (ex) {
 					listsProgress.error(ex.toString());
@@ -915,14 +906,14 @@ String.prototype.toFilename = function() {
 		filmsProgress.push(debug.enabled ? debug.filmIds.length : Object.keys(ListItem.map).length, 1);
 
 		for (const listItem of Object.values(ListItem.map)) {
-			if (shouldSkipFilm(listItem.id)) {
+			if (shouldSkipFilm(listItem.data.id)) {
 				continue;
 			}
 
-			const url = `/film/${listItem.id}/`;
-			filmsProgress.increment(listItem.name, url);
+			const url = `/film/${listItem.data.id}/`;
+			filmsProgress.increment(listItem.data.name, url);
 			const html = await get(url);
-			Film.fromHTML(listItem.id, html);
+			Film.fromHTML(listItem.data.id, html);
 		}
 
 		filmsProgress.pop();
@@ -943,10 +934,10 @@ String.prototype.toFilename = function() {
 				$('button[title="Добавить в папку"]').trigger('click');
 			}
 
-			const folders = select(getListsDropdown(), 'input[type="checkbox"][checked] + span', false);
-			film.lists    = folders ? folders.map((_i, folder) => $(folder).text()).toArray() : [];
+			const folders           = select(getListsDropdown(), 'input[type="checkbox"][checked] + span', false);
+			film.extendedData.lists = folders ? folders.map((_i, folder) => $(folder).text()).toArray() : [];
 
-			createDownloadButton({ download : `${film.id}.json`, json : film, title : 'Скачать фильм' })
+			createDownloadButton({ download : `${film.data.id}.json`, json : film, title : 'Скачать фильм' })
 				.get(0)
 				?.click();
 		}, 1);
@@ -969,7 +960,7 @@ String.prototype.toFilename = function() {
 
 		setTimeout(() => {
 			const film = Film.fromHTML(id, document.body.innerHTML);
-			navigator.clipboard.writeText(film.fullName);
+			navigator.clipboard.writeText(film.data.fullName);
 		}, 1);
 	}
 
@@ -979,21 +970,25 @@ String.prototype.toFilename = function() {
 
 	function createTestFilm(id: number): FilmData {
 		return {
-			id,
-			kind         : 'film',
-			key          : `Film:${id}`,
-			name         : `Test film ${id}`,
-			originalName : '',
-			fullName     : `Test film ${id} [200${id}]`,
-			year         : `200${id}`,
-			time         : 90 + id,
-			related      : [ 100 + id ],
-			description  : `Test film ${id} description\nNext line\n\nEnd`,
-			genres       : [ 'genre1', 'genre2', `genre${id}` ],
-			lists        : [ 'First list', 'Second list' ],
-			note         : `User note ${id}\nNext line\n\nEnd`,
-			poster       : `https://example.com/poster_${id}.jpg`,
-			directors    : [ 'Ivan Ivanov', 'John Smith' ],
+			kind : 'film',
+			key  : `Film:${id}`,
+			data : {
+				id,
+				name         : `Test film ${id}`,
+				originalName : '',
+				fullName     : `Test film ${id} [200${id}]`,
+				year         : `200${id}`,
+				time         : 90 + id,
+			},
+			extendedData : {
+				related     : [ 100 + id ],
+				description : `Test film ${id} description\nNext line\n\nEnd`,
+				genres      : [ 'genre1', 'genre2', `genre${id}` ],
+				lists       : [ 'First list', 'Second list' ],
+				note        : `User note ${id}\nNext line\n\nEnd`,
+				poster      : `https://example.com/poster_${id}.jpg`,
+				directors   : [ 'Ivan Ivanov', 'John Smith' ],
+			},
 		};
 	}
 

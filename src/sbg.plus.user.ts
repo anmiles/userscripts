@@ -721,10 +721,9 @@ type ApiProfileData = {
 	type LabelValues = Record<Lng, string>;
 
 	class Label {
-		values: LabelValues;
-
-		constructor(values: LabelValues) {
-			this.values = values;
+		constructor(
+			public values: LabelValues,
+		) {
 		}
 
 		format(data: Record<string, string>): Label {
@@ -1600,11 +1599,7 @@ type ApiProfileData = {
 	type ScriptReplacer<TSearchValue extends string | RegExp> = TSearchValue extends string ? string : (string | ((substring: string, ...args: any[]) => string));
 
 	class Script {
-		private data: string | undefined;
-
-		constructor(data: string | undefined) {
-			this.data = data;
-		}
+		constructor(private data: string | undefined) {}
 
 		static async create({ src, prefix, transformer, data }: { src: string, data?: string, prefix: `__sbg_${string}`, transformer: (script: Script) => void }): Promise<Script> {
 			if (!data) {
@@ -1777,13 +1772,11 @@ type ApiProfileData = {
 		VersionWatcherEventDataTypes,
 		EventWatcherListenerOptions
 	> {
-		private storageKey: string;
-		private getter: () => ReadableVariable<string>;
-
-		constructor(storageKey: string, getter: () => ReadableVariable<string>) {
+		constructor(
+			private storageKey: string,
+			private getter: () => ReadableVariable<string>,
+		) {
 			super(versionWatcherEventTypes);
-			this.storageKey = storageKey;
-			this.getter     = getter;
 		}
 
 		get(): string {
@@ -4629,10 +4622,10 @@ type ApiProfileData = {
 	}
 
 	class LineData {
-		linePoints: [PointData, PointData];
-		lineCoords: OlLineCoords;
-
-		constructor(linePoints: [PointData, PointData], lineCoords: OlLineCoords) {
+		constructor(
+			public linePoints: [PointData, PointData],
+			public lineCoords: OlLineCoords,
+		) {
 			this.linePoints = linePoints;
 			this.lineCoords = lineCoords;
 		}
@@ -4790,10 +4783,9 @@ type ApiProfileData = {
 	}
 
 	class CoordsMap<K extends OlCoords | OlLineCoords | OlRegionCoords, V> {
-		private data: Record<string, V>;
-
-		constructor(data: Record<string, V> = {}) {
-			this.data = data;
+		constructor(
+			private data: Record<string, V> = {},
+		) {
 		}
 
 		private stringifyKey(key: K | string): string {
