@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.56
+// @version        0.9.57
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.56';
+window.__sbg_plus_version = '0.9.57';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
@@ -81,6 +81,8 @@ interface Window {
 	__sbg_cui_function_loadMainScript: () => void;
 	__sbg_cui_function_clearInventory: (forceClear?: boolean, filteredLoot?: any[]) => Promise<void>;
 	__sbg_cui_function_toggleNavPopup: () => void;
+	__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => void;
+	__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
 }
 
 interface EventTarget {
@@ -401,6 +403,16 @@ type CUIConfig = {
 	},
 }
 
+type Notif = {
+	id: number;
+	g: string;
+	na: string;
+	ta: number;
+	ti: string;
+	c: OlCoords;
+	t: string;
+};
+
 type ReadableVariable<T> = { get: () => T };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 type WritableVariable<T> = { set: (value: T) => void } & ReadableVariable<T>;
@@ -462,11 +474,6 @@ type ApiProfileData = {
 		};
 
 		constructor(eventTypes: readonly TEventTypes[]) {
-			this.init(eventTypes);
-			this.watch();
-		}
-
-		private init(eventTypes: readonly TEventTypes[]) {
 			this.eventTypes = eventTypes;
 			this.listeners  = {} as typeof this.listeners;
 			this.events     = {} as typeof this.events;
@@ -475,6 +482,8 @@ type ApiProfileData = {
 				this.events[eventType]    = [];
 				this.listeners[eventType] = [];
 			});
+
+			this.watch();
 		}
 
 		protected abstract watch(): void;
@@ -1032,6 +1041,7 @@ type ApiProfileData = {
 		draw        : { ru : 'Рисование', en : 'Draw' },
 		other       : { ru : 'Прочие настройки', en : 'Other settings' },
 		custom      : { ru : 'Мои настройки', en : 'My settings' },
+		tests       : { ru : 'Тесты', en : 'Tests' },
 	} as const;
 
 	const featureTriggers = [ '', 'pageLoad', 'cuiTransform', 'mapReady', 'fireClick' ] as const;
@@ -1054,7 +1064,7 @@ type ApiProfileData = {
 		public?: boolean;
 		simple?: boolean;
 		desktop?: boolean;
-		unchecked?: boolean;
+		unchecked?: boolean | (() => boolean);
 		parent?: FeatureParent;
 	}
 
@@ -1067,7 +1077,7 @@ type ApiProfileData = {
 		private public: boolean;
 		private simple: boolean;
 		private desktop: boolean;
-		private unchecked: boolean;
+		private unchecked: boolean | (() => boolean);
 		parent?: FeatureParent;
 		private toggleValue = false;
 
@@ -1104,7 +1114,7 @@ type ApiProfileData = {
 		}
 
 		isImplicitlyEnabled(): boolean {
-			return this.isAvailable() && this.isIncluded(this.getPreset()) && !this.unchecked;
+			return this.isAvailable() && this.isIncluded(this.getPreset()) && !(typeof this.unchecked === 'function' ? this.unchecked() : this.unchecked);
 		}
 
 		isAvailable(): boolean {
@@ -1391,6 +1401,10 @@ type ApiProfileData = {
 		{ ru : 'Сообщать об обновлениях скрипта', en : 'Report script updates' },
 		{ public : true, group, trigger : 'mapReady', unchecked : true });
 
+	new Feature(moveDestroyNotificationsToTop,
+		{ ru : 'Переместить оповещения об атаке наверх', en : 'Move destroy notifications to top' },
+		{ public : true, group, trigger : 'mapReady', unchecked : () => !features.get(loadEUI).isEnabled() });
+
 	group = 'eui';
 
 	new Feature(centerIconsInGraphicalButtons,
@@ -1542,6 +1556,12 @@ type ApiProfileData = {
 	new Feature(enableOldWebViewCompatibility,
 		{ ru : 'Включить совместимость со старыми webview', en : 'Enable old web view compatibility' },
 		{ public : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('.popup.pp-center') });
+
+	group = 'tests';
+
+	new Feature(testNotifications,
+		{ ru : 'Тестовые нотификации', en : 'Test notifications' },
+		{ group, trigger : 'mapReady', unchecked : true });
 
 	settings.cleanupFeatures();
 
@@ -2518,7 +2538,7 @@ type ApiProfileData = {
 				},
 				functions : {
 					readable : [ 'clearInventory' ],
-					writable : [ 'toggleNavPopup' ],
+					writable : [ 'toggleNavPopup', 'createToast', 'getNotifs' ],
 				},
 			});
 	}
@@ -3294,6 +3314,37 @@ type ApiProfileData = {
 		}, { previous : true });
 	}
 
+	function moveDestroyNotificationsToTop() {
+		((createToast) => {
+			window.__sbg_cui_function_createToast = function(content, position, duration, className, oldestFirst) {
+				if (className === 'sbgcui_destroy_notif_toast') {
+					position = 'top left';
+				}
+
+				return createToast(content, position, duration, className, oldestFirst);
+			};
+		})(window.__sbg_cui_function_createToast);
+
+		setCSS(`
+			.sbgcui_destroy_notifs>.toastify:nth-child(1) {
+				translate: 0 calc(2em - 5px);
+			}
+
+			.sbgcui_destroy_notifs>.toastify:nth-child(2) {
+				translate: 0 calc(2em - 10px);
+			}
+
+			.sbgcui_destroy_notifs>.toastify:nth-child(3) {
+				translate: 0 calc(2em - 15px);
+			}
+
+			.sbgcui_destroy_notifs {
+				bottom: auto;
+				top: 5px;
+			}
+		`);
+	}
+
 	function quickRecycleAllRefs(inventoryContent: JQuery<HTMLElement>) {
 		setCSS(`
 			.inventory__content[data-tab="3"] .inventory__item {
@@ -3840,6 +3891,30 @@ type ApiProfileData = {
 				}
 			}
 		`);
+	}
+
+	function testNotifications() {
+		window.__sbg_cui_function_getNotifs = function<TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) {
+			if (typeof latest === 'number') {
+				return 1 as TResult;
+			}
+
+			if (typeof latest === 'undefined') {
+				return [
+					{
+						id : 1,
+						g  : 'guid',
+						na : 'TestUser',
+						ta : 0,
+						ti : new Date().toISOString(),
+						c  : [ 0, 0 ],
+						t  : 'test point',
+					} as Notif,
+				] as TResult;
+			}
+
+			throw `'latest' is not number or undefined: ${latest}`;
+		};
 	}
 
 	class Builder {
