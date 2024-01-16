@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        5.1.2
+// @version        6.0.0
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -20,7 +20,7 @@ const debug = {
 
 const defaultListID = 6; // favorites
 const perPage       = 100;
-const pageInterval  = parseInt(localStorage.pageInterval) || 1000;
+const pageInterval  = parseInt(localStorage['pageInterval']) || 1000;
 
 const boxWidth = 1000;
 const boxItem  = 24;
@@ -36,7 +36,7 @@ interface String {
 	toFilename(): string;
 }
 
-Number.prototype.case = function(zero: string, one: string, two: string): string {
+Number.prototype.case = function(this: number, zero: string, one: string, two: string): string {
 	let num = Math.abs(this);
 	num    %= 100;
 
@@ -168,8 +168,8 @@ String.prototype.toFilename = function() {
 				return data.productionYear ? data.productionYear.toString() : '';
 			}
 
-			const start = data.releaseYears[0].start;
-			const end   = data.releaseYears.slice(-1)[0].end;
+			const start = data.releaseYears[0]?.start || null;
+			const end   = data.releaseYears.slice(-1)[0]?.end || null;
 
 			if (start === null) {
 				return '...';
@@ -221,12 +221,14 @@ String.prototype.toFilename = function() {
 		}
 
 		private static create(id: number, getData: () => ListItemData) {
-			if (!ListItem.map[id]) {
-				const { kind, data } = getData();
-				ListItem.map[id]     = new ListItem(kind, data);
+			const listItem = ListItem.map[id];
+
+			if (listItem) {
+				return listItem;
 			}
 
-			return ListItem.map[id];
+			const { kind, data } = getData();
+			return ListItem.map[id] = new ListItem(kind, data);
 		}
 
 		static is(item: unknown): item is ListItem {
@@ -239,9 +241,9 @@ String.prototype.toFilename = function() {
 				const desc   = nameEl.next().text().split(/\s*\((.*?)\)\s*/);
 
 				const name         = nameEl.text().trim();
-				const originalName = desc[0].trim() || '';
-				const year         = desc.length >= 2 ? desc[1].trim().replace(/^-$/, '') : '';
-				const time         = desc.length >= 3 && /^\d+$/.test(desc[2]) ? parseInt(desc[2]) : 0;
+				const originalName = desc[0]!.trim() || '';
+				const year         = desc.length >= 2 ? desc[1]!.trim().replace(/^-$/, '') : '';
+				const time         = desc.length >= 3 && /^\d+$/.test(desc[2]!) ? parseInt(desc[2]!) : 0;
 
 				return { kind : 'listItem', data : { id, year, time, ...FilmBase.getNames({ name, originalName, year }) } };
 			});
@@ -264,12 +266,14 @@ String.prototype.toFilename = function() {
 		}
 
 		private static create(id: number, getData: () => RelatedData) {
-			if (!Related.map[id]) {
-				const { kind, key, data } = getData();
-				Related.map[id]           = new Related(kind, key, data);
+			const related = Related.map[id];
+
+			if (related) {
+				return related;
 			}
 
-			return Related.map[id];
+			const { kind, key, data } = getData();
+			return Related.map[id] = new Related(kind, key, data);
 		}
 
 		static is(item: unknown): item is Related {
@@ -298,12 +302,13 @@ String.prototype.toFilename = function() {
 		}
 
 		private static create(id: number, getData: () => FilmData) {
-			if (!Film.map[id]) {
-				const { kind, key, data, extendedData } = getData();
-				Film.map[id]                            = new Film(kind, key, data, extendedData);
+			const film = Film.map[id];
+			if (film) {
+				return film;
 			}
 
-			return Film.map[id];
+			const { kind, key, data, extendedData } = getData();
+			return Film.map[id] = new Film(kind, key, data, extendedData);
 		}
 
 		static is(item: unknown): item is Film {
@@ -326,18 +331,30 @@ String.prototype.toFilename = function() {
 					throw error('Не удалось найти объект __NEXT_DATA__ на странице фильма');
 				}
 
-				const json     = JSON.parse(htmlMatch[1]);
+				const relatedFilm = Related.map[id];
+
+				if (!relatedFilm) {
+					throw `Unknown related item for id ${id}`;
+				}
+
+				const json     = JSON.parse(htmlMatch[1]!);
 				const jsonData = json.props.apolloState.data as JSONData;
 
-				const related      = Film.getRelated(jsonData);
-				const key          = Related.map[id].key;
+				const related = Film.getRelated(jsonData);
+				const key     = relatedFilm.key;
+
 				const jsonFilmData = jsonData[key];
-				const genres       = Film.getGenres(jsonFilmData, jsonData);
-				const lists        = Film.getLists(jsonFilmData);
-				const poster       = Film.getPoster(jsonFilmData);
-				const description  = Film.getDescription(jsonFilmData);
-				const note         = Film.getNote(jsonFilmData);
-				const directors    = Film.getMembers(jsonFilmData, jsonData, '"DIRECTOR"');
+
+				if (!jsonFilmData) {
+					throw `Cannot find jsonFilmData by key ${key}`;
+				}
+
+				const genres      = Film.getGenres(jsonFilmData, jsonData);
+				const lists       = Film.getLists(jsonFilmData);
+				const poster      = Film.getPoster(jsonFilmData);
+				const description = Film.getDescription(jsonFilmData);
+				const note        = Film.getNote(jsonFilmData);
+				const directors   = Film.getMembers(jsonFilmData, jsonData, '"DIRECTOR"');
 
 				return {
 					kind         : 'film',
@@ -352,7 +369,7 @@ String.prototype.toFilename = function() {
 			return Object.keys(data)
 				.filter(Film.isFilmKey)
 				.map((key) => {
-					const film = data[key];
+					const film = data[key]!;
 					Related.fromJSON(key, film);
 					return film.id;
 				});
@@ -361,7 +378,7 @@ String.prototype.toFilename = function() {
 		private static isFilmKey(key: string): key is `${FilmTypeName}:${number}` {
 			const [ typeName, idString ] = key.split(':');
 
-			return Film.isFilmTypeName(typeName) && !isNaN(Number(idString));
+			return Film.isFilmTypeName(typeName!) && !isNaN(Number(idString));
 		}
 
 		private static isFilmTypeName(typeName: string): typeName is FilmTypeName {
@@ -369,7 +386,17 @@ String.prototype.toFilename = function() {
 		}
 
 		private static getGenres(jsonFilmData: JSONFilmData<FilmTypeName>, jsonData: JSONData): string[] {
-			const genres = jsonFilmData.genres.map(({ __ref }) => jsonData[__ref].name);
+			const genres = [] as string[];
+
+			for (const { __ref } of jsonFilmData.genres) {
+				const genre = jsonData[__ref];
+
+				if (!genre) {
+					throw `Cannot find ref ${__ref} in jsonData for film id = ${jsonFilmData.id}`;
+				}
+
+				genres.push(genre.name);
+			}
 
 			if (jsonFilmData.__typename === 'TvSeries') {
 				genres.push('сериал');
@@ -411,8 +438,19 @@ String.prototype.toFilename = function() {
 			jsonRole: JSONRole,
 		): string[]  {
 			const key   = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole)) as `members({"limit":${number},"role":${JSONRole}})`;
-			const refs  = jsonFilmData[key].items.map((item) => item.person.__ref);
-			const names = refs.map((ref) => jsonData[ref].name || jsonData[ref].originalName);
+			const refs  = jsonFilmData[key]!.items.map((item) => item.person.__ref);
+			const names = [];
+
+			for (const ref of refs) {
+				const member = jsonData[ref];
+
+				if (!member) {
+					throw `Cannot find ref ${ref} in jsonData for film id = ${jsonFilmData.id}`;
+				}
+
+				names.push(member.name || member.originalName);
+			}
+
 			return names;
 		}
 	}
@@ -528,6 +566,13 @@ String.prototype.toFilename = function() {
 			this.logLink      = $('<span></span>').appendTo(this.logPanel);
 			this.buttonPanel  = $('<div></div>').addClass('buttons').appendTo(this.box);
 
+			this.counts    = [];
+			this.weights   = [];
+			this.values    = [];
+			this.bases     = [];
+			this.startTime = new Date();
+			this.value     = 0;
+
 			console.debug('__construct', title);
 			this.print(title);
 		}
@@ -628,8 +673,8 @@ String.prototype.toFilename = function() {
 			let multiplier = 1;
 
 			for (let i = 0; i < this.counts.length; i++) {
-				multiplier /= (this.counts[i] / this.weights[i]);
-				this.value += this.values[i] * multiplier;
+				multiplier /= (this.counts[i]! / this.weights[i]!);
+				this.value += this.values[i]! * multiplier;
 			}
 
 			console.debug('render', this);
@@ -659,7 +704,7 @@ String.prototype.toFilename = function() {
 
 	function error(ex: Error | string) {
 		if (currentProgress) {
-			currentProgress.error(`Не удалось распарсить страницу ${currentUrl}. Ошибка: ${ex}`);
+			currentProgress.error(`Не удалось обработать страницу ${currentUrl}. Ошибка: ${ex}`);
 		}
 		// eslint-disable-next-line no-debugger
 		debugger;
@@ -674,11 +719,13 @@ String.prototype.toFilename = function() {
 		return obj;
 	}
 
-	function regex(text: string, pattern: RegExp) {
+	function regex(text: string, pattern: RegExp): RegExpExecArray {
 		const match = pattern.exec(text);
+
 		if (!match) {
 			throw error(`Не удалось найти текст по регулярному выражению ${pattern}`);
 		}
+
 		return match;
 	}
 
@@ -773,7 +820,7 @@ String.prototype.toFilename = function() {
 						ListItem.fromJSON(item.data.id, item);
 					}
 				} catch (ex) {
-					listsProgress.error(ex.toString());
+					listsProgress.error(ex as string);
 					return;
 				}
 
@@ -812,7 +859,7 @@ String.prototype.toFilename = function() {
 			}
 
 			const reader = new FileReader();
-			reader.readAsText(files[0]);
+			reader.readAsText(files[0]!);
 
 			reader.onload = function() {
 				success(reader.result as string);
@@ -865,12 +912,12 @@ String.prototype.toFilename = function() {
 			throw error(`Text '${text}' doesn't match regexp`);
 		}
 
-		const title      = matches[1];
-		const totalPages = Math.ceil(parseInt(matches[2]) / perPage);
+		const title      = matches[1]!;
+		const totalPages = Math.ceil(parseInt(matches[2]!) / perPage);
 		return { id, title, firstPageHTML, totalPages };
 	}
 
-	async function parseList(list: List, currentPage: number) {
+	async function parseList(list: List, currentPage: number): Promise<void> {
 		if (shouldSkipList(list.title)) {
 			return;
 		}
@@ -885,7 +932,7 @@ String.prototype.toFilename = function() {
 			const id = parseFilmId(listItem);
 
 			if (shouldSkipFilm(id)) {
-				return null;
+				continue;
 			}
 
 			ListItem.fromElement(id, listItem);
@@ -965,7 +1012,7 @@ String.prototype.toFilename = function() {
 	}
 
 	function getCurrentFilmId(): number {
-		return parseInt(regex(location.pathname, /^\/(film|series)\/(\d+)/)[2]);
+		return parseInt(regex(location.pathname, /^\/(film|series)\/(\d+)/)[2]!);
 	}
 
 	function createTestFilm(id: number): FilmData {

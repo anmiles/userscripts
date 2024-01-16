@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.57
+// @version        0.9.58
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,9 +12,8 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.57';
+window.__sbg_plus_version = '0.9.58';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Window {
 	ol: Ol;
 	turf: Turf;
@@ -39,7 +38,7 @@ interface Window {
 	__sbg_local: boolean;
 	__sbg_preset: unknown;
 	__sbg_urls: Urls;
-	__sbg_language: Lng;
+	__sbg_language: Lang;
 	__sbg_plus_version: string;
 	__sbg_plus_localStorage_watcher: unknown;
 	__sbg_plus_modifyFeatures: Function;
@@ -91,17 +90,43 @@ interface EventTarget {
 	getEventHandlers: <T = EventListener>(type: string) => T[];
 	clearEventListeners: (type: string, sealed: boolean) => void;
 	addOnlyEventListener: EventTarget['addEventListener'];
-	addRepeatingEventListener: (
+	addRepeatingEventListener: <TEvent extends Event>(
 		type: string,
-		callback: (ev: Event) => void,
+		callback: (ev: TEvent) => void,
 		options: {
 			repeats: number,
 			timeout: number,
-			tick?: (ev: Event, iteration: number) => void,
-			filter?: (ev: Event) => boolean,
-			cancel?: (ev: Event) => boolean,
+			tick?: (ev: TEvent, iteration: number) => void,
+			filter?: (ev: TEvent) => boolean,
+			cancel?: (ev: TEvent) => boolean,
 		},
 	) => void;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface WindowEventMap {
+	'deviceorientationabsolute': DeviceOrientationEvent;
+}
+
+interface DeviceOrientationEvent {
+	webkitCompassHeading: number;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+interface Object {
+	ownKeys: <K extends string, V>(obj: Record<K, V> | Partial<Record<K, V>>, allKeys?: readonly K[]) => K[],
+}
+
+Object.ownKeys = <K extends string, V>(obj: Record<K, V> | Partial<Record<K, V>>, allKeys?: readonly K[]): K[] => {
+	function isOwnKey(key: keyof any): key is K {
+		return allKeys?.includes(key as K) ?? true;
+	}
+
+	return Object.keys(obj).filter<K>(isOwnKey);
+};
+
+type EventTargetWithEventType<TEventType extends string> = EventTarget & {
+	__events: Record<TEventType, EventListeners>;
 }
 
 type EventListeners = {
@@ -111,10 +136,6 @@ type EventListeners = {
 
 interface CustomTouchEvent {
 	(data: { touches: TouchEvent['touches'] }): void;
-}
-
-interface DeviceOrientationEvent extends Event {
-	webkitCompassHeading: number;
 }
 
 type Ol = {
@@ -329,7 +350,9 @@ type Urls = Record<UrlType, {
 	remote: string;
 }>;
 
-type Lng = 'ru' | 'en';
+const langs = [ 'ru', 'en' ] as const;
+
+type Lang = typeof langs[number];
 
 type Level = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -504,7 +527,7 @@ type ApiProfileData = {
 				eventOptions: TEventOptions
 			},
 		) {
-			this.filter(listeners, { eventOptions }).map((listener) => {
+			listeners.filter((listener) => this.isMatchEventOptions(listener, eventOptions)).map((listener) => {
 				if (!listener.enabled) {
 					return;
 				}
@@ -515,6 +538,13 @@ type ApiProfileData = {
 
 				listener.handler(eventData);
 			});
+		}
+
+		protected isMatchEventOptions<TEventType extends TEventTypes>(
+			_listener: EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>,
+			_eventOptions: TEventOptions,
+		): boolean {
+			return true;
 		}
 
 		emit<TEventType extends TEventTypes>(
@@ -714,6 +744,7 @@ type ApiProfileData = {
 				pointCoords: Label;
 				lines: Label;
 				linesCoords: Label;
+				unknownError: Label;
 			}
 		}
 	}
@@ -727,7 +758,7 @@ type ApiProfileData = {
 	type BuilderStates = Record<BuilderButtons, boolean>;
 	type BuilderFeatures = Record<BuilderButtons, BuilderFeature>;
 
-	type LabelValues = Record<Lng, string>;
+	type LabelValues = Record<Lang, string>;
 
 	class Label {
 		constructor(
@@ -738,9 +769,9 @@ type ApiProfileData = {
 		format(data: Record<string, string>): Label {
 			const formattedLabel = new Label(this.values);
 
-			Object.entries(formattedLabel.values).forEach(([ lng, value ]: [ Lng, string ]) => {
-				formattedLabel.values[lng] = value.replace(/\$\{(.+?)\}/g, (_, key) => data[key]);
-			});
+			for (const lang of langs) {
+				formattedLabel.values[lang] = formattedLabel.values[lang].replace(/\$\{(.+?)\}/g, (_, key) => data[key] || '');
+			}
 
 			return formattedLabel;
 		}
@@ -977,6 +1008,10 @@ type ApiProfileData = {
 					ru : "Каждый массив в 'lines' должен состоять из двух массивов координат точек",
 					en : "Each array in 'lines' should contain two arrays of point coordinates",
 				}),
+				unknownError : new Label({
+					ru : 'Причина ошибки неизвестна: ошибка произошла до определения возможных причин',
+					en : 'Error reason is unknown: the error ocurred before defining possible reasons',
+				}),
 			},
 		},
 	};
@@ -1016,7 +1051,7 @@ type ApiProfileData = {
 
 		save() {
 			const json                    = {} as Record<string, any>;
-			json.features                 = this.features;
+			json['features']              = this.features;
 			const str                     = JSON.stringify(json);
 			localStorage[this.storageKey] = str;
 		}
@@ -1054,7 +1089,7 @@ type ApiProfileData = {
 	};
 
 	type FeatureParents = {
-		parent: FeatureBase<unknown, unknown>,
+		parent: FeatureBase<any, any>,
 		dependency: 'any' | 'all';
 	};
 
@@ -1226,9 +1261,9 @@ type ApiProfileData = {
 
 	// TODO: в других вотчерах должен быть такой же способ объявления типов аргументов для каждого метода
 	type FeaturesEventDataTypes = {
-		add: FeatureBase<unknown, unknown>,
-		inherit: { feature: FeatureBase<unknown, unknown>, value: boolean },
-		toggle: { feature: FeatureBase<unknown, unknown>, value: boolean },
+		add: FeatureBase<any, any>,
+		inherit: { feature: FeatureBase<any, any>, value: boolean },
+		toggle: { feature: FeatureBase<any, any>, value: boolean },
 	};
 
 	class Features extends EventWatcher<
@@ -1236,21 +1271,21 @@ type ApiProfileData = {
 		FeaturesEventDataTypes,
 		EventWatcherListenerOptions
 	> {
-		keys = {} as Record<string, FeatureBase<unknown, unknown>>;
-		groups = {} as Record<FeatureGroup, FeatureBase<unknown, unknown>[]>;
-		triggers = {} as Record<FeatureTrigger, FeatureBase<unknown, unknown>[]>;
+		keys = {} as Record<string, FeatureBase<any, any>>;
+		groups = {} as Record<FeatureGroup, FeatureBase<any, any>[]>;
+		triggers = {} as Record<FeatureTrigger, FeatureBase<any, any>[]>;
 		parents = {} as Partial<Record<FeatureGroup, FeatureParents>>;
 
 		constructor() {
 			super(featuresEventTypes);
-			Object.keys(featureGroups).map((key: FeatureGroup) => this.groups[key] = []);
+			Object.ownKeys(featureGroups).map((key: FeatureGroup) => this.groups[key] = []);
 			featureTriggers.map((key) => this.triggers[key] = []);
 		}
 
 		protected override watch() {
 		}
 
-		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']) {
+		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']): FeatureBase<any, any> | undefined {
 			return this.keys[func.name];
 		}
 
@@ -1270,7 +1305,7 @@ type ApiProfileData = {
 		}
 
 		inheritAll() {
-			Object.entries(this.parents).forEach(([ _group, { parent, dependency } ]: [FeatureGroup, FeatureParents]) => {
+			Object.values(this.parents).forEach(({ parent, dependency }) => {
 				const children = this.getChildren(parent);
 
 				if (dependency === 'all' && parent.isExplicitlyEnabled()) {
@@ -1283,7 +1318,7 @@ type ApiProfileData = {
 			});
 		}
 
-		inherit(feature: FeatureBase<unknown, unknown>, value: boolean) {
+		inherit(feature: FeatureBase<any, any>, value: boolean) {
 			const featureParent = this.parents[feature.group];
 
 			if (!featureParent) {
@@ -1309,7 +1344,7 @@ type ApiProfileData = {
 			}
 		}
 
-		private getParent(feature: FeatureBase<unknown, unknown>): FeatureBase<unknown, unknown> | undefined {
+		private getParent(feature: FeatureBase<any, any>): FeatureBase<any, any> | undefined {
 			const parents = this.parents[feature.group];
 			const parent  = parents?.parent;
 
@@ -1318,7 +1353,7 @@ type ApiProfileData = {
 				: undefined;
 		}
 
-		private getChildren(feature: FeatureBase<unknown, unknown>): FeatureBase<unknown, unknown>[] {
+		private getChildren(feature: FeatureBase<any, any>): FeatureBase<any, any>[] {
 			const parents = this.parents[feature.group];
 			const parent  = parents?.parent;
 
@@ -1403,7 +1438,7 @@ type ApiProfileData = {
 
 	new Feature(moveDestroyNotificationsToTop,
 		{ ru : 'Переместить оповещения об атаке наверх', en : 'Move destroy notifications to top' },
-		{ public : true, group, trigger : 'mapReady', unchecked : () => !features.get(loadEUI).isEnabled() });
+		{ public : true, group, trigger : 'mapReady', unchecked : () => !features.get(loadEUI)?.isEnabled() });
 
 	group = 'eui';
 
@@ -1566,32 +1601,32 @@ type ApiProfileData = {
 	settings.cleanupFeatures();
 
 	type Presets = 'base' | 'nicoscript' | 'egorscript' | 'allscripts' | 'full';
-	const presets = {} as Record<Presets, FeatureBase<unknown, unknown>[]>;
+	const presets = {} as Record<Presets, FeatureBase<any, any>[]>;
 
 	presets['base'] = [
 		...features.groups.base,
 	];
 
 	if (window.innerWidth >= 800) {
-		presets['base'].push(features.get(showBuilderPanel));
+		presets['base'].push(features.get(showBuilderPanel)!);
 	}
 
 	presets['nicoscript'] = [
 		...presets['base'],
 		...features.groups.cui,
-		features.get(loadCUI),
+		features.get(loadCUI)!,
 	];
 
 	presets['egorscript'] = [
 		...presets['base'],
 		...features.groups.eui,
-		features.get(loadEUI),
+		features.get(loadEUI)!,
 	];
 
 	presets['allscripts'] = [
 		...presets['nicoscript'],
 		...presets['egorscript'],
-		features.get(restoreCUISort),
+		features.get(restoreCUISort)!,
 	];
 
 	presets['full'] = [];
@@ -1887,12 +1922,11 @@ type ApiProfileData = {
 			})(localStorage.removeItem);
 		}
 
-		protected override filter<TEventType extends keyof LocalStorageWatcherEventDataTypes>(
-			listeners: typeof this.listeners[TEventType],
-			{ eventOptions }: { eventOptions: LocalStorageWatcherEventOptions },
+		protected override isMatchEventOptions<TEventType extends typeof localStorageWatcherEventTypes[number]>(
+			listener: EventWatcherListener<LocalStorageWatcherEventDataTypes[TEventType], LocalStorageWatcherListenerOptions>,
+			eventOptions: LocalStorageWatcherEventOptions,
 		) {
-			return listeners
-				.filter((listener) => listener.listenerOptions.key === eventOptions.key && listener.listenerOptions.when === eventOptions.when);
+			return listener.listenerOptions.key === eventOptions.key && listener.listenerOptions.when === eventOptions.when;
 		}
 	}
 
@@ -1962,14 +1996,17 @@ type ApiProfileData = {
 
 	function preventLoadingScript() {
 		((append) => {
-			Element.prototype.append = function() {
-				if (arguments.length === 0) {
+			Element.prototype.append = function(...nodes: (string | Node)[]) {
+				if (nodes.length === 0) {
 					return;
 				}
-				if (arguments[0].src === getNativeScriptSrc()) {
+
+				const firstNode = nodes[0];
+
+				if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getNativeScriptSrc()) {
 					return;
 				}
-				append.apply(this, arguments);
+				append.apply(this, nodes);
 			};
 		})(Element.prototype.append);
 
@@ -1996,13 +2033,17 @@ type ApiProfileData = {
 
 	function enhanceEventListeners() {
 		((addEventListener, removeEventListener) => {
-			function initEventListeners(target: EventTarget, type: string): EventTarget {
+			function initEventListeners<TEventType extends string>(target: EventTarget, type: TEventType): EventTargetWithEventType<TEventType> {
 				target.__events       = target.__events || {};
-				target.__events[type] = target.__events[type] || { listeners : [] };
+				target.__events[type] = target.__events[type] || { listeners : [], sealed : false };
 				return target;
 			}
 
-			EventTarget.prototype.addEventListener = function(type, listener) {
+			EventTarget.prototype.addEventListener = function<T extends string>(
+				type: T,
+				listener: Parameters<typeof this.addEventListener>[1],
+				options?: Parameters<typeof this.addEventListener>[2],
+			) {
 				if (!listener) {
 					return;
 				}
@@ -2015,10 +2056,14 @@ type ApiProfileData = {
 
 				target.__events[type].listeners.push(listener);
 
-				addEventListener.apply(this, arguments);
+				addEventListener.call(this, type, listener, options);
 			};
 
-			EventTarget.prototype.removeEventListener = function(type, listener) {
+			EventTarget.prototype.removeEventListener = function<T extends string>(
+				type: T,
+				listener: Parameters<typeof this.addEventListener>[1],
+				options?: Parameters<typeof this.addEventListener>[2],
+			) {
 				if (!listener) {
 					return;
 				}
@@ -2030,10 +2075,10 @@ type ApiProfileData = {
 					target.__events[type].listeners.splice(index, 1);
 				}
 
-				removeEventListener.apply(this, arguments);
+				removeEventListener.call(this, type, listener, options);
 			};
 
-			EventTarget.prototype.getEventListeners = function(type: string): EventListenerOrEventListenerObject[] {
+			EventTarget.prototype.getEventListeners = function<T extends string>(type: T): EventListenerOrEventListenerObject[] {
 				const target = initEventListeners(this, type);
 
 				const listeners = [];
@@ -2057,7 +2102,7 @@ type ApiProfileData = {
 					.map((handler) => handler as T);
 			};
 
-			EventTarget.prototype.clearEventListeners = function(type: string, sealed: boolean) {
+			EventTarget.prototype.clearEventListeners = function<T extends string>(type: T, sealed: boolean) {
 				const target = initEventListeners(this, type);
 
 				if (sealed) {
@@ -2071,7 +2116,11 @@ type ApiProfileData = {
 				target.__events[type].listeners.splice(0);
 			};
 
-			EventTarget.prototype.addOnlyEventListener = function(type, listener) {
+			EventTarget.prototype.addOnlyEventListener = function<T extends string>(
+				type: T,
+				listener: Parameters<typeof this.addEventListener>[1],
+				options?: Parameters<typeof this.addEventListener>[2],
+			) {
 				if (!listener) {
 					return;
 				}
@@ -2081,18 +2130,33 @@ type ApiProfileData = {
 				target.clearEventListeners(type, true);
 				target.__events[type].listeners.push(listener);
 
-				addEventListener.apply(this, arguments);
+				addEventListener.call(this, type, listener, options);
 			};
 
-			EventTarget.prototype.addRepeatingEventListener = function(type, callback, { repeats: limit, timeout, tick = () => {}, filter = () => true, cancel = () => true }): void {
+			EventTarget.prototype.addRepeatingEventListener = function<TEvent extends Event>(
+				type: string,
+				callback: (ev: TEvent) => void,
+				{
+					repeats: limit,
+					timeout,
+					tick = () => {},
+					filter = () => true,
+					cancel = () => true,
+				}: {
+					repeats: number,
+					timeout: number,
+					tick?: (ev: TEvent, iteration: number) => void,
+					filter?: (ev: TEvent) => boolean,
+					cancel?: (ev: TEvent) => boolean,
+				}): void {
 				let repeats = 0;
 
-				addEventListener.call(this, type, (ev: Event) => {
-					if (!filter(ev)) {
+				this.addEventListener(type, (ev) => {
+					if (!filter(ev as TEvent)) {
 						return;
 					}
 
-					if (!cancel(ev)) {
+					if (!cancel(ev as TEvent)) {
 						repeats = 0;
 						return;
 					}
@@ -2101,11 +2165,11 @@ type ApiProfileData = {
 
 					if (repeats >= limit) {
 						repeats = 0;
-						callback(ev);
+						callback(ev as TEvent);
 						return;
 					}
 
-					tick(ev, repeats);
+					tick(ev as TEvent, repeats);
 
 					setTimeout(() => {
 						repeats = 0;
@@ -2118,11 +2182,11 @@ type ApiProfileData = {
 		console.log('enhanced event listeners');
 	}
 
-	function getLanguage(): Lng {
+	function getLanguage(): Lang {
 		let lang;
 
 		try {
-			lang = JSON.parse(localStorage.settings).lang;
+			lang = JSON.parse(localStorage['settings']).lang;
 		} catch {
 			lang = navigator.language;
 		}
@@ -2137,7 +2201,7 @@ type ApiProfileData = {
 		const feedbackTouches      = 3;
 		const feedbackTouchRepeats = 2;
 
-		document.addRepeatingEventListener('touchstart', () => copyLogs(), {
+		document.addRepeatingEventListener<TouchEvent>('touchstart', () => copyLogs(), {
 			repeats : feedbackTouchRepeats,
 			timeout : feedbackClickTimeout,
 			filter  : (ev: TouchEvent) => ev.touches.length === feedbackTouches,
@@ -2193,7 +2257,7 @@ type ApiProfileData = {
 	}
 
 	async function loadCUI(nativeScript: Script): Promise<void> {
-		if (!features.get(loadCUI).isEnabled()) {
+		if (!features.get(loadCUI)!.isEnabled()) {
 			console.log('skipped loadCUI; loading native script');
 			nativeScript.embed();
 			return;
@@ -2243,7 +2307,7 @@ type ApiProfileData = {
 		script.transform(fixCUIWarnings);
 		script.transform(fixPointNavigation);
 
-		features.triggers['cuiTransform'].map((transformer: Transformer) => {
+		features.triggers['cuiTransform'].map((transformer: FeatureBase<any, any>) => {
 			script = transformer.exec(script);
 		});
 
@@ -2324,7 +2388,7 @@ type ApiProfileData = {
 		let isChecked;
 
 		try {
-			JSON.parse(localStorage.settings).base === layerName;
+			JSON.parse(localStorage['settings']).base === layerName;
 		} catch {
 			isChecked = localStorage['sbg-plus-state-ymaps'] === '1';
 		}
@@ -2488,7 +2552,7 @@ type ApiProfileData = {
 			return;
 		}
 
-		const center = JSON.parse(localStorage.homeCoords);
+		const center = JSON.parse(localStorage['homeCoords']);
 		window.__sbg_variable_map.get().getView().setCenter(center);
 		console.log('initialized home location');
 	}
@@ -2823,16 +2887,16 @@ type ApiProfileData = {
 
 		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
 
-		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<unknown, unknown> }> = [
-			{ container : 'info', title : 'ARR', feature : features.get(arrangeButtons) },
-			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton) },
-			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton) },
-			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer) },
-			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton) },
+		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<any, any> }> = [
+			{ container : 'info', title : 'ARR', feature : features.get(arrangeButtons)! },
+			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton)! },
+			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton)! },
+			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer)! },
+			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton)! },
 
-			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort) },
-			{ container : 'inventory', title : 'BUT', feature : features.get(moveReferenceButtonsDown) },
-			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons) },
+			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort)! },
+			{ container : 'inventory', title : 'BUT', feature : features.get(moveReferenceButtonsDown)! },
+			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons)! },
 		];
 
 		for (const { container, title, feature } of featureToggles) {
@@ -2894,10 +2958,7 @@ type ApiProfileData = {
 				height: 100%;
 				-webkit-backdrop-filter: blur(5px);
 				backdrop-filter: blur(5px);
-			}
-
-			.popup.pp-center > * {
-				position: relative;
+				z-index: -1;
 			}
 		`);
 	}
@@ -3259,7 +3320,7 @@ type ApiProfileData = {
 				'$1$ — $2$; $3$ $4$',
 				$('<span>', { class : 'profile-link' }).text(data.name).css('color', `var(--team-${data.team})`).attr('data-name', data.name).on('click', window.__sbg_function_openProfile),
 				$('<span>').text(window.i18next.t('leaderboard.level', { count : data.level })).css('color', `var(--level-${data.level})`),
-				...window.__sbg_function_takeUnits(value),
+				...window.__sbg_function_takeUnits(value || 0),
 			);
 
 			const list = $('<ol>')
@@ -3645,7 +3706,7 @@ type ApiProfileData = {
 		arrow.hide();
 
 		function createTouch(touchData: Partial<Touch> & { target: EventTarget }): { touches: TouchEvent['touches'] } {
-			const touches = [ {
+			const touch = {
 				clientX       : touchData.clientX ?? 0,
 				clientY       : touchData.clientY ?? 0,
 				pageX         : touchData.pageX ?? touchData.clientX ?? 0,
@@ -3658,14 +3719,16 @@ type ApiProfileData = {
 				radiusY       : touchData.radiusY ?? 1,
 				rotationAngle : touchData.rotationAngle ?? 0,
 				target        : touchData.target,
-			} ];
+			};
+
+			const touches = [ touch ];
 
 			const set = new Set(touches);
 
 			return {
 				touches : {
 					length            : set.size,
-					item              : (index: number) => touches[index],
+					item              : (index: number) => index === 0 ? touch : null,
 					[Symbol.iterator] : set[Symbol.iterator],
 				},
 			};
@@ -3829,7 +3892,7 @@ type ApiProfileData = {
 				manageDrawing(event);
 
 				const tempLine       = window.__sbg_variable_temp_lines_source.get().getFeatures()[0];
-				const tempLineCoords = tempLine.getGeometry().flatCoordinates;
+				const tempLineCoords = tempLine!.getGeometry().flatCoordinates;
 
 				const highlightFeature = new window.ol.Feature<'highlights'>({
 					geometry : new window.ol.geom.Circle([ tempLineCoords.slice(tempLineCoords.length - 2) ], 16),
@@ -3925,9 +3988,9 @@ type ApiProfileData = {
 		regions: CoordsMap<OlRegionCoords, OlRegion> = new CoordsMap();
 		linesMap: CoordsMap<OlCoords, { coords: OlCoords; mine: boolean}[]> = new CoordsMap();
 		regionsMap: CoordsMap<OlLineCoords, { region: OlRegion, mine: boolean}[]> = new CoordsMap();
-		data: BuilderData;
+		data: BuilderData = new BuilderData(this);
 		startPoint?: OlPoint;
-		ownTeam: Team;
+		ownTeam: Team = 0;
 		drawTeam: Team = 4;
 		maxDrawAttempts = 3;
 
@@ -3986,7 +4049,7 @@ type ApiProfileData = {
 				const matches = style.match(/team-(\d+)/);
 
 				if (matches) {
-					this.ownTeam = parseInt(matches[1]) as Team;
+					this.ownTeam = parseInt(matches[1]!) as Team;
 				}
 			}
 
@@ -4075,11 +4138,16 @@ type ApiProfileData = {
 				if (this.features.builder.getState()) {
 					this.mapClick(ev);
 				} else {
-					originalMapClick(ev);
+					if (originalMapClick) {
+						originalMapClick(ev);
+					}
 				}
 			};
 
-			window.__sbg_variable_map.get().un('click', originalMapClick);
+			if (originalMapClick) {
+				window.__sbg_variable_map.get().un('click', originalMapClick);
+			}
+
 			window.__sbg_variable_map.get().on('click', extendedMapClick);
 		}
 
@@ -4137,7 +4205,13 @@ type ApiProfileData = {
 				this.pointStyles[point.getId()] = point.getStyle();
 				point.setStyle(window.__sbg_variable_FeatureStyles.get().POINT(point.getGeometry().flatCoordinates, this.drawTeam, 1, true));
 			} else {
-				point.setStyle(this.pointStyles[point.getId()]);
+				const style = this.pointStyles[point.getId()];
+
+				if (style) {
+					point.setStyle(style);
+				} else {
+					throw `Attempt to get non-existing style for point id = '${point.getId()}'`;
+				}
 			}
 		}
 
@@ -4181,6 +4255,8 @@ type ApiProfileData = {
 							return this.data.paste(true);
 					}
 				}
+
+				return false;
 			});
 		}
 
@@ -4197,7 +4273,7 @@ type ApiProfileData = {
 			const arcCoords: OlLineCoords[] = [];
 
 			for (let i = 1; i < coordsList.length; i++) {
-				const arc = window.turf.greatCircle(coordsList[i - 1], coordsList[i], { npoints : this.getNPoints() });
+				const arc = window.turf.greatCircle(coordsList[i - 1]!, coordsList[i]!, { npoints : this.getNPoints() });
 				arcCoords.push(arc.geometry.coordinates);
 			}
 
@@ -4212,8 +4288,8 @@ type ApiProfileData = {
 		getLineCoords(line: OlLine): OlLineCoords {
 			const { flatCoordinates } = line.getGeometry();
 
-			const startCoords = this.getCoords([ flatCoordinates[0], flatCoordinates[1] ]);
-			const endCoords   = this.getCoords([ flatCoordinates[flatCoordinates.length - 2], flatCoordinates[flatCoordinates.length - 1] ]);
+			const startCoords = this.getCoords([ flatCoordinates[0]!, flatCoordinates[1]! ]);
+			const endCoords   = this.getCoords([ flatCoordinates[flatCoordinates.length - 2]!, flatCoordinates[flatCoordinates.length - 1]! ]);
 
 			return this.createLineCoords(startCoords, endCoords);
 		}
@@ -4221,9 +4297,9 @@ type ApiProfileData = {
 		getRegionCoords(region: OlRegion): OlRegionCoords {
 			const { flatCoordinates } = region.getGeometry();
 
-			const startCoords  = this.getCoords([ flatCoordinates[0], flatCoordinates[1] ]);
-			const middleCoords = this.getCoords([ flatCoordinates[flatCoordinates.length * 1 / 3], flatCoordinates[flatCoordinates.length * 1 / 3 + 1] ]);
-			const endCoords    = this.getCoords([ flatCoordinates[flatCoordinates.length * 2 / 3], flatCoordinates[flatCoordinates.length * 2 / 3 + 1] ]);
+			const startCoords  = this.getCoords([ flatCoordinates[0]!, flatCoordinates[1]! ]);
+			const middleCoords = this.getCoords([ flatCoordinates[flatCoordinates.length * 1 / 3]!, flatCoordinates[flatCoordinates.length * 1 / 3 + 1]! ]);
+			const endCoords    = this.getCoords([ flatCoordinates[flatCoordinates.length * 2 / 3]!, flatCoordinates[flatCoordinates.length * 2 / 3 + 1]! ]);
 
 			return this.createRegionCoords(startCoords, middleCoords, endCoords);
 		}
@@ -4286,7 +4362,7 @@ type ApiProfileData = {
 			feature.setId(id);
 			feature.setProperties({ team : this.drawTeam, mine : true });
 			feature.setStyle(new window.ol.style.Style({
-				stroke : new window.ol.style.Stroke({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam].stroke, width : 2 }),
+				stroke : new window.ol.style.Stroke({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.stroke || '', width : 2 }),
 			}));
 
 			const source        = layers.get(layerName).getSource();
@@ -4333,7 +4409,7 @@ type ApiProfileData = {
 			feature.setId(id);
 			feature.setProperties({ team : this.drawTeam, mine : true, shared });
 			feature.setStyle(new window.ol.style.Style({
-				fill : new window.ol.style.Fill({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam].fill }),
+				fill : new window.ol.style.Fill({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.fill || '' }),
 			}));
 
 			const layer         = layers.get(layerName);
@@ -4381,12 +4457,12 @@ type ApiProfileData = {
 				if (!confirm(labels.builder.messages.deleteHome.toString())) {
 					return false;
 				}
-				delete localStorage.homeCoords;
+				delete localStorage['homeCoords'];
 			} else {
 				if (!confirm(labels.builder.messages.setHome.toString())) {
 					return false;
 				}
-				localStorage.homeCoords = JSON.stringify(window.__sbg_variable_map.get().getView().getCenter());
+				localStorage['homeCoords'] = JSON.stringify(window.__sbg_variable_map.get().getView().getCenter());
 			}
 
 			return true;
@@ -4467,6 +4543,7 @@ type ApiProfileData = {
 
 			const route = this.data.getRoute();
 			$('.route.popup').find('textarea').val(route).end().removeClass('hidden');
+			return undefined;
 		}
 
 		async copy(previousState: boolean) {
@@ -4488,11 +4565,47 @@ type ApiProfileData = {
 		private state: { value: boolean };
 		button: JQuery<HTMLElement>;
 
-		constructor({ name, action, initialState, label, buttonContainer, builder }: { name: BuilderButtons, buttonContainer: JQuery<HTMLElement>, initialState: boolean, label: BuilderButtonLabel, action: BuilderAction, builder: Builder }) {
+		constructor({
+			name,
+			action,
+			initialState,
+			label,
+			buttonContainer,
+			builder,
+		}: {
+			name: BuilderButtons,
+			buttonContainer: JQuery<HTMLElement>,
+			initialState: boolean,
+			label: BuilderButtonLabel,
+			action: BuilderAction,
+			builder: Builder
+		}) {
 			this.name   = name;
 			this.action = action.bind(builder);
 			this.button = this.createButton(label, buttonContainer);
-			this.initState(initialState);
+
+			const value = this.loadState(initialState);
+
+			this.state = new Proxy<typeof this.state>({ value }, {
+				get : (
+					data: typeof this.state,
+					property: keyof typeof this.state,
+				): boolean => data[property],
+
+				set : (
+					data: typeof this.state,
+					property: keyof typeof this.state,
+					value: typeof this.state[keyof typeof this.state],
+				): boolean => {
+					const storageKey         = this.getStorageKey();
+					localStorage[storageKey] = value ? '1' : '0';
+					data[property]           = value;
+					this.setButtonState();
+					return true;
+				},
+			});
+
+			this.setButtonState();
 		}
 
 		getState(): boolean {
@@ -4505,23 +4618,6 @@ type ApiProfileData = {
 
 		setButtonState() {
 			this.button.toggleClass('active', this.state.value);
-		}
-
-		private initState(initialState: boolean) {
-			const value = this.loadState(initialState);
-
-			this.state = new Proxy<typeof this.state>({ value }, {
-				get : (data: typeof this.state, property: keyof typeof this.state): boolean => data[property],
-				set : (data: typeof this.state, property: keyof typeof this.state, value: typeof this.state[keyof typeof this.state]): boolean => {
-					const storageKey         = this.getStorageKey();
-					localStorage[storageKey] = value ? '1' : '0';
-					data[property]           = value;
-					this.setButtonState();
-					return true;
-				},
-			});
-
-			this.setButtonState();
 		}
 
 		private loadState(initialState: boolean): boolean {
@@ -4611,7 +4707,11 @@ type ApiProfileData = {
 			const parsed = this.parse(text);
 
 			if ('error' in parsed) {
-				alert(parsed.error.toString());
+				if (parsed.error) {
+					alert(parsed.error.toString());
+				} else {
+					alert(labels.builder.validationErrors.unknownError.toString());
+				}
 				return;
 			}
 
@@ -4620,6 +4720,8 @@ type ApiProfileData = {
 			for (const lineCoords of data) {
 				this.builder.buildLine(lineCoords);
 			}
+
+			return undefined;
 		}
 
 		private static pack(data: LineData[]): BuilderDataPack {
@@ -4650,7 +4752,7 @@ type ApiProfileData = {
 			return data;
 		}
 
-		private parse(text: string): { pack: BuilderDataPack} | {error: Label } {
+		private parse(text: string): { pack: BuilderDataPack } | { error: Label | undefined } {
 			let pack;
 
 			try {
@@ -4668,16 +4770,17 @@ type ApiProfileData = {
 			return { pack };
 		}
 
-		async copy(previousState: boolean) {
+		async copy(previousState: boolean) : Promise<boolean | undefined> {
 			if (!previousState) {
 				return false;
 			}
 
 			await navigator.clipboard.writeText(JSON.stringify(BuilderData.pack(this.data)));
 			alert(labels.builder.messages.copied.toString());
+			return undefined;
 		}
 
-		async paste(previousState: boolean) {
+		async paste(previousState: boolean) : Promise<boolean | undefined> {
 			if (!previousState) {
 				return false;
 			}
@@ -4689,6 +4792,7 @@ type ApiProfileData = {
 			}
 
 			this.set(text);
+			return undefined;
 		}
 
 		getRoute(): string {
@@ -4714,27 +4818,28 @@ type ApiProfileData = {
 	}
 
 	class PointData {
-		guid: OlGuid;
-		title: string;
-		coords: OlCoords;
-
-		private constructor() {}
+		private constructor(
+			public guid: OlGuid,
+			public title: string,
+			public coords: OlCoords,
+		) {}
 
 		static async resolve(point: OlPoint, builder: Builder): Promise<PointData> {
-			const pointData  = new PointData();
-			pointData.guid   = point.getId();
-			pointData.title  = await PointData.getPointTitle(pointData.guid, builder.points);
-			pointData.coords = builder.getPointCoords(point);
-			return pointData;
+			const guid   = point.getId();
+			const title  = await PointData.getPointTitle(guid, builder.points);
+			const coords = builder.getPointCoords(point);
+			return new PointData(guid, title, coords);
 		}
 
 		private static async getPointTitle(guid: OlGuid, points: Builder['points']): Promise<string> {
-			if (!points[guid]) {
-				const { response } = await window.__sbg_function_apiQuery('point', { guid });
-				points[guid]       = response.data.t;
+			const point = points[guid];
+
+			if (point) {
+				return point;
 			}
 
-			return points[guid];
+			const { response } = await window.__sbg_function_apiQuery('point', { guid });
+			return points[guid] = response.data.t;
 		}
 	}
 
@@ -4748,7 +4853,7 @@ type ApiProfileData = {
 
 	class BuilderDataPackValidator {
 		private validationErrors: Labels['builder']['validationErrors'];
-		private validationError: Label;
+		private validationError: Label | undefined;
 
 		constructor(validationErrors: Labels['builder']['validationErrors']) {
 			this.validationErrors = validationErrors;
@@ -4894,9 +4999,7 @@ type ApiProfileData = {
 		}
 
 		forEach(func: (value: V, key: string) => void) {
-			for (const key in this.data) {
-				func(this.data[key], key);
-			}
+			Object.entries(this.data).forEach(([ key, value ]) => func(value, key));
 		}
 
 		deleteMine(key: K | string) {
@@ -4926,14 +5029,14 @@ type ApiProfileData = {
 	}
 
 	class SettingsPopup {
-		private container: JQuery<HTMLElement>;
+		private container: JQuery<HTMLElement> | undefined;
 		private sections = {} as Record<FeatureGroup, JQuery<HTMLElement>>;
 		private checkboxes = {} as Record<string, JQuery<HTMLElement>>;
 
 		constructor() {
 			this.render();
 
-			Object.keys(features.groups).map((group: FeatureGroup) => {
+			Object.ownKeys(features.groups).map((group: FeatureGroup) => {
 				const groupFeatures = features.groups[group].filter((feature) => feature.isAvailable());
 
 				if (groupFeatures.length === 0 && group !== 'custom') {
@@ -5000,19 +5103,24 @@ type ApiProfileData = {
 			const sectionTitle   = $('<h4></h4>').text(new Label(featureGroup).toString());
 			const section        = $('<div></div>').addClass('settings-section').append(sectionTitle);
 			this.sections[group] = section;
-			this.container.append(section);
+
+			if (this.container) {
+				this.container.append(section);
+			} else {
+				throw `Attempt to render section of group '${group}' to non existing container. Please render this.render() before adding groups`;
+			}
 		}
 
-		addFeature(feature: FeatureBase<unknown, unknown>) {
+		addFeature(feature: FeatureBase<any, any>) {
 			const checkbox = this.renderFeatureCheckbox(feature);
 			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
 			this.sections[feature.group].find('h4').before(setting);
 			this.checkboxes[feature.key] = checkbox;
 		}
 
-		check(feature: FeatureBase<unknown, unknown>, value: boolean) {
+		check(feature: FeatureBase<any, any>, value: boolean) {
 			settings.setFeature(feature.key, value);
-			this.checkboxes[feature.key].prop('checked', value);
+			this.checkboxes[feature.key]?.prop('checked', value);
 		}
 
 		private renderSetting(isSimple: boolean, ...children: Array<Label | JQuery<HTMLElement>>) {
@@ -5026,7 +5134,7 @@ type ApiProfileData = {
 			return settingLabel;
 		}
 
-		private renderFeatureCheckbox(feature: FeatureBase<unknown, unknown>) {
+		private renderFeatureCheckbox(feature: FeatureBase<any, any>) {
 			return ($('<input type="checkbox" />') as JQuery<HTMLInputElement>)
 				.prop('checked', feature.isEnabled())
 				.on('change', (ev) => {

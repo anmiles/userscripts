@@ -12,24 +12,24 @@
   "engines": {
     "node": ">=18.14.2"
   },
-  "main": "dist/index.js",
   "scripts": {
     "build": "npm-run-all build:*",
-    "build:compile": "tsc",
+    "build:compile": "rimraf dist && tsc -p ./tsconfig.build.json",
     "build:minify": "node scripts/minify.js",
-    "lint": "eslint --ext .js,.ts .",
+    "lint": "eslint --ext .js,.ts --ignore-path .gitignore .",
     "lint:fix": "npm run lint -- --fix"
   },
   "devDependencies": {
-    "@anmiles/eslint-config": "^2.0.2",
-    "@anmiles/prototypes": "^6.0.1",
+    "@anmiles/eslint-config": "^5.0.0",
+    "@anmiles/prototypes": "^7.0.0",
+    "@anmiles/tsconfig": "^2.0.0",
     "@types/jquery": "^3.5.29",
-    "@typescript-eslint/eslint-plugin": "^6.16.0",
-    "@typescript-eslint/parser": "^6.16.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-plugin-align-assignments": "^1.1.2",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jest": "^27.6.0",
+    "eslint-plugin-jest": "^27.6.3",
     "jest": "^29.7.0",
     "npm-run-all": "^4.1.5",
     "terser": "^5.26.0",
