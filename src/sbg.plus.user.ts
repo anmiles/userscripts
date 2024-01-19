@@ -114,10 +114,10 @@ interface DeviceOrientationEvent {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Object {
-	ownKeys: <K extends string, V>(obj: Record<K, V> | Partial<Record<K, V>>, allKeys?: readonly K[]) => K[],
+	typedKeys: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly K[]) => K[],
 }
 
-Object.ownKeys = <K extends string, V>(obj: Record<K, V> | Partial<Record<K, V>>, allKeys?: readonly K[]): K[] => {
+Object.typedKeys = <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly K[]): K[] => {
 	function isOwnKey(key: keyof any): key is K {
 		return allKeys?.includes(key as K) ?? true;
 	}
@@ -1061,7 +1061,9 @@ type ApiProfileData = {
 
 	console.log('created settings');
 
-	const featureGroups = {
+	const featureGroupNames = [ 'scripts', 'base', 'cui', 'eui', 'animations', 'toolbar', 'fire', 'inventory', 'leaderboard', 'info', 'buttons', 'draw', 'other', 'custom', 'tests' ] as const;
+
+	const featureGroups: Record<typeof featureGroupNames[number], LabelValues> = {
 		scripts     : { ru : 'Скрипты', en : 'Scripts' },
 		base        : { ru : 'Основные настройки', en : 'Basic settings' },
 		cui         : { ru : 'Скрипт Николая', en : 'Nicko script' },
@@ -1278,7 +1280,7 @@ type ApiProfileData = {
 
 		constructor() {
 			super(featuresEventTypes);
-			Object.ownKeys(featureGroups).map((key: FeatureGroup) => this.groups[key] = []);
+			Object.typedKeys(featureGroups, featureGroupNames).map((key: FeatureGroup) => this.groups[key] = []);
 			featureTriggers.map((key) => this.triggers[key] = []);
 		}
 
@@ -5036,7 +5038,7 @@ type ApiProfileData = {
 		constructor() {
 			this.render();
 
-			Object.ownKeys(features.groups).map((group: FeatureGroup) => {
+			Object.typedKeys(features.groups, featureGroupNames).map((group: FeatureGroup) => {
 				const groupFeatures = features.groups[group].filter((feature) => feature.isAvailable());
 
 				if (groupFeatures.length === 0 && group !== 'custom') {
