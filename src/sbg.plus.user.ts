@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.61
+// @version        0.9.62
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.61';
+window.__sbg_plus_version = '0.9.62';
 
 interface Window {
 	ol: Ol;
@@ -3064,6 +3064,11 @@ type ApiProfileData = {
 				--ingress-btn-border-color: var(--sbgcui-branding-color);
 				--ingress-btn-bg-color: var(--ol-background-color);
 				--ingress-btn-glow-color: transparent;
+
+				--ingress-btn-hl-color: var(--sbgcui-branding-color);
+				--ingress-btn-hl-border-color: var(--sbgcui-branding-color);
+				--ingress-btn-hl-bg-color: var(--ol-background-color);
+				--ingress-btn-hl-glow-color: transparent;
 			}
 
 			.ol-control button {
@@ -3095,7 +3100,7 @@ type ApiProfileData = {
 	}
 
 	function replaceHighlevelWarningWithIcon(attackSlider: JQuery<HTMLElement>) {
-		const sliderHeight = attackSlider.height();
+		const sliderHeight = attackSlider.outerHeight();
 
 		setCSS(`
 			#attack-slider {
@@ -3104,20 +3109,29 @@ type ApiProfileData = {
 
 			.attack-slider-highlevel {
 				pointer-events: none;
-				font-size: 36px;
-				width: 1px;
+				position: relative;
+				bottom: -${sliderHeight}px;
 				height: ${sliderHeight}px;
-				margin: -${sliderHeight}px auto 0 auto;
+				padding: 2px;
+				box-sizing: border-box;
+				text-align: center;
 				background: none;
 				backdrop-filter: none;
 				-webkit-backdrop-filter: none;
-				text-align: center;
-				display: block;
 				z-index: 1;
+				font-size: 0;
+			}
+			.attack-slider-highlevel svg {
+				max-height: 100%;
 			}
 		`);
 
-		$('.attack-slider-highlevel').html('&#x20e0');
+		$('.attack-slider-highlevel').append(`
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+				<circle r="47" cx="50" cy="50" fill="none" stroke="red" stroke-width="6"></circle>
+				<line x1="15" y1="15" x2="85" y2="85" stroke="red" stroke-width="6"></line>
+			</svg>
+		`);
 	}
 
 	function joinFireButtons(attackMenu: JQuery<HTMLElement>) {
@@ -3145,12 +3159,19 @@ type ApiProfileData = {
 				left: -50%;
 			}
 
-			#attack-menu.sbgcui_attack-menu-rotate::after {
-				background: var(--ingress-selection-color);
+			#attack-menu {
+				opacity: 0.7;
 			}
 
 			#attack-menu.sbgcui_attack-menu-rotate {
-				border-color: var(--ingress-selection-color);
+				border-color: var(--sbgcui-branding-color) !important;
+				width: 80px !important;
+				height: 80px !important;
+				opacity: 1;
+			}
+
+			#attack-menu.sbgcui_attack-menu-rotate::after {
+				background: var(--sbgcui-branding-color) !important;
 			}
 		`);
 
