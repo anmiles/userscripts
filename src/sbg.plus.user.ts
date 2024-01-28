@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.58
+// @version        0.9.59
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.58';
+window.__sbg_plus_version = '0.9.59';
 
 interface Window {
 	ol: Ol;
@@ -1452,6 +1452,10 @@ type ApiProfileData = {
 		{ ru : 'Показать кнопку перезагрузки в компактном режиме', en : 'Show reload button in compact mode' },
 		{ public : true, group, trigger : 'mapReady' });
 
+	new Feature(applyCustomTeamColorToAllControlsUsingIngressTheme,
+		{ ru : 'Применять собственный цвет команды ко всем элементам в теме Ingress', en : 'Apply custom team color to all controls using Ingress theme' },
+		{ public : true, group, trigger : 'mapReady', unchecked : true });
+
 	group = 'animations';
 
 	new Feature(disableCarouselAnimation,
@@ -1987,6 +1991,14 @@ type ApiProfileData = {
 			className     : 'interaction-toast',
 		}).showToast();
 	}
+
+	// function replaceColor(selector: string, propertyName: string, color: string) {
+	// 	setCSS(`
+	// 		${selector} {
+	// 			${propertyName}: ${$(selector).css(propertyName).replace(/rgba?\(.*?\)/, color).replace(/\s+!important/, '')} !important;
+	// 		}
+	// 	`);
+	// }
 
 	function addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLike: LayerName) {
 		const source = new window.ol.source.Vector<TLayerName>();
@@ -3041,6 +3053,22 @@ type ApiProfileData = {
 				position: absolute;
 				top: 0.75em;
 				right: 0.75em;
+			}
+		`);
+	}
+
+	function applyCustomTeamColorToAllControlsUsingIngressTheme() {
+		setCSS(`
+			:root {
+				--ingress-btn-color: var(--sbgcui-branding-color);
+				--ingress-btn-border-color: var(--sbgcui-branding-color);
+				--ingress-btn-bg-color: var(--ol-background-color);
+				--ingress-btn-glow-color: transparent;
+			}
+
+			.ol-control button {
+				box-shadow: none !important;
+				border: none !important;
 			}
 		`);
 	}
