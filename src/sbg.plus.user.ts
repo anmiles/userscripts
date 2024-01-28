@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.60
+// @version        0.9.61
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.60';
+window.__sbg_plus_version = '0.9.61';
 
 interface Window {
 	ol: Ol;
@@ -2513,7 +2513,7 @@ type ApiProfileData = {
 			}
 
 			.sbg-plus-popup .popup-button-secondary {
-				filter: grayscale(1);
+				filter: grayscale(0.4);
 			}
 		`);
 
