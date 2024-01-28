@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.59
+// @version        0.9.60
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.59';
+window.__sbg_plus_version = '0.9.60';
 
 interface Window {
 	ol: Ol;
@@ -1452,8 +1452,8 @@ type ApiProfileData = {
 		{ ru : 'Показать кнопку перезагрузки в компактном режиме', en : 'Show reload button in compact mode' },
 		{ public : true, group, trigger : 'mapReady' });
 
-	new Feature(applyCustomTeamColorToAllControlsUsingIngressTheme,
-		{ ru : 'Применять собственный цвет команды ко всем элементам в теме Ingress', en : 'Apply custom team color to all controls using Ingress theme' },
+	new Feature(useTeamColorForButtonsInIngressTheme,
+		{ ru : 'Использовать цвет команды для кнопок в теме Ingress', en : 'Use team color for buttons in Ingress theme' },
 		{ public : true, group, trigger : 'mapReady', unchecked : true });
 
 	group = 'animations';
@@ -3057,7 +3057,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function applyCustomTeamColorToAllControlsUsingIngressTheme() {
+	function useTeamColorForButtonsInIngressTheme() {
 		setCSS(`
 			:root {
 				--ingress-btn-color: var(--sbgcui-branding-color);
