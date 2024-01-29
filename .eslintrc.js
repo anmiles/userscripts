@@ -13,6 +13,11 @@ module.exports = {
 		EventListener                      : true,
 		EventListenerOrEventListenerObject : true,
 	},
+	ignorePatterns : [
+		'**/node_modules/',
+		'dist/',
+		'ext/',
+	],
 	rules : {
 		'@typescript-eslint/no-unused-vars' : [ 'error', { args : 'none' } ],
 		'camelcase'                         : [ 'error', { allow : [ '^_(_[a-z][A-Za-z]+)+$' ] } ],
