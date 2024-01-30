@@ -6,32 +6,31 @@
     "userscripts"
   ],
   "author": "Anatoliy Oblaukhov",
-  "homepage": "https://gitlab.com/anmiles/userscripts",
-  "repository": "gitlab:anmiles/userscripts",
+  "homepage": "https://github.com/anmiles/userscripts",
+  "repository": "github:anmiles/userscripts",
   "license": "MIT",
   "engines": {
     "node": ">=18.14.2"
   },
   "scripts": {
-    "build": "npm-run-all build:*",
-    "build:compile": "rimraf dist && tsc -p ./tsconfig.build.json",
-    "build:minify": "node scripts/minify.js",
+    "build": "rimraf dist && tsc -p ./tsconfig.build.json",
+    "build:ci": "tsc -noEmit -p ./tsconfig.build.json",
+    "minify": "node scripts/minify.js",
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "npm run lint -- --fix"
   },
   "devDependencies": {
-    "@anmiles/eslint-config": "^5.0.0",
-    "@anmiles/prototypes": "^9.0.0",
-    "@anmiles/tsconfig": "^2.0.0",
+    "@anmiles/eslint-config": "^5.0.2",
+    "@anmiles/prototypes": "^9.0.2",
+    "@anmiles/tsconfig": "^2.0.1",
     "@types/jquery": "^3.5.29",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
     "eslint": "^8.56.0",
     "eslint-plugin-align-assignments": "^1.1.2",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jest": "^27.6.3",
     "jest": "^29.7.0",
-    "npm-run-all": "^4.1.5",
     "terser": "^5.27.0",
     "typescript": "^5.3.3"
   }

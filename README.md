@@ -2,4 +2,4 @@
 
 Userscripts for browsers
 
-See https://anmiles.net/userscripts for usage
+See https://anmiles.net/userscripts for details
