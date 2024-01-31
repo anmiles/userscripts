@@ -3,7 +3,10 @@
   "version": "3.0.6",
   "description": "Userscripts for browsers",
   "keywords": [
-    "userscripts"
+    "userscripts",
+    "parser",
+    "customization",
+    "maps"
   ],
   "author": "Anatoliy Oblaukhov",
   "homepage": "https://github.com/anmiles/userscripts",
