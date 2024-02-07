@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.63
+// @version        0.9.64
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.63';
+window.__sbg_plus_version = '0.9.64';
 
 interface Window {
 	ol: Ol;
@@ -56,6 +56,7 @@ interface Window {
 	__sbg_variable_is_dark: ReadableVariable<boolean>;
 	__sbg_variable_ItemTypes: ReadableVariable<string[]>;
 	__sbg_variable_map: ReadableVariable<OlMap>;
+	__sbg_variable_self_data: WritableVariable<SelfData>;
 	__sbg_variable_TeamColors: ReadableVariable<OlTeamColors>;
 	__sbg_variable_temp_lines_source: ReadableVariable<OlSource<'temp_lines'>>;
 	__sbg_variable_units: ReadableVariable<Array<[RegExp, string]>>;
@@ -426,6 +427,15 @@ type CUIConfig = {
 		interval: number,
 		duration: number,
 	},
+}
+
+type SelfData = {
+	g: string;
+	l: number;
+	n: string;
+	t: number;
+	td: boolean;
+	x: number;
 }
 
 type Notif = {
@@ -1409,6 +1419,10 @@ type ApiProfileData = {
 	new Feature(fixCompass,
 		{ ru : 'Починить компас', en : 'Fix compass' },
 		{ public : true, group, trigger : 'mapReady' });
+
+	new Feature(showLevelUpCongratulations,
+		{ ru : 'Показывать поздравления с новым уровнем', en : 'Show level-up congratulations' },
+		{ public : true, group, trigger : 'mapReady', requires : () => window.__sbg_variable_self_data });
 
 	group = 'cui';
 
@@ -2397,6 +2411,7 @@ type ApiProfileData = {
 		return script.expose('__sbg', {
 			variables : {
 				readable : [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
+				writable : [ 'self_data' ],
 			},
 			functions : {
 				readable : [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
@@ -3047,6 +3062,98 @@ type ApiProfileData = {
 					console.warn('DeviceOrientationEvent permission is not granted');
 				}
 			});
+	}
+
+	function showLevelUpCongratulations() {
+		const storageKey = 'lastUserLevel';
+		const selfData   = window.__sbg_variable_self_data.get();
+
+		if (!localStorage[storageKey]) {
+			localStorage[storageKey] = selfData.l;
+		}
+
+		const congratulation = $(`
+			<h3>New access</h3>
+			<p>Level <span class="value"></span></p>
+			<p>🎉</p>
+		`);
+
+		const popup = $('<div></div>')
+			.addClass('levelup')
+			.append(congratulation)
+			.hide()
+			.appendTo('body');
+
+		const showPopup = () => {
+			popup
+				.find('.value')
+				.text(localStorage[storageKey])
+				.end()
+				.show();
+
+			setTimeout(() => {
+				$(window).on('click.levelup', () => {
+					popup.hide();
+					$(window).off('click.levelup');
+				});
+			});
+		};
+
+		const checkPopup = (newValue: number) => {
+			if (newValue.toString() !== localStorage[storageKey]) {
+				localStorage[storageKey] = newValue.toString();
+				showPopup();
+			}
+		};
+
+		document.querySelector('#self-info__explv')!
+			.addRepeatingEventListener('click', () => showPopup(), {
+				repeats : 3,
+				timeout : 1000,
+			});
+
+		window.__sbg_variable_self_data.set(new Proxy(selfData, {
+			set : (_target, property, newValue) => {
+				if (property === 'l') {
+					checkPopup(newValue);
+				}
+
+				return true;
+			},
+		}));
+
+		checkPopup(selfData.l);
+
+		setCSS(`
+			.levelup {
+				width: calc(100% - 120px);
+				border: 2px solid #fdba3e !important;
+				background-color: hsl(41deg 54% 7% / 80%);
+				padding: 20px 0 !important;
+				text-transform: uppercase;
+				text-align: center;
+				position: absolute;
+				z-index: 1;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+			}
+
+			.levelup h3 {
+				margin: 0;
+				color: #fed647;
+			}
+
+			.levelup p {
+				font-size: 14vw;
+				color: #feebb4;
+				margin: 0;
+			}
+
+			#self-info__explv {
+				pointer-events: auto;
+			}
+		`);
 	}
 
 	/* eui */
