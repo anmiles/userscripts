@@ -2481,6 +2481,10 @@ type ApiProfileData = {
 				display: flex;
 			}
 
+			.sbg-plus-settings .settings-section__item input[type="checkbox"] {
+				padding: 0 1em;
+			}
+
 			.sbg-plus-settings .settings-section__item span {
 				flex-grow: 1;
 			}
