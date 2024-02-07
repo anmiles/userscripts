@@ -343,7 +343,9 @@ type I18Next = {
 	translator: unknown;
 }
 
-type UrlType = 'desktop' | 'mobile' | 'script' | 'intel' | 'cui' | 'eui';
+const urlTypes = [ 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
+
+type UrlType = typeof urlTypes[number];
 
 type Urls = Record<UrlType, {
 	local: string;
@@ -2223,11 +2225,11 @@ type ApiProfileData = {
 	}
 
 	function initUrls() {
-		if (window.__sbg_urls) {
-			return;
-		}
+		// which urls should be always loaded by forced values below
+		// TODO: remove "eui" in the new version of the APK
+		const alwaysForced: UrlType[] = [ 'eui' ];
 
-		window.__sbg_urls = {
+		const forcedUrls: typeof window.__sbg_urls = {
 			desktop : {
 				local  : 'sbg.plus.user.js',
 				remote : 'https://anmiles.net/userscripts/sbg.plus.user.js',
@@ -2250,10 +2252,17 @@ type ApiProfileData = {
 			},
 			eui : {
 				local  : 'egor.js',
-				remote : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/index.js',
+				remote : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
 			},
 		};
 
+		window.__sbg_urls = window.__sbg_urls || {} as typeof window.__sbg_urls;
+
+		for (const urlType of urlTypes) {
+			if (alwaysForced.includes(urlType) || !(urlType in window.__sbg_urls)) {
+				window.__sbg_urls[urlType] = forcedUrls[urlType];
+			}
+		}
 	}
 
 	function fixPermissionsCompatibility() {
