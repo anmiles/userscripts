@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.65
+// @version        0.9.66
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.65';
+window.__sbg_plus_version = '0.9.66';
 
 interface Window {
 	ol: Ol;
@@ -3113,9 +3113,11 @@ type ApiProfileData = {
 			});
 
 		window.__sbg_variable_self_data.set(new Proxy(selfData, {
-			set : (_target, property, newValue) => {
+			set : <K extends keyof SelfData>(target: SelfData, property: K, newValue: SelfData[K]) => {
+				target[property] = newValue;
+
 				if (property === 'l') {
-					checkPopup(newValue);
+					checkPopup(Number(newValue));
 				}
 
 				return true;
