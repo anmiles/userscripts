@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.68
+// @version        0.9.70
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.68';
+window.__sbg_plus_version = '0.9.70';
 
 interface Window {
 	ol: Ol;
@@ -3114,25 +3114,31 @@ type ApiProfileData = {
 			<p>🎉</p>
 		`);
 
+		const overlay = $('<div></div>')
+			.addClass('levelup-overlay')
+			.appendTo('body');
+
 		const popup = $('<div></div>')
 			.addClass('levelup')
 			.append(congratulation)
-			.hide()
-			.appendTo('body');
+			.appendTo(overlay);
 
 		const showPopup = () => {
 			popup
 				.find('.value')
-				.text(localStorage[storageKey])
-				.end()
-				.show();
+				.text(localStorage[storageKey]);
+
+			overlay
+				.addClass('active');
 
 			setTimeout(() => {
-				$(window).on('click.levelup', () => {
-					popup.hide();
-					$(window).off('click.levelup');
-				});
-			});
+				overlay
+					.on('click.close', () => {
+						overlay
+							.removeClass('active')
+							.off('click.close');
+					});
+			}, 1000);
 		};
 
 		const checkPopup = (newValue: number) => {
@@ -3163,15 +3169,33 @@ type ApiProfileData = {
 		checkPopup(selfData.l);
 
 		setCSS(`
+			.levelup-overlay {
+				position: fixed;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 1;
+				background: rgba(0, 0, 0, 0.6);
+				opacity: 0;
+				pointer-events: none;
+			}
+
+			.levelup-overlay.active {
+				opacity: 1;
+				transition: 1s opacity;
+				pointer-events: auto;
+			}
+
 			.levelup {
 				width: calc(100% - 120px);
 				border: 2px solid #fdba3e !important;
-				background-color: hsl(41deg 54% 7% / 90%);
+				background-color: hsl(41deg 54% 7%);
 				padding: 20px 0 !important;
 				text-transform: uppercase;
 				text-align: center;
 				position: absolute;
-				z-index: 1;
+				z-index: 2;
 				top: 50%;
 				left: 50%;
 				transform: translate(-50%, -50%);
