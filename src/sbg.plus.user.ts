@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.66
+// @version        0.9.67
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.66';
+window.__sbg_plus_version = '0.9.67';
 
 interface Window {
 	ol: Ol;
@@ -731,6 +731,7 @@ type ApiProfileData = {
 			cuiUpdated: Label;
 			localWarning: Label;
 			noGeoApp: Label;
+			featureSwitchedOff: Label;
 		}
 		builder: {
 			buttons: Record<BuilderButtons, BuilderButtonLabel>;
@@ -778,11 +779,23 @@ type ApiProfileData = {
 		) {
 		}
 
-		format(data: Record<string, string>): Label {
-			const formattedLabel = new Label(this.values);
+		format(data: Record<string, string | Label>): Label {
+			const formattedLabel = new Label({ ... this.values });
 
 			for (const lang of langs) {
-				formattedLabel.values[lang] = formattedLabel.values[lang].replace(/\$\{(.+?)\}/g, (_, key) => data[key] || '');
+				formattedLabel.values[lang] = formattedLabel.values[lang].replace(/\$\{(.+?)\}/g, (_, key) => {
+					const value = data[key];
+
+					if (!value) {
+						return '';
+					}
+
+					if (typeof value === 'string') {
+						return value;
+					}
+
+					return value.toString();
+				});
 			}
 
 			return formattedLabel;
@@ -848,6 +861,10 @@ type ApiProfileData = {
 			noGeoApp : new Label({
 				ru : 'Не найдено ни одного приложения карт. Координаты скопированы в буфер обмена.',
 				en : 'No any map application found. Coordinates has been copied to the clipboard.',
+			}),
+			featureSwitchedOff : new Label({
+				ru : '${label} временно не работает и отключён до исправления его автором',
+				en : '${label} is temporarily broken and disabled until fixing by its author',
 			}),
 		},
 		builder : {
@@ -1123,7 +1140,7 @@ type ApiProfileData = {
 		group: FeatureGroup;
 		trigger: FeatureTrigger;
 		abstract func: ((data: TData) => TArgument);
-		private public: boolean;
+		public: boolean;
 		private simple: boolean;
 		private desktop: boolean;
 		private unchecked: boolean | (() => boolean);
@@ -1384,7 +1401,7 @@ type ApiProfileData = {
 
 	new Feature(loadCUI,
 		{ ru : 'Скрипт Николая', en : 'Nicko script' },
-		{ public : true, simple : true, group, trigger : '' });
+		{ public : false, simple : true, group, trigger : '' });
 
 	new Feature(loadEUI,
 		{ ru : 'Скрипт Егора', en : 'Egor script' },
@@ -1966,6 +1983,7 @@ type ApiProfileData = {
 
 		window.__sbg_language = getLanguage();
 		detectLocal();
+		checkEssentialFeatures(features.get(loadCUI)!, features.get(loadEUI)!);
 		initFeedback();
 		initUrls();
 		fixPermissionsCompatibility();
@@ -2046,6 +2064,21 @@ type ApiProfileData = {
 	function detectLocal() {
 		if (window.__sbg_local && window.__sbg_preset !== 'full') {
 			alert(labels.toasts.localWarning.toString());
+		}
+	}
+
+	function checkEssentialFeatures(...features: FeatureBase<any, any>[]) {
+		for (const feature of features) {
+			const storageKey = `sbg-plus-disabled-${feature.key}`;
+
+			if (!feature.public) {
+				if (!localStorage[storageKey]) {
+					localStorage[storageKey] = 1;
+					alert(labels.toasts.featureSwitchedOff.format({ label : feature.label }));
+				}
+			} else {
+				delete localStorage[storageKey];
+			}
 		}
 	}
 
