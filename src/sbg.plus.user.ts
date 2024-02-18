@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.69
+// @version        0.9.68
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.69';
+window.__sbg_plus_version = '0.9.68';
 
 interface Window {
 	ol: Ol;
@@ -3758,13 +3758,18 @@ type ApiProfileData = {
 	}
 
 	function arrangeButtons() {
+		const buttons = [
+			$('.sbgcui_jumpToButton'),
+			$('.info .popup-close'),
+			$('.sbgcui_navbutton'),
+		];
+
 		function toggle(value: boolean) {
-			[
-				'.sbgcui_jumpToButton',
-				'.info .popup-close',
-				'.sbgcui_navbutton',
-			].map((selector) => $(selector).appendTo(value ? '.i-stat .i-buttons' : '.info.popup'));
+			buttons.map((button) => button.appendTo(value ? '.i-stat .i-buttons' : '.info.popup'));
 		}
+
+		// back compatibility with other scripts' selectors
+		buttons.map((button) => button.clone().appendTo('.info.popup').hide());
 
 		features.on('toggle', ({ feature, value }) => {
 			if (feature.key === arrangeButtons.name) {
