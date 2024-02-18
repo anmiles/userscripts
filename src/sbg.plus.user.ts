@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.68
+// @version        0.9.69
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.68';
+window.__sbg_plus_version = '0.9.69';
 
 interface Window {
 	ol: Ol;
@@ -1127,6 +1127,7 @@ type ApiProfileData = {
 	interface FeatureOptions {
 		group: FeatureGroup;
 		trigger: FeatureTrigger;
+		broken?: boolean;
 		public?: boolean;
 		simple?: boolean;
 		desktop?: boolean;
@@ -1140,7 +1141,8 @@ type ApiProfileData = {
 		group: FeatureGroup;
 		trigger: FeatureTrigger;
 		abstract func: ((data: TData) => TArgument);
-		public: boolean;
+		broken: boolean;
+		private public: boolean;
 		private simple: boolean;
 		private desktop: boolean;
 		private unchecked: boolean | (() => boolean);
@@ -1158,6 +1160,7 @@ type ApiProfileData = {
 			this.group   = options.group;
 			this.trigger = options.trigger;
 
+			this.broken    = options.broken || false;
 			this.public    = options.public || false;
 			this.simple    = options.simple || false;
 			this.desktop   = options.desktop || false;
@@ -1171,8 +1174,8 @@ type ApiProfileData = {
 			features.inherit(this, value);
 		}
 
-		isEnabled(): boolean {
-			return this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled();
+		isEnabled(allowBroken = false): boolean {
+			return (!this.broken || allowBroken) && (this.isExplicitlyEnabled() ?? this.isImplicitlyEnabled());
 		}
 
 		isExplicitlyEnabled(): boolean | undefined {
@@ -1401,7 +1404,7 @@ type ApiProfileData = {
 
 	new Feature(loadCUI,
 		{ ru : 'Скрипт Николая', en : 'Nicko script' },
-		{ public : false, simple : true, group, trigger : '' });
+		{ broken : true, public : true, simple : true, group, trigger : '' });
 
 	new Feature(loadEUI,
 		{ ru : 'Скрипт Егора', en : 'Egor script' },
@@ -2069,12 +2072,12 @@ type ApiProfileData = {
 
 	function checkEssentialFeatures(...features: FeatureBase<any, any>[]) {
 		for (const feature of features) {
-			const storageKey = `sbg-plus-disabled-${feature.key}`;
+			const storageKey = `sbg-plus-feature-disabled-${feature.key}`;
 
-			if (!feature.public) {
+			if (!feature.isEnabled() && feature.isEnabled(true)) {
 				if (!localStorage[storageKey]) {
 					localStorage[storageKey] = 1;
-					alert(labels.toasts.featureSwitchedOff.format({ label : feature.label }));
+					alert(labels.toasts.featureSwitchedOff.format({ label : feature.label }).toString());
 				}
 			} else {
 				delete localStorage[storageKey];
