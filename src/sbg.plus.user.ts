@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.70
+// @version        0.9.71
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.70';
+window.__sbg_plus_version = '0.9.71';
 
 interface Window {
 	ol: Ol;
@@ -1404,7 +1404,7 @@ type ApiProfileData = {
 
 	new Feature(loadCUI,
 		{ ru : 'Скрипт Николая', en : 'Nicko script' },
-		{ broken : true, public : true, simple : true, group, trigger : '' });
+		{ public : true, simple : true, group, trigger : '' });
 
 	new Feature(loadEUI,
 		{ ru : 'Скрипт Егора', en : 'Egor script' },
