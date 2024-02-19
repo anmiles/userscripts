@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.71
+// @version        0.9.72
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.71';
+window.__sbg_plus_version = '0.9.72';
 
 interface Window {
 	ol: Ol;
@@ -3305,13 +3305,14 @@ type ApiProfileData = {
 			}
 			.attack-slider-highlevel svg {
 				max-height: 100%;
+				stroke: currentColor;
 			}
 		`);
 
 		$('.attack-slider-highlevel').append(`
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-				<circle r="47" cx="50" cy="50" fill="none" stroke="red" stroke-width="6"></circle>
-				<line x1="15" y1="15" x2="85" y2="85" stroke="red" stroke-width="6"></line>
+				<circle r="47" cx="50" cy="50" fill="none" stroke-width="6"></circle>
+				<line x1="15" y1="15" x2="85" y2="85" stroke-width="6"></line>
 			</svg>
 		`);
 	}
