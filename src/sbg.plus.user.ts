@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.74
+// @version        0.9.75
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.74';
+window.__sbg_plus_version = '0.9.75';
 
 interface Window {
 	ol: Ol;
@@ -80,7 +80,6 @@ interface Window {
 	__sbg_cui_function_olInjection: () => void;
 	__sbg_cui_function_loadMainScript: () => void;
 	__sbg_cui_function_clearInventory: (forceClear?: boolean, filteredLoot?: any[]) => Promise<void>;
-	__sbg_cui_function_toggleNavPopup: () => void;
 	__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => void;
 	__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
 }
@@ -860,7 +859,7 @@ type ApiProfileData = {
 			}),
 			noGeoApp : new Label({
 				ru : 'Не найдено ни одного приложения карт. Координаты скопированы в буфер обмена.',
-				en : 'No any map application found. Coordinates has been copied to the clipboard.',
+				en : 'Maps application is not found. Coordinates has been copied to the clipboard.',
 			}),
 			featureSwitchedOff : new Label({
 				ru : '${label} временно не работает и отключён до исправления его автором',
@@ -2680,7 +2679,7 @@ type ApiProfileData = {
 				},
 				functions : {
 					readable : [ 'clearInventory' ],
-					writable : [ 'toggleNavPopup', 'createToast', 'getNotifs' ],
+					writable : [ 'createToast', 'getNotifs' ],
 				},
 			});
 	}
@@ -2780,21 +2779,11 @@ type ApiProfileData = {
 				'Навигация и переход к точке',
 				'window.location.href = url',
 				`if (window['${obj}']['${func}'](url) === false) {
-					createToast('Приложение не установлено').showToast();
+					navigator.clipboard.writeText(lastOpenedPoint.coords);
+					createToast('${labels.toasts.noGeoApp.toString()}', 'top left', 3000).showToast();
 				}`,
 			)
 		;
-
-		// window.__sbg_cui_function_toggleNavPopup = function() {
-		// 	const [ lng, lat ]           = window.__sbg_cui_variable_lastOpenedPoint.get().coords;
-		// 	const coords: OlCoordsString = `${lat},${lng}`;
-		// 	const result                 = window[obj][func](coords);
-
-		// 	if (result === false) {
-		// 		navigator.clipboard.writeText(coords);
-		// 		showToast(labels.toasts.noGeoApp, 3000);
-		// 	}
-		// };
 	}
 
 	function disableClusters(script: Script): Script {
