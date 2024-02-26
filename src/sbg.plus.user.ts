@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.78
+// @version        0.9.79
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.78';
+window.__sbg_plus_version = '0.9.79';
 
 interface Window {
 	ol: Ol;
@@ -1191,7 +1191,15 @@ type ApiProfileData = {
 		}
 
 		isAvailable(): boolean {
-			return (isMobile() || this.desktop) && (this.public || this.getPreset() === 'full' || localStorage['sbg-plus-test-mode']);
+			return (
+				isMobile()
+				|| this.desktop
+			) && (
+				this.public
+				|| (localStorage['sbg-plus-last-username'] && protectedFeatures[localStorage['sbg-plus-last-username']]?.includes(this))
+				|| this.getPreset() === 'full'
+				|| localStorage['sbg-plus-test-mode']
+			);
 		}
 
 		isSimple(): boolean {
@@ -1668,6 +1676,11 @@ type ApiProfileData = {
 
 	presets['full'] = [];
 
+	const protectedFeatures: Record<string, Array<FeatureBase<any, any>>> = {
+		/* eslint-disable quote-props */
+		'MadMaxNsK' : [ features.get(joinFireButtons)! ],
+	};
+
 	features.inheritAll();
 
 	console.log('created features');
@@ -2014,6 +2027,7 @@ type ApiProfileData = {
 		initLayers();
 		execFeatures('mapReady');
 		execFireFeatures();
+		saveUsername();
 
 		console.log(`finished at ${new Date().toISOString()}`);
 	}
@@ -2676,6 +2690,10 @@ type ApiProfileData = {
 				execFeatures('fireClick');
 			}
 		});
+	}
+
+	function saveUsername() {
+		localStorage['sbg-plus-last-username'] = window.__sbg_variable_self_data.get().n;
 	}
 
 	function exposeCUIScript(script: Script): Script {
