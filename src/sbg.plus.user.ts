@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.75
+// @version        0.9.76
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.75';
+window.__sbg_plus_version = '0.9.76';
 
 interface Window {
 	ol: Ol;
@@ -668,7 +668,12 @@ type ApiProfileData = {
 	consoleWatcherEventTypes.map((eventType) => {
 		consoleWatcher.on(eventType, ({ message }) => {
 			const parts = logParts.filter((logPart) => logBuilder[logPart].enabled).map((logPart) => logBuilder[logPart].format(eventType, message));
-			logs.push(parts.join(' '));
+			const line  = parts.join(' ');
+			logs.push(line);
+
+			if (eventType === 'error' && window.__sbg_preset === 'full') {
+				alert(line);
+			}
 		}, {});
 	});
 
@@ -1735,12 +1740,21 @@ type ApiProfileData = {
 		}
 
 		replaceCUIBlock<TSearchValue extends string | RegExp>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
+			let replaced = false;
+
 			this.data = this.data
 				?.replace(
 					new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`),
-					(_data, open, _, block, close) => open + Script.replaceData(block, searchValue, replacer) + close,
+					(_data, open, _, block, close) => {
+						replaced = true;
+						return open + Script.replaceData(block, searchValue, replacer) + close;
+					},
 				)
 			;
+
+			if (!replaced) {
+				console.error(`replace CUI block '${block}': not found`);
+			}
 
 			return this;
 		}
