@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.77
+// @version        0.9.78
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.77';
+window.__sbg_plus_version = '0.9.78';
 
 interface Window {
 	ol: Ol;
@@ -1297,7 +1297,6 @@ type ApiProfileData = {
 		'toggle',
 	] as const;
 
-	// TODO: в других вотчерах должен быть такой же способ объявления типов аргументов для каждого метода
 	type FeaturesEventDataTypes = {
 		add: FeatureBase<any, any>,
 		inherit: { feature: FeatureBase<any, any>, value: boolean },
@@ -1461,14 +1460,6 @@ type ApiProfileData = {
 	new Transformer(unlockCompassWhenRotateMap,
 		{ ru : 'Разблокировать компас при вращении карты', en : 'Unlock compass when rotate map' },
 		{ public : true, group, trigger : 'cuiTransform' });
-
-	new Transformer(alwaysClearInventory,
-		{ ru : 'Запускать авточистку инвентаря после каждого дискавера', en : 'Launch inventory cleanup after every discover' },
-		{ public : true, group, trigger : 'cuiTransform', unchecked : true });
-
-	new Transformer(waitClearInventory,
-		{ ru : 'Дожидаться получения предметов перед запуском авточистки', en : 'Wait for updating inventory before cleanup' },
-		{ public : false, group, trigger : 'cuiTransform' });
 
 	new Feature(fixSortButton,
 		{ ru : 'Исправить расположение кнопки сортировки', en : 'Fix sort button z-index' },
@@ -2042,13 +2033,15 @@ type ApiProfileData = {
 		}).showToast();
 	}
 
-	// function replaceColor(selector: string, propertyName: string, color: string) {
-	// 	setCSS(`
-	// 		${selector} {
-	// 			${propertyName}: ${$(selector).css(propertyName).replace(/rgba?\(.*?\)/, color).replace(/\s+!important/, '')} !important;
-	// 		}
-	// 	`);
-	// }
+	// @ts-expect-error 6133
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	function replaceColor(selector: string, propertyName: string, color: string) {
+		setCSS(`
+			${selector} {
+				${propertyName}: ${$(selector).css(propertyName).replace(/((rgb|hsl)a?\(.*?\)|#[0-9a-fA-F]{3,6})/, color).replace(/\s+!important/, '')} !important;
+			}
+		`);
+	}
 
 	function addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLike: LayerName) {
 		const source = new window.ol.source.Vector<TLayerName>();
@@ -2834,33 +2827,6 @@ type ApiProfileData = {
 		;
 	}
 
-	function alwaysClearInventory(script: Script): Script {
-		return script
-			.replace(
-				/const MIN_FREE_SPACE = \d+/,
-				'const MIN_FREE_SPACE = INVENTORY_LIMIT',
-			)
-		;
-	}
-
-	function waitClearInventory(script: Script): Script {
-		return script;
-
-		// TODO: fix
-		// $('#discover').on('click', () => {
-		// 	(window.__sbg_plus_localStorage_watcher as LocalStorageWatcher).on('getItem', () => {
-		// 		window.__sbg_cui_function_clearInventory(false);
-		// 	}, { key : 'inventory-cache', when : 'after', once : true });
-		// });
-
-		// return script
-		// 	.replace(
-		// 		'await clearInventory(false, toDelete);',
-		// 		'// await clearInventory(false, toDelete);',
-		// 	)
-		// ;
-	}
-
 	function disableCarouselAnimation() {
 		window.Splide.defaults       = window.Splide.defaults || {};
 		window.Splide.defaults.speed = 0;
@@ -3454,7 +3420,6 @@ type ApiProfileData = {
 	}
 
 	function moveReferenceButtonsDown() {
-		// TODO: split from hideManualClearButtons
 		setCSS(`
 			[data-feat-moveReferenceButtonsDown] .inventory__controls {
 				height: 0;
