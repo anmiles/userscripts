@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.73
+// @version        0.9.74
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.73';
+window.__sbg_plus_version = '0.9.74';
 
 interface Window {
 	ol: Ol;
@@ -2814,20 +2814,10 @@ type ApiProfileData = {
 		`);
 
 		return script
-			// .replace(
-			// 	'view.fit(',
-			// 	'if (false) view.fit(',
-			// )
-			.replaceCUIBlock(
-				'Показ радиуса катализатора',
-				/(?<=\n\s+)view\./g,
-				(match: string) => `if (false) ${match}`,
+			.replace(
+				'fitBlastRange(isCompleted) {',
+				'fitBlastRange(isCompleted) { isCompleted = true;',
 			)
-			// .replaceCUIBlock(
-			// 	'Вращение карты',
-			// 	'function resetView() {',
-			// 	'function resetView() { view.setRotation(0); return; ',
-			// )
 		;
 	}
 
