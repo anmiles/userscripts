@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.76
+// @version        0.9.77
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.76';
+window.__sbg_plus_version = '0.9.77';
 
 interface Window {
 	ol: Ol;
@@ -2891,7 +2891,13 @@ type ApiProfileData = {
 		((_init) => {
 			window.Toastify.prototype.init = function(options) {
 				if (!options.forceDuration) {
-					options.duration = Math.min(options.duration || 0, 1000);
+					if (!options.duration) {
+						options.duration = 0;
+					} else {
+						if (options.duration > 0 && options.duration <= 3000) {
+							options.duration = Math.min(options.duration, 1000);
+						}
+					}
 				}
 
 				_init.call(this, options);
