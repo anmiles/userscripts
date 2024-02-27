@@ -74,7 +74,6 @@ interface Window {
 
 	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
 	__sbg_cui_variable_config: ReadableVariable<CUIConfig>;
-	__sbg_cui_variable_lastOpenedPoint: ReadableVariable<{ coords: OlCoords }>;
 
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
@@ -2700,7 +2699,7 @@ type ApiProfileData = {
 		return script
 			.expose('__sbg_cui', {
 				variables : {
-					readable : [ 'USERSCRIPT_VERSION', 'config', 'lastOpenedPoint' ],
+					readable : [ 'USERSCRIPT_VERSION', 'config', 'database' ],
 				},
 				functions : {
 					readable : [ 'clearInventory' ],
