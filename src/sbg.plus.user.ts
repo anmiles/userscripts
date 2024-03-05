@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.80
+// @version        0.9.81
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.80';
+window.__sbg_plus_version = '0.9.81';
 
 interface Window {
 	ol: Ol;
@@ -78,7 +78,6 @@ interface Window {
 	__sbg_cui_function_main: () => Promise<void>;
 	__sbg_cui_function_olInjection: () => void;
 	__sbg_cui_function_loadMainScript: () => void;
-	__sbg_cui_function_clearInventory: (forceClear?: boolean, filteredLoot?: any[]) => Promise<void>;
 	__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => void;
 	__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
 }
@@ -2084,7 +2083,7 @@ type ApiProfileData = {
 	}
 
 	function detectLocal() {
-		if (window.__sbg_local && window.__sbg_preset !== 'full') {
+		if (window.__sbg_local && window.__sbg_preset !== 'full' && !localStorage['sbg-plus-disable-local-warning']) {
 			alert(labels.toasts.localWarning.toString());
 		}
 	}
@@ -2702,7 +2701,7 @@ type ApiProfileData = {
 					readable : [ 'USERSCRIPT_VERSION', 'config', 'database' ],
 				},
 				functions : {
-					readable : [ 'clearInventory' ],
+					readable : [ ],
 					writable : [ 'createToast', 'getNotifs' ],
 				},
 			});
@@ -3110,15 +3109,19 @@ type ApiProfileData = {
 				.find('.value')
 				.text(localStorage[storageKey]);
 
-			overlay
-				.addClass('active');
+			overlay.show();
+
+			setTimeout(() => {
+				overlay.addClass('active');
+			}, 1);
 
 			setTimeout(() => {
 				overlay
 					.on('click.close', () => {
 						overlay
 							.removeClass('active')
-							.off('click.close');
+							.off('click.close')
+							.hide();
 					});
 			}, 1000);
 		};
@@ -3152,6 +3155,7 @@ type ApiProfileData = {
 
 		setCSS(`
 			.levelup-overlay {
+				display: none;
 				position: fixed;
 				left: 0;
 				top: 0;
