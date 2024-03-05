@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.81
+// @version        0.9.82
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -12,7 +12,7 @@
 // @grant          none
 // ==/UserScript==
 
-window.__sbg_plus_version = '0.9.81';
+window.__sbg_plus_version = '0.9.82';
 
 interface Window {
 	ol: Ol;
@@ -1541,7 +1541,7 @@ type ApiProfileData = {
 
 	new Feature(replaceHighlevelWarningWithIcon,
 		{ ru : 'Заменить предупреждение про недостаточный уровень на значок поверх предмета', en : 'Replace highlevel warning with an icon on top of the item' },
-		{ group, trigger : 'fireClick', requires : () => $('#attack-slider') });
+		{ group, trigger : 'fireClick' });
 
 	new Feature(joinFireButtons,
 		{ ru : 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en : 'Join attack button and attack panel button, close panel by clicking outside' },
@@ -2458,7 +2458,8 @@ type ApiProfileData = {
 	function transformNativeScript(script: Script): Script {
 		return script
 			.transform(exposeNativeScript)
-			.transform(includeYMaps);
+			.transform(includeYMaps)
+			.transform(exposeAttackSliderData);
 	}
 
 	function exposeNativeScript(script: Script): Script {
@@ -2494,6 +2495,15 @@ type ApiProfileData = {
 			.replace(
 				'if (type == \'osm\') {',
 				`if (type == '${layerName}') { \n  theme = is_dark ? 'dark' : 'light';\n  source = new ol.source.XYZ({ url: \`https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&projection=web_mercator&theme=\${theme}&lang=\${window.__sbg_language}\` });\n} else if (type == 'osm') {\n`,
+			)
+		;
+	}
+
+	function exposeAttackSliderData(script: Script): Script {
+		return script
+			.replace(
+				/\$\('#catalysers-list'\)\.append\(el\)/g,
+				'if (e.l > self_data.l) el.attr(\'data-disabled\', 1);\n$(\'#catalysers-list\').append(el)',
 			)
 		;
 	}
@@ -3164,13 +3174,11 @@ type ApiProfileData = {
 				z-index: 65534;
 				background: rgba(0, 0, 0, 0.8);
 				opacity: 0;
-				pointer-events: none;
 			}
 
 			.levelup-overlay.active {
 				opacity: 1;
 				transition: 1s opacity;
-				pointer-events: auto;
 			}
 
 			.levelup {
@@ -3267,39 +3275,26 @@ type ApiProfileData = {
 		`);
 	}
 
-	function replaceHighlevelWarningWithIcon(attackSlider: JQuery<HTMLElement>) {
-		const sliderHeight = attackSlider.outerHeight();
-
+	function replaceHighlevelWarningWithIcon() {
 		setCSS(`
 			#attack-slider {
 				padding: 4px 0;
 			}
 
 			.attack-slider-highlevel {
-				pointer-events: none;
-				position: relative;
-				bottom: -${sliderHeight}px;
-				height: ${sliderHeight}px;
-				padding: 2px;
-				box-sizing: border-box;
-				text-align: center;
-				background: none;
-				backdrop-filter: none;
-				-webkit-backdrop-filter: none;
-				z-index: 1;
-				font-size: 0;
+				display: none;
 			}
-			.attack-slider-highlevel svg {
-				max-height: 100%;
-				stroke: currentColor;
-			}
-		`);
 
-		$('.attack-slider-highlevel').append(`
-			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-				<circle r="47" cx="50" cy="50" fill="none" stroke-width="6"></circle>
-				<line x1="15" y1="15" x2="85" y2="85" stroke-width="6"></line>
-			</svg>
+			#catalysers-list > .splide__slide[data-disabled]:after {
+				display: block;
+				content: "";
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle r="47" cx="50" cy="50" fill="none" stroke="red" stroke-width="6"></circle><line x1="15" y1="15" x2="85" y2="85" stroke="red" stroke-width="6"></line></svg>') center center no-repeat;
+			}
 		`);
 	}
 
