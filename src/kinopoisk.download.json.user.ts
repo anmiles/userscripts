@@ -20,17 +20,17 @@ const debug = {
 
 const defaultListID = 6; // favorites
 const perPage       = 100;
-const pageInterval  = parseInt(localStorage['pageInterval']) || 1000;
+const pageInterval  = parseInt(localStorage.getItem('pageInterval') ?? '0') || 1000;
 
 const boxWidth = 1000;
 const boxItem  = 24;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface Number {
 	case(zero: string, one: string, two: string): string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface String {
 	beautify(): string;
 	toFilename(): string;
@@ -106,47 +106,47 @@ String.prototype.toFilename = function() {
 	let currentUrl: string;
 	let listsProgress: Progress;
 	let filmsProgress: Progress;
-	let currentProgress: Progress;
+	let currentProgress: Progress | undefined;
 
 	const filmTypeNames = [ 'Film', 'TvSeries' ] as const;
 	type FilmTypeName = typeof filmTypeNames[number];
 
-	type Data = {
-		id: number;
-		name: string;
-		originalName: string;
-		fullName: string;
-		year: string;
-		time: number;
-	};
-
-	type ExtendedData = {
-		related: number[];
-		genres: string[];
-		lists: string[];
-		poster: string | null;
-		description: string;
-		note: string | null;
-		directors: string[];
+	interface Data {
+		id           : number;
+		name         : string;
+		originalName : string;
+		fullName     : string;
+		year         : string;
+		time         : number;
 	}
 
-	type ListItemData = {
-		kind: 'listItem';
-		data: Data;
-	};
+	interface ExtendedData {
+		related     : number[];
+		genres      : string[];
+		lists       : string[];
+		poster      : string | null;
+		description : string;
+		note        : string | null;
+		directors   : string[];
+	}
 
-	type RelatedData = {
-		kind: 'related';
-		key: `${FilmTypeName}:${number}`;
-		data: Data;
-	};
+	interface ListItemData {
+		kind : 'listItem';
+		data : Data;
+	}
 
-	type FilmData = {
-		kind: 'film';
-		key: `${FilmTypeName}:${number}`;
-		data: Data;
-		extendedData: ExtendedData;
-	};
+	interface RelatedData {
+		kind : 'related';
+		key  : `${FilmTypeName}:${number}`;
+		data : Data;
+	}
+
+	interface FilmData {
+		kind         : 'film';
+		key          : `${FilmTypeName}:${number}`;
+		data         : Data;
+		extendedData : ExtendedData;
+	}
 
 	abstract class FilmBase {
 		protected constructor(
@@ -155,42 +155,16 @@ String.prototype.toFilename = function() {
 
 		protected static parseJSON(jsonFilmData: JSONFilmData<FilmTypeName>): Data {
 			const id           = jsonFilmData.id;
-			const name         = jsonFilmData.title.russian || '';
-			const originalName = jsonFilmData.title.original || '';
+			const name         = jsonFilmData.title.russian ?? '';
+			const originalName = jsonFilmData.title.original ?? '';
 			const year         = FilmBase.getYear(jsonFilmData);
-			const time         = jsonFilmData.totalDuration || jsonFilmData.seriesDuration || jsonFilmData.duration || 0;
+			const time         = jsonFilmData.totalDuration ?? jsonFilmData.seriesDuration ?? jsonFilmData.duration ?? 0;
 
 			return { id, year, time, ...FilmBase.getNames({ name, originalName, year }) };
 		}
 
-		private static getYear(data: JSONFilmData<FilmTypeName>): string {
-			if (!data.releaseYears || data.releaseYears.length === 0) {
-				return data.productionYear ? data.productionYear.toString() : '';
-			}
-
-			const start = data.releaseYears[0]?.start || null;
-			const end   = data.releaseYears.slice(-1)[0]?.end || null;
-
-			if (start === null) {
-				return '...';
-			}
-
-			if (start === end) {
-				return start.toString();
-			}
-
-			if (end) {
-				return `${start} - ${end}`;
-			}
-
-			if (data.__typename === 'TvSeries') {
-				return `${start} - ...`;
-			}
-
-			return start.toString();
-		}
-
-		protected static getNames({ name, originalName, year } : { name: string, originalName: string, year: string }): { name: string, originalName: string, fullName: string } {
+		protected static getNames({ name, originalName, year } : { name : string; originalName : string; year : string })
+			: { name : string; originalName : string; fullName : string } {
 			if (!name && originalName) {
 				name         = originalName;
 				originalName = '';
@@ -208,27 +182,43 @@ String.prototype.toFilename = function() {
 
 			return { name, originalName, fullName };
 		}
+
+		private static getYear(data: JSONFilmData<FilmTypeName>): string {
+			if (!data.releaseYears || data.releaseYears.length === 0) {
+				return data.productionYear ? data.productionYear.toString() : '';
+			}
+
+			const start = data.releaseYears[0]?.start;
+			const end   = data.releaseYears.slice(-1)[0]?.end;
+
+			if (start == null) {
+				return '...';
+			}
+
+			if (start === end) {
+				return start.toString();
+			}
+
+			if (end) {
+				return `${start} - ${end}`;
+			}
+
+			if (data.__typename === 'TvSeries') {
+				return `${start} - ...`;
+			}
+
+			return start.toString();
+		}
 	}
 
 	class ListItem extends FilmBase implements ListItemData {
-		static map: Record<number, ListItem> = {};
+		static map : Record<number, ListItem> = {};
 
 		private constructor(
 			public kind: 'listItem',
 			data: Data,
 		) {
 			super(data);
-		}
-
-		private static create(id: number, getData: () => ListItemData) {
-			const listItem = ListItem.map[id];
-
-			if (listItem) {
-				return listItem;
-			}
-
-			const { kind, data } = getData();
-			return ListItem.map[id] = new ListItem(kind, data);
 		}
 
 		static is(item: unknown): item is ListItem {
@@ -249,13 +239,24 @@ String.prototype.toFilename = function() {
 			});
 		}
 
-		static fromJSON(id: number, film: ListItem) {
+		static fromJSON(id: number, film: ListItem): ListItem {
 			return ListItem.create(id, () => film);
+		}
+
+		private static create(id: number, getData: () => ListItemData): ListItem {
+			const listItem = ListItem.map[id];
+
+			if (listItem) {
+				return listItem;
+			}
+
+			const { kind, data } = getData();
+			return ListItem.map[id] = new ListItem(kind, data);
 		}
 	}
 
 	class Related extends FilmBase implements RelatedData {
-		static map: Record<number, Related> = {};
+		static map : Record<number, Related> = {};
 
 		private constructor(
 			public kind: 'related',
@@ -263,17 +264,6 @@ String.prototype.toFilename = function() {
 			data: Data,
 		) {
 			super(data);
-		}
-
-		private static create(id: number, getData: () => RelatedData) {
-			const related = Related.map[id];
-
-			if (related) {
-				return related;
-			}
-
-			const { kind, key, data } = getData();
-			return Related.map[id] = new Related(kind, key, data);
 		}
 
 		static is(item: unknown): item is Related {
@@ -287,10 +277,21 @@ String.prototype.toFilename = function() {
 				data : FilmBase.parseJSON(jsonFilmData),
 			}));
 		}
+
+		private static create(id: number, getData: () => RelatedData): Related {
+			const related = Related.map[id];
+
+			if (related) {
+				return related;
+			}
+
+			const { kind, key, data } = getData();
+			return Related.map[id] = new Related(kind, key, data);
+		}
 	}
 
 	class Film extends FilmBase implements FilmData {
-		static map: Record<number, Film> = {};
+		static map : Record<number, Film> = {};
 
 		private constructor(
 			public kind: 'film',
@@ -301,16 +302,6 @@ String.prototype.toFilename = function() {
 			super(data);
 		}
 
-		private static create(id: number, getData: () => FilmData) {
-			const film = Film.map[id];
-			if (film) {
-				return film;
-			}
-
-			const { kind, key, data, extendedData } = getData();
-			return Film.map[id] = new Film(kind, key, data, extendedData);
-		}
-
 		static is(item: unknown): item is Film {
 			return typeof item === 'object' && item !== null && 'kind' in item && item.kind === 'film';
 		}
@@ -318,27 +309,49 @@ String.prototype.toFilename = function() {
 		static fromHTML(id: number, html: string): Film {
 			return Film.create(id, () => {
 				if (!html) {
-					throw error('Пустое содержимое страницы фильма');
+					error('Пустое содержимое страницы фильма');
 				}
 
 				if (typeof html.match !== 'function') {
-					throw error('Некорректное содержимое страницы фильма');
+					error('Некорректное содержимое страницы фильма');
 				}
 
 				const htmlMatch = html.match(/__NEXT_DATA__.*?>(.*?)<\/script>/);
 
 				if (!htmlMatch) {
-					throw error('Не удалось найти объект __NEXT_DATA__ на странице фильма');
+					error('Не удалось найти объект __NEXT_DATA__ на странице фильма');
 				}
 
 				const relatedFilm = Related.map[id];
 
 				if (!relatedFilm) {
-					throw `Unknown related item for id ${id}`;
+					error('Не удалось найти связанные фильмы');
 				}
 
-				const json     = JSON.parse(htmlMatch[1]!);
-				const jsonData = json.props.apolloState.data as JSONData;
+				function isRecord(obj: unknown): obj is Record<string, unknown> {
+					return typeof obj === 'object' && obj !== null;
+				}
+
+				function jsonSelect<T>(text: string, keys: string[]): T {
+					const json = JSON.parse(text) as unknown;
+					let value  = json;
+
+					for (const key of keys) {
+						if (!isRecord(value)) {
+							error(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
+						}
+
+						if (!(key in value)) {
+							error(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
+						}
+
+						value = value[key];
+					}
+
+					return value as T;
+				}
+
+				const jsonData = jsonSelect<JSONData>(htmlMatch[1]!, [ 'props', 'apolloState', 'data' ]);
 
 				const related = Film.getRelated(jsonData);
 				const key     = relatedFilm.key;
@@ -346,7 +359,7 @@ String.prototype.toFilename = function() {
 				const jsonFilmData = jsonData[key];
 
 				if (!jsonFilmData) {
-					throw `Cannot find jsonFilmData by key ${key}`;
+					throw new Error(`Cannot find jsonFilmData by key ${key}`);
 				}
 
 				const genres      = Film.getGenres(jsonFilmData, jsonData);
@@ -363,6 +376,16 @@ String.prototype.toFilename = function() {
 					extendedData : { related, genres, lists, poster, description, note, directors },
 				};
 			});
+		}
+
+		private static create(id: number, getData: () => FilmData): FilmData {
+			const film = Film.map[id];
+			if (film) {
+				return film;
+			}
+
+			const { kind, key, data, extendedData } = getData();
+			return Film.map[id] = new Film(kind, key, data, extendedData);
 		}
 
 		private static getRelated(data: JSONData): number[] {
@@ -382,7 +405,7 @@ String.prototype.toFilename = function() {
 		}
 
 		private static isFilmTypeName(typeName: string): typeName is FilmTypeName {
-			return filmTypeNames.includes(typeName as any);
+			return filmTypeNames.includes(typeName as FilmTypeName);
 		}
 
 		private static getGenres(jsonFilmData: JSONFilmData<FilmTypeName>, jsonData: JSONData): string[] {
@@ -392,7 +415,7 @@ String.prototype.toFilename = function() {
 				const genre = jsonData[__ref];
 
 				if (!genre) {
-					throw `Cannot find ref ${__ref} in jsonData for film id = ${jsonFilmData.id}`;
+					error(`Не удалось найти связь '${__ref}' в данных #${jsonFilmData.id}`);
 				}
 
 				genres.push(genre.name);
@@ -410,10 +433,10 @@ String.prototype.toFilename = function() {
 		}
 
 		private static getPoster(jsonFilmData: JSONFilmData<FilmTypeName>): string | null {
-			let poster = jsonFilmData.poster && (jsonFilmData.poster.avatarsUrl || jsonFilmData.poster.fallbackUrl);
+			let poster = jsonFilmData.poster && (jsonFilmData.poster.avatarsUrl ?? jsonFilmData.poster.fallbackUrl);
 
 			if (poster) {
-				if (poster.indexOf('//') === 0) {
+				if (poster.startsWith('//')) {
 					poster = `https:${poster}`;
 				}
 				if (!poster.match(/\d+x\d+$/)) {
@@ -425,11 +448,11 @@ String.prototype.toFilename = function() {
 		}
 
 		private static getDescription(jsonFilmData: JSONFilmData<FilmTypeName>): string {
-			return (jsonFilmData.synopsis || jsonFilmData.shortDescription || '').beautify();
+			return (jsonFilmData.synopsis ?? jsonFilmData.shortDescription ?? '').beautify();
 		}
 
 		private static getNote(jsonFilmData: JSONFilmData<FilmTypeName>): string | null {
-			return jsonFilmData.userData.note && jsonFilmData.userData.note.value;
+			return jsonFilmData.userData.note?.value ?? null;
 		}
 
 		private static getMembers<JSONRole extends JSONRoles>(
@@ -445,7 +468,7 @@ String.prototype.toFilename = function() {
 				const member = jsonData[ref];
 
 				if (!member) {
-					throw `Cannot find ref ${ref} in jsonData for film id = ${jsonFilmData.id}`;
+					error(`Не удалось найти связь '${ref}' в данных #${jsonFilmData.id}`);
 				}
 
 				names.push(member.name || member.originalName);
@@ -455,102 +478,100 @@ String.prototype.toFilename = function() {
 		}
 	}
 
-	type List = {
-		id: number;
-		title: string;
-		firstPageHTML: string | null;
-		totalPages: number
-	};
+	interface List {
+		id            : number;
+		title         : string;
+		firstPageHTML : string | null;
+		totalPages    : number;
+	}
 
 	type JSONRoles = '"DIRECTOR"';
 
 	type JSONFilmData<TFilmTypeName extends FilmTypeName> = {
-		__typename: TFilmTypeName;
-		id: number;
+		__typename : TFilmTypeName;
+		id         : number;
 		title: {
-			__typename: 'Title';
-			original: string | null;
-			russian: string | null;
+			__typename : 'Title';
+			original   : string | null;
+			russian    : string | null;
 		};
-		productionYear: number | null;
+		productionYear : number | null;
 		releaseYears?: Array<{
-			__typename: 'YearsRange';
-			start: number | null;
-			end: number | null;
-		}>
-		duration: number | null;
-		totalDuration: number | null;
-		seriesDuration: number | null;
-		genres: Array<{ __ref: `Genre:${number}`}>;
+			__typename : 'YearsRange';
+			start      : number | null;
+			end        : number | null;
+		}>;
+		duration       : number | null;
+		totalDuration  : number | null;
+		seriesDuration : number | null;
+		genres         : Array<{ __ref : `Genre:${number}` }>;
 		userData: {
-			__typename: 'MovieUserData';
+			__typename : 'MovieUserData';
 			folders: Array<{
-				__typename: 'Folder';
-				id: number;
-				name: string;
+				__typename : 'Folder';
+				id         : number;
+				name       : string;
 			}>;
-			note: null | {
-				__typename: 'UserMovieNote';
-				value: string
-			};
+			note: {
+				__typename : 'UserMovieNote';
+				value      : string;
+			} | null;
 		};
-		poster: null | {
-			__typename: 'Image';
-			avatarsUrl: string | null;
-			fallbackUrl: string | null;
-		};
-		synopsis : string | null;
+		poster: {
+			__typename  : 'Image';
+			avatarsUrl  : string | null;
+			fallbackUrl : string | null;
+		} | null;
+		synopsis         : string | null;
 		shortDescription : string | null;
 	} & {
 		[key in `members({"limit":${number},"role":${JSONRoles}})`]: {
 			items: Array<{
-				__typename: 'FilmCrewMember',
+				__typename : 'FilmCrewMember';
 				person: {
-					__ref: `Person:${number}`
-				}
-			}>
+					__ref : `Person:${number}`;
+				};
+			}>;
 		};
 	};
 
 	type JSONData = {
 		[key in `Film:${number}`]: JSONFilmData<'Film'>;
 	} & {
-		[key in `TvSeries:${number}`]: JSONFilmData<'TvSeries'>;
-	} & {
 		[key in `Genre:${number}`]: {
-			__typename: 'Genre';
-			id: number;
-			name: string;
-			slug: string;
+			__typename : 'Genre';
+			id         : number;
+			name       : string;
+			slug       : string;
 		};
 	} & {
 		[key in `Person:${number}`]: {
-			__typename: 'Person';
-			id: number;
-			name: string;
-			originalName: string;
+			__typename   : 'Person';
+			id           : number;
+			name         : string;
+			originalName : string;
 		};
+	} & {
+		[key in `TvSeries:${number}`]: JSONFilmData<'TvSeries'>;
 	};
 
 	class Progress {
-		private container: JQuery<HTMLElement>;
-		private box: JQuery<HTMLElement>;
-		private progressBox: JQuery<HTMLElement>;
-		private progressBar: JQuery<HTMLElement>;
-		private percentLabel: JQuery<HTMLElement>;
-		private remainLabel: JQuery<HTMLElement>;
-		private logPanel: JQuery<HTMLElement>;
-		private logText: JQuery<HTMLElement>;
-		private logLink: JQuery<HTMLElement>;
-
-		buttonPanel: JQuery<HTMLElement>;
-
-		startTime: Date;
-		counts: number[];
-		weights: number[];
-		values: number[];
-		bases: number[];
-		value: number;
+		buttonPanel                   : JQuery;
+		startTime                     : Date;
+		counts                        : number[];
+		weights                       : number[];
+		values                        : number[];
+		bases                         : number[];
+		value                         : number;
+		private readonly container    : JQuery;
+		private readonly box          : JQuery;
+		private readonly progressBox  : JQuery;
+		private readonly progressBar  : JQuery;
+		private readonly percentLabel : JQuery;
+		private readonly remainLabel  : JQuery;
+		private readonly logPanel     : JQuery;
+		private readonly logText      : JQuery;
+		private readonly logLink      : JQuery;
 
 		constructor(
 			public title: string,
@@ -577,7 +598,7 @@ String.prototype.toFilename = function() {
 			this.print(title);
 		}
 
-		private static getContainer(): JQuery<HTMLElement> {
+		private static getContainer(): JQuery {
 			const cssClass       = 'download-container';
 			const parentSelector = 'body';
 			const container      = $(`${parentSelector} > .${cssClass}`);
@@ -587,22 +608,7 @@ String.prototype.toFilename = function() {
 				: container;
 		}
 
-		private formatTime(ms: number) {
-			if (isNaN(ms) || ms === 0) {
-				return '';
-			}
-
-			const seconds = Math.ceil(ms / 1000);
-
-			if (seconds < 100) {
-				return `~ ${seconds} ${seconds.case('секунд', 'секунда', 'секунды')}`;
-			}
-
-			const minutes = Math.ceil(seconds / 60);
-			return `~ ${minutes} ${minutes.case('минут', 'минута', 'минуты')}`;
-		}
-
-		start() {
+		start(): void {
 			this.counts    = [];
 			this.weights   = [];
 			this.values    = [];
@@ -612,7 +618,7 @@ String.prototype.toFilename = function() {
 			this.render();
 		}
 
-		finish() {
+		finish(): void {
 			this.values[0] = this.counts[0] = this.weights[0] = 1;
 			this.bases[0]  = 0;
 			console.debug('finish', this);
@@ -620,11 +626,11 @@ String.prototype.toFilename = function() {
 			this.render();
 		}
 
-		close() {
+		close(): void {
 			this.container.hide();
 		}
 
-		push(count: number, weight: number) {
+		push(count: number, weight: number): void {
 			this.counts.push(count);
 			this.weights.push(weight);
 			this.values.push(0);
@@ -632,7 +638,7 @@ String.prototype.toFilename = function() {
 			console.debug('push', this);
 		}
 
-		pop() {
+		pop(): void {
 			this.counts.pop();
 			this.weights.pop();
 			this.values.pop();
@@ -641,7 +647,7 @@ String.prototype.toFilename = function() {
 			console.debug('pop', this);
 		}
 
-		increment(itemTitle: string, itemLink: string) {
+		increment(itemTitle: string, itemLink: string): void {
 			if (this.values.length === 0) {
 				return;
 			}
@@ -652,28 +658,28 @@ String.prototype.toFilename = function() {
 			this.render();
 		}
 
-		print(message: string, isError?: boolean) {
+		print(message: string, isError?: boolean): void {
 			(isError ? console.error : console.log)(message);
-			this.logPanel.css({ color : (isError ? 'red' : 'black') });
+			this.logPanel.css({ color : isError ? 'red' : 'black' });
 			this.logText.text(message);
 			this.logLink.html('');
 		}
 
-		link(itemTitle: string, itemLink: string) {
+		link(itemTitle: string, itemLink: string): void {
 			$('<span></span>').html('&nbsp;-&nbsp;').appendTo(this.logLink);
 			$('<a></a>').attr('href', itemLink).attr('target', '_blank').text(itemTitle).appendTo(this.logLink);
 		}
 
-		error(message: string) {
+		error(message: string): void {
 			this.print(message, true);
 		}
 
-		render() {
+		render(): void {
 			this.value     = this.bases.reduce((a: number, b: number) => a + b, 0);
 			let multiplier = 1;
 
 			for (let i = 0; i < this.counts.length; i++) {
-				multiplier /= (this.counts[i]! / this.weights[i]!);
+				multiplier /= this.counts[i]! / this.weights[i]!;
 				this.value += this.values[i]! * multiplier;
 			}
 
@@ -691,30 +697,45 @@ String.prototype.toFilename = function() {
 				this.remainLabel.html('');
 			}
 		}
+
+		private formatTime(ms: number): string {
+			if (isNaN(ms) || ms === 0) {
+				return '';
+			}
+
+			const seconds = Math.ceil(ms / 1000);
+
+			if (seconds < 100) {
+				return `~ ${seconds} ${seconds.case('секунд', 'секунда', 'секунды')}`;
+			}
+
+			const minutes = Math.ceil(seconds / 60);
+			return `~ ${minutes} ${minutes.case('минут', 'минута', 'минуты')}`;
+		}
 	}
 
-	function isConsoleOpened() {
+	function isConsoleOpened(): boolean {
 		const startTime = new Date();
 		console.warn('Нажмите F8 для продолжения');
 		// eslint-disable-next-line no-debugger
 		debugger;
 		const endTime = new Date();
-		return (endTime.getTime() - startTime.getTime()) > 200;
+		return endTime.getTime() - startTime.getTime() > 200;
 	}
 
-	function error(ex: Error | string) {
+	function error(ex: string): never {
 		if (currentProgress) {
 			currentProgress.error(`Не удалось обработать страницу ${currentUrl}. Ошибка: ${ex}`);
 		}
 		// eslint-disable-next-line no-debugger
 		debugger;
-		throw ex;
+		throw new Error(ex);
 	}
 
-	function select(context: JQuery<HTMLElement>, selector: string, skipError?: boolean) {
+	function select(context: JQuery, selector: string, skipError?: boolean): JQuery {
 		const obj = context.find(selector);
 		if (obj.length === 0 && skipError !== false) {
-			throw error(`Не удалось найти элемент по селектору ${selector}`);
+			error(`Не удалось найти элемент по селектору ${selector}`);
 		}
 		return obj;
 	}
@@ -723,7 +744,7 @@ String.prototype.toFilename = function() {
 		const match = pattern.exec(text);
 
 		if (!match) {
-			throw error(`Не удалось найти текст по регулярному выражению ${pattern}`);
+			error(`Не удалось найти текст по регулярному выражению ${pattern}`);
 		}
 
 		return match;
@@ -734,6 +755,7 @@ String.prototype.toFilename = function() {
 			// eslint-disable-next-line no-debugger
 			debugger;
 		}
+
 		currentUrl                  = url;
 		let response: string | null = null;
 
@@ -743,7 +765,7 @@ String.prototype.toFilename = function() {
 			await sleep(pageInterval);
 
 			try {
-				response = await $.get(url);
+				response = await $.get(url) as string | null;
 			} catch (ex) {
 				console.warn(`Не удалось загрузить страницу '${url}', попытка #${attempt++} через секунду...`);
 
@@ -757,15 +779,15 @@ String.prototype.toFilename = function() {
 		return response;
 	}
 
-	async function sleep(ms: number) {
+	async function sleep(ms: number): Promise<void> {
 		return new Promise((resolve) => setTimeout(resolve, ms));
 	}
 
 	function parseFilmId(li: HTMLElement): number {
-		const idString = $(li).data('id');
+		const idString = String($(li).data('id'));
 		const id       = parseInt(idString);
 		if (isNaN(id)) {
-			throw error(`Id не является целым числом: ${idString}`);
+			error(`Id не является целым числом: ${idString}`);
 		}
 		return id;
 	}
@@ -778,8 +800,8 @@ String.prototype.toFilename = function() {
 		return debug.enabled && debug.listNames.length > 0 && debug.listNames.includes(listName);
 	}
 
-	function downloadAll() {
-		if (!(isConsoleOpened())) {
+	function downloadAll(): void {
+		if (!isConsoleOpened()) {
 			alert('Нажмите F12 чтобы открыть консоль и попробуйте ещё раз');
 			return;
 		}
@@ -802,10 +824,10 @@ String.prototype.toFilename = function() {
 		const fileInput = createFileInput({
 			success : (contents: string) => {
 				try {
-					const data = JSON.parse(contents) as { lists: Record<number, unknown> };
+					const data = JSON.parse(contents) as { lists : Record<number, unknown> };
 
 					if (!('lists' in data)) {
-						throw 'Загруженный файл не является корректным файлом списков';
+						error('Загруженный файл не является корректным файлом списков');
 					}
 
 					for (const item of Object.values(data.lists)) {
@@ -830,7 +852,7 @@ String.prototype.toFilename = function() {
 				listsProgress.start();
 				listsProgress.finish();
 
-				downloadAllFilms();
+				void downloadAllFilms();
 			},
 			fail : (message: string) => {
 				listsProgress.error(message);
@@ -845,11 +867,11 @@ String.prototype.toFilename = function() {
 			loadButton.hide();
 			startButton.hide();
 
-			downloadAllLists();
+			void downloadAllLists();
 		});
 	}
 
-	function createFileInput({ success, fail } : { success: (contents: string) => void, fail: (message: string) => void}): JQuery<HTMLElement> {
+	function createFileInput({ success, fail } : { success : (contents: string) => void; fail : (message: string) => void }): JQuery {
 		const fileInput = $('<input type="file" />');
 
 		fileInput.on('change', (ev) => {
@@ -875,7 +897,7 @@ String.prototype.toFilename = function() {
 		return fileInput;
 	}
 
-	async function downloadAllLists() {
+	async function downloadAllLists(): Promise<void> {
 		listsProgress.start();
 		const startUrl  = buildUrl();
 		const startHTML = await get(startUrl);
@@ -899,17 +921,17 @@ String.prototype.toFilename = function() {
 			.get(0)
 			?.click();
 
-		downloadAllFilms();
+		void downloadAllFilms();
 	}
 
 	function createList(li: HTMLElement, startHTML: string): List {
-		const id            = $(li).data('id');
+		const id            = parseInt(String($(li).data('id')));
 		const text          = $(li).text().trim();
 		const firstPageHTML = $(li).find('a').attr('href') ? null : startHTML;
 		const matches       = text.match(/^\s*(.*?)\s+\((\d+)\)\s*$/);
 
 		if (!matches) {
-			throw error(`Text '${text}' doesn't match regexp`);
+			error(`Text '${text}' doesn't match regexp`);
 		}
 
 		const title      = matches[1]!;
@@ -943,11 +965,11 @@ String.prototype.toFilename = function() {
 		}
 	}
 
-	function buildUrl(list = { id : defaultListID }, currentPage = 1) {
+	function buildUrl(list = { id : defaultListID }, currentPage = 1): string {
 		return `/mykp/folders/${list.id}/?page=${currentPage}&limit=${perPage}`;
 	}
 
-	async function downloadAllFilms() {
+	async function downloadAllFilms(): Promise<void> {
 		currentProgress = filmsProgress;
 		filmsProgress.start();
 		filmsProgress.push(debug.enabled ? debug.filmIds.length : Object.keys(ListItem.map).length, 1);
@@ -972,7 +994,7 @@ String.prototype.toFilename = function() {
 			?.click();
 	}
 
-	function downloadFilm() {
+	function downloadFilm(): void {
 		const id   = getCurrentFilmId();
 		const film = Film.fromHTML(id, document.body.innerHTML);
 
@@ -981,8 +1003,11 @@ String.prototype.toFilename = function() {
 				$('button[title="Добавить в папку"]').trigger('click');
 			}
 
-			const folders           = select(getListsDropdown(), 'input[type="checkbox"][checked] + span', false);
-			film.extendedData.lists = folders ? folders.map((_i, folder) => $(folder).text()).toArray() : [];
+			const folders = select(getListsDropdown(), 'input[type="checkbox"][checked] + span', false);
+
+			film.extendedData.lists = folders.length > 0
+				? folders.map((_i, folder) => $(folder).text()).toArray()
+				: [];
 
 			createDownloadButton({ download : `${film.data.id}.json`, json : film, title : 'Скачать фильм' })
 				.get(0)
@@ -990,7 +1015,7 @@ String.prototype.toFilename = function() {
 		}, 1);
 	}
 
-	function createDownloadButton({ download, json, title }: { download: string, json: any, title: string }) {
+	function createDownloadButton({ download, json, title }: { download : string; json : unknown; title : string }): JQuery {
 		return $('<a></a>')
 			.addClass('button')
 			.text(title)
@@ -998,16 +1023,16 @@ String.prototype.toFilename = function() {
 			.attr('download', download);
 	}
 
-	function getListsDropdown() {
+	function getListsDropdown(): JQuery {
 		return select($('body'), 'button[title="Добавить в папку"] + div[class^="styles_dropdownMenu"]', false);
 	}
 
-	function copyTitle() {
+	function copyTitle(): void {
 		const id = getCurrentFilmId();
 
 		setTimeout(() => {
 			const film = Film.fromHTML(id, document.body.innerHTML);
-			navigator.clipboard.writeText(film.data.fullName);
+			void navigator.clipboard.writeText(film.data.fullName);
 		}, 1);
 	}
 
@@ -1039,7 +1064,7 @@ String.prototype.toFilename = function() {
 		};
 	}
 
-	async function test() {
+	async function test(): Promise<void> {
 		const intervalMs = 200;
 
 		listsProgress = new Progress('Загрузка списков');
@@ -1086,16 +1111,16 @@ String.prototype.toFilename = function() {
 			?.click();
 	}
 
-	type ButtonOptions = {
-		container: JQuery<HTMLElement>;
-		icon: string;
-		title: string;
-		func: () => void;
-		top: number;
-		fontSize: number;
+	interface ButtonOptions {
+		container : JQuery;
+		icon      : string;
+		title     : string;
+		func      : () => void;
+		top       : number;
+		fontSize  : number;
 	}
 
-	function renderButton({ container, icon, title, func, top, fontSize }: ButtonOptions) {
+	function renderButton({ container, icon, title, func, top, fontSize }: ButtonOptions): JQuery {
 		return $('<a></a>')
 			.text(icon)
 			.css({ 'cursor' : 'pointer', 'color' : '#ffffff', 'font-size' : `${fontSize}px`, 'top' : `${top}px`, 'position' : 'relative', 'padding' : '4px' })
@@ -1104,7 +1129,7 @@ String.prototype.toFilename = function() {
 			.on('click', func);
 	}
 
-	function setCSS() {
+	function setCSS(): void {
 		const css = `
 			.download-container {
 				position: fixed;
@@ -1221,12 +1246,12 @@ String.prototype.toFilename = function() {
 			.appendTo('head');
 	}
 
-	function renderDownload() {
+	function renderDownload(): void {
 		const container = $('<div></div>')
 			.css({ 'position' : 'fixed', 'top' : '6px', 'right' : 0, 'z-index' : 65535, 'padding' : '4px' })
 			.appendTo($('body'));
 
-		if (location.pathname.indexOf('/film/') !== -1 || location.pathname.indexOf('/series/') !== -1) {
+		if (location.pathname.includes('/film/') || location.pathname.includes('/series/')) {
 			renderButton({ container, icon : '#', title : 'Copy title', func : copyTitle, top : 7, fontSize : 35 });
 			renderButton({ container, icon : '{}', title : 'Download film', func : debug.enabled ? test : downloadFilm, top : 0, fontSize : 24 });
 		}

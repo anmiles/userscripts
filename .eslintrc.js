@@ -1,11 +1,15 @@
 module.exports = {
-	root    : true,
+	root : true,
+
 	extends : [
-		'./node_modules/@anmiles/eslint-config/.eslintrc.js',
+		'./node_modules/@anmiles/eslint-config/src/base.preset.js',
+		'./node_modules/@anmiles/eslint-config/src/ts.preset.js',
 	],
+
 	env : {
 		browser : true,
 	},
+
 	globals : {
 		$                                  : true,
 		JQuery                             : true,
@@ -13,13 +17,12 @@ module.exports = {
 		EventListener                      : true,
 		EventListenerOrEventListenerObject : true,
 	},
-	ignorePatterns : [
-		'**/node_modules/',
-		'dist/',
-		'ext/',
-	],
+
 	rules : {
 		'@typescript-eslint/no-unused-vars' : [ 'error', { args : 'none' } ],
-		'camelcase'                         : [ 'error', { allow : [ '^_(_[a-z][A-Za-z]+)+$' ] } ],
+		'camelcase'                         : [ 'error', { allow : [
+			'keep_fnames',
+			'keep_classnames',
+		] } ],
 	},
 };

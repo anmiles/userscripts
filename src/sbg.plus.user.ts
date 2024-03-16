@@ -12,222 +12,232 @@
 // @grant          none
 // ==/UserScript==
 
+/* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
 window.__sbg_plus_version = '0.9.82';
 
 interface Window {
-	ol: Ol;
-	turf: Turf;
-	Splide: Splide;
-	Toastify: Toastify;
-	i18next: I18Next;
+	[key: `__sbg_${string}_original`] : string;
+	[key: `__sbg_${string}_modified`] : string;
 
-	Feature: unknown;
-	setCSS: (css: string) => void;
-	cuiStatus: 'loading' | 'loaded';
-	cuiEmbedded: boolean | undefined;
+	ol        : Ol;
+	turf      : Turf;
+	Splide?   : Splide;
+	Toastify? : Toastify;
+	i18next   : I18Next;
+
+	Feature     : unknown;
+	setCSS      : (css: string) => void;
+	cuiStatus   : 'loaded' | 'loading';
+	cuiEmbedded : boolean | undefined;
 
 	DeviceOrientationEvent: {
-		prototype: DeviceOrientationEvent;
+		prototype         : DeviceOrientationEvent;
+		requestPermission : () => Promise<'denied' | 'granted'>;
 		new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
-		requestPermission: () => Promise<'granted'>,
 	};
 
-	[key: `__sbg_${string}_original`]: string;
-	[key: `__sbg_${string}_modified`]: string;
-
-	__sbg_local: boolean;
-	__sbg_preset: unknown;
-	__sbg_urls: Urls;
-	__sbg_language: Lang;
-	__sbg_plus_version: string;
-	__sbg_plus_localStorage_watcher: unknown;
-	__sbg_plus_modifyFeatures: Function;
-	__sbg_plus_animation_duration: number;
-	__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
-	__sbg_debug_object: (message: string, obj: Record<string, unknown>) => void;
+	__sbg_local                     : boolean;
+	__sbg_preset                    : unknown;
+	__sbg_urls                      : Urls;
+	__sbg_language                  : Lang;
+	__sbg_plus_version              : string;
+	__sbg_plus_localStorage_watcher : unknown;
+	__sbg_plus_modifyFeatures       : (...args: unknown[]) => void;
+	__sbg_plus_animation_duration   : number;
+	__sbg_onerror_handlers          : Array<NonNullable<typeof window.onerror>>;
+	__sbg_debug_object              : (message: string, obj: Record<string, unknown>) => void;
 
 	__sbg_share: {
-		open: (url: string) => boolean;
-		navigate: (coords: OlCoordsString) => boolean;
+		open     : (url: string) => boolean;
+		navigate : (coords: OlCoordsString) => boolean;
 	};
 
-	__sbg_variable_draw_slider: ReadableVariable<Splide>;
-	__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
-	__sbg_variable_is_dark: ReadableVariable<boolean>;
-	__sbg_variable_ItemTypes: ReadableVariable<string[]>;
-	__sbg_variable_map: ReadableVariable<OlMap>;
-	__sbg_variable_self_data: WritableVariable<SelfData>;
-	__sbg_variable_TeamColors: ReadableVariable<OlTeamColors>;
-	__sbg_variable_temp_lines_source: ReadableVariable<OlSource<'temp_lines'>>;
-	__sbg_variable_units: ReadableVariable<Array<[RegExp, string]>>;
-	__sbg_variable_VERSION: ReadableVariable<string>;
+	__sbg_variable_draw_slider       : ReadableVariable<Splide>;
+	__sbg_variable_FeatureStyles     : ReadableVariable<OlFeatureStyles>;
+	__sbg_variable_is_dark           : ReadableVariable<boolean>;
+	__sbg_variable_ItemTypes         : ReadableVariable<string[]>;
+	__sbg_variable_map               : ReadableVariable<OlMap>;
+	__sbg_variable_self_data         : WritableVariable<SelfData>;
+	__sbg_variable_TeamColors        : ReadableVariable<OlTeamColors>;
+	__sbg_variable_temp_lines_source : ReadableVariable<OlSource>;
+	__sbg_variable_units             : ReadableVariable<Array<[RegExp, string]>>;
+	__sbg_variable_VERSION           : ReadableVariable<string>;
 
-	__sbg_function_apiQuery: ApiQuery;
-	__sbg_function_drawLeaderboard: () => Promise<void>;
-	__sbg_function_deleteInventoryItem: (parent: JQuery<HTMLElement>) => Promise<void>;
-	__sbg_function_jquerypassargs: (container: JQuery<HTMLElement>, template: string, ...elements: Array<JQuery<HTMLElement> | string>) => JQuery<HTMLElement>;
-	__sbg_function_manageDrawing: (event: SplideEvent) => void;
-	__sbg_function_openProfile: (data: string | OlGuid | JQuery.Event) => Promise<void>;
-	__sbg_function_showInfo: (data: string | OlGuid | undefined) => void;
-	__sbg_function_takeUnits: (value: number) => [string, string];
-	__sbg_function_timeToString: (seconds: number) => string;
+	__sbg_function_apiQuery            : ApiQuery;
+	__sbg_function_drawLeaderboard     : () => Promise<void>;
+	__sbg_function_deleteInventoryItem : (parent: JQuery) => Promise<void>;
+	__sbg_function_jquerypassargs      : (container: JQuery, template: string, ...elements: Array<JQuery | string>) => JQuery;
+	__sbg_function_manageDrawing       : (event: SplideEvent) => void;
+	__sbg_function_openProfile         : (data: JQuery.Event | OlGuid) => Promise<void>;
+	__sbg_function_showInfo            : (data: OlGuid   | undefined) => void;
+	__sbg_function_takeUnits           : (value: number) => [string, string];
+	__sbg_function_timeToString        : (seconds: number) => string;
 
-	__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
-	__sbg_cui_variable_config: ReadableVariable<CUIConfig>;
+	__sbg_cui_variable_USERSCRIPT_VERSION : ReadableVariable<string>;
+	__sbg_cui_variable_config             : ReadableVariable<CUIConfig>;
 
-	__sbg_cui_function_main: () => Promise<void>;
-	__sbg_cui_function_olInjection: () => void;
-	__sbg_cui_function_loadMainScript: () => void;
-	__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => void;
-	__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
+	__sbg_cui_function_main           : () => Promise<void>;
+	__sbg_cui_function_olInjection    : () => void;
+	__sbg_cui_function_loadMainScript : () => void;
+	__sbg_cui_function_createToast    : (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => void;
+	__sbg_cui_function_getNotifs      : <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
 }
 
 interface EventTarget {
-	__events: Record<string, EventListeners>;
-	getEventListeners: (type: string) => EventListenerOrEventListenerObject[];
-	getEventHandlers: <T = EventListener>(type: string) => T[];
-	clearEventListeners: (type: string, sealed: boolean) => void;
-	addOnlyEventListener: EventTarget['addEventListener'];
+	__events                  : Record<string, EventListeners>;
+	getEventListeners         : (type: string) => EventListenerOrEventListenerObject[];
+	getEventHandlers          : <T = EventListener>(type: string) => T[];
+	clearEventListeners       : (type: string, sealed: boolean) => void;
+	addOnlyEventListener      : EventTarget['addEventListener'];
 	addRepeatingEventListener: <TEvent extends Event>(
 		type: string,
 		callback: (ev: TEvent) => void,
 		options: {
-			repeats: number,
-			timeout: number,
-			tick?: (ev: TEvent, iteration: number) => void,
-			filter?: (ev: TEvent) => boolean,
-			cancel?: (ev: TEvent) => boolean,
+			repeats : number;
+			timeout : number;
+			tick?   : (ev: TEvent, iteration: number) => void;
+			filter? : (ev: TEvent) => boolean;
+			cancel? : (ev: TEvent) => boolean;
 		},
 	) => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface WindowEventMap {
-	'deviceorientationabsolute': DeviceOrientationEvent;
+	'deviceorientationabsolute' : DeviceOrientationEvent;
 }
 
 interface DeviceOrientationEvent {
-	webkitCompassHeading: number;
+	webkitCompassHeading : number | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface Object {
-	typedKeys: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly K[]) => K[],
+	typedKeys    : <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]) => K[];
+	typedEntries : <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]) => [K, V][];
 }
 
-Object.typedKeys = <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly K[]): K[] => {
-	function isOwnKey(key: keyof any): key is K {
-		return allKeys?.includes(key as K) ?? true;
+Object.typedKeys = <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]): K[] => {
+	function isOwnKey(key: number | string | symbol): key is K {
+		return allKeys.includes(String(key));
 	}
 
 	return Object.keys(obj).filter<K>(isOwnKey);
 };
 
-type EventTargetWithEventType<TEventType extends string> = EventTarget & {
-	__events: Record<TEventType, EventListeners>;
-}
+Object.typedEntries = <K extends string, V>(
+	obj: Record<K, V>,
+	allKeys: string[] | readonly string[],
+): [K, V][] => Object
+	.typedKeys(obj, allKeys)
+	.map((key) => [ key, obj[key] ]);
 
-type EventListeners = {
-	listeners: EventListenerOrEventListenerObject[],
-	sealed: boolean
+type EventTargetWithEventType<TEventType extends string> = EventTarget & {
+	__events : Record<TEventType, EventListeners>;
 };
 
-interface CustomTouchEvent {
-	(data: { touches: TouchEvent['touches'] }): void;
+interface EventListeners {
+	listeners : EventListenerOrEventListenerObject[];
+	sealed    : boolean;
 }
 
-type Ol = {
-	Map: OlMap,
-	View: OlView,
-	proj: OlProj;
+type CustomTouchEvent = (data: { touches : TouchEvent['touches'] }) => void;
+
+interface Ol {
+	Map    : OlMap;
+	View   : OlView;
+	proj   : OlProj;
 	source: {
-		Vector: new <TLayerName extends LayerName>() => OlSource<TLayerName>;
+		Vector : new () => OlSource;
 	};
 	layer: {
-		Vector: new<TLayerName extends LayerName>({ source, className }: { source: OlSource<TLayerName>, className: `ol-layer__${TLayerName}` }) => OlLayer<TLayerName>;
+		Vector : new<TLayerName extends LayerName>({ source, className }: {
+			source    : OlSource;
+			className : `ol-layer__${TLayerName}`;
+		}) => OlLayer;
 	};
-	Feature: new <TLayerName extends LayerName>({ geometry }: { geometry: OlGeometry }) => OlFeature<TLayerName>;
+	Feature : new ({ geometry }: { geometry : OlGeometry }) => OlFeature;
 	geom: {
-		LineString: new (flatCoordinates: OlFlatCoordinates[]) => OlGeometry;
-		Polygon: new (flatCoordinates: OlFlatCoordinates[][]) => OlGeometry;
-		Circle: new (flatCoordinates: OlFlatCoordinates[], radius: number) => OlGeometry;
-	}
+		LineString : new (flatCoordinates: OlFlatCoordinates[]) => OlGeometry;
+		Polygon    : new (flatCoordinates: OlFlatCoordinates[][]) => OlGeometry;
+		Circle     : new (flatCoordinates: OlFlatCoordinates[], radius: number) => OlGeometry;
+	};
 	format: {
-		GeoJSON: new () => OlFormat;
+		GeoJSON : new () => OlFormat;
 	};
 	style: {
-		Style: new (styles: OlStyles) => OlStyle;
-		Fill: new (fillStyle: { color: string }) => OlFill;
-		Stroke: new (strokeStyle: { color: string; width: number }) => OlStroke;
+		Style  : new (styles: OlStyles) => OlStyle;
+		Fill   : new (fillStyle: { color : string }) => OlFill;
+		Stroke : new (strokeStyle: { color : string; width : number }) => OlStroke;
 	};
-};
-
-type OlMap = {
-	addLayer: <TLayerName extends LayerName>(layer: OlLayer<TLayerName>) => void;
-	getAllLayers: () => OlLayer<any>[];
-	getView: () => OlView;
-	forEachFeatureAtPixel: <TLayerName extends LayerName>(pixel: OlPixel, callback: (feature: OlFeature<TLayerName>, layer: OlLayer<TLayerName>) => void) => void;
-	getListeners: <TEventType extends OlMapEventType>(eventName: TEventType) => Array<OlMapEventListener<TEventType>>;
-	on: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
-	un: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
-};
-
-type LayerName = 'points' | 'lines' | 'regions' | 'lines_built' | 'regions_built' | 'regions_shared' | 'highlights' | 'temp_lines';
-
-type OlLayer<TLayerName extends LayerName> = OlObject<TLayerName, true> & {
-	getSource: () => OlSource<TLayerName>;
-	setVisible: (visible: boolean) => void;
-};
-
-type OlSource<TLayerName extends LayerName> = {
-	addFeature: (feature: OlFeature<TLayerName>) => void;
-	removeFeature: (feature: OlFeature<TLayerName>) => void;
-	getFeatures: () => OlFeature<TLayerName>[];
-	clear: (fast?: boolean) => void;
-	on: <T extends OlSourceEventName>(eventName: T, handler: (...args: OlSourceEvents<TLayerName>[T][]) => void) => void;
-};
-
-type OlFeature<TLayerName extends LayerName> = OlObject<TLayerName, false> & {
-	getGeometry: () => OlGeometry;
-	getId: () => OlGuid;
-	setId: (id: OlGuid) => void;
-	getStyle: () => OlStyle;
-	setStyle: (style: OlStyle) => void;
-};
-
-type OlFeatureStyles = {
-	TEXT: (text: string) => OlStyle;
-	POINT: (pos: OlFlatCoordinates, team: Team, energy: number, light: boolean | number) => OlStyle;
-};
-
-type OlTeamColors = Array<{
-	fill: `#${string}`;
-	stroke: `#${string}`;
-}>;
-
-type TProperties<TLayerName extends LayerName, TLayer extends boolean> = TLayer extends true
-	? OlLayerProperties<TLayerName>
-	: OlFeatureProperties<TLayerName>;
-
-type OlObject<TLayerName extends LayerName | never, TLayer extends boolean> = {
-	getProperties: () => TProperties<TLayerName, TLayer>;
-	setProperties: (properties: TProperties<TLayerName, TLayer>, silent?: true) => void;
 }
 
-type OlLayerProperties<TLayerName extends LayerName> = { name: TLayerName, zIndex: number };
+interface OlMap {
+	addLayer              : (layer: OlLayer) => void;
+	getAllLayers          : () => OlLayer[];
+	getView               : () => OlView;
+	forEachFeatureAtPixel : (pixel: OlPixel, callback: (feature: OlFeature, layer: OlLayer) => void) => void;
+	getListeners          : <TEventType extends OlMapEventType>(eventName: TEventType) => Array<OlMapEventListener<TEventType>>;
+	on                    : <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
+	un                    : <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
+}
 
-type OlFeatureProperties<TLayerName> = TLayerName extends `regions${string}`
-? {
-	team: Team,
-	mine: boolean,
-	shared: boolean
-} : {
-	team: Team,
-	mine: boolean
+const layerNames = [ 'base', 'highlights', 'lines_built', 'lines_temp', 'lines', 'points', 'regions_built', 'regions_shared', 'regions', 'temp_lines' ] as const;
+type LayerName = typeof layerNames[number];
+
+type OlLayer = OlObject<true> & {
+	getSource  : () => OlSource;
+	setVisible : (visible: boolean) => void;
 };
 
-type OlGeometry = {
-	flatCoordinates: OlFlatCoordinates;
+interface OlSource {
+	addFeature    : (feature: OlFeature) => void;
+	removeFeature : (feature: OlFeature) => void;
+	getFeatures   : () => OlFeature[];
+	clear         : (fast?: boolean) => void;
+	on            : <T extends OlSourceEventName>(eventName: T, handler: (...args: OlSourceEvents[T][]) => void) => void;
+}
+
+type OlFeature = OlObject<false> & {
+	getGeometry : () => OlGeometry;
+	getId       : () => OlGuid;
+	setId       : (id: OlGuid) => void;
+	getStyle    : () => OlStyle;
+	setStyle    : (style: OlStyle) => void;
+};
+
+interface OlFeatureStyles {
+	TEXT  : (text: string) => OlStyle;
+	POINT : (pos: OlFlatCoordinates, team: Team, energy: number, light: boolean | number) => OlStyle;
+}
+
+type OlTeamColors = Array<{
+	fill   : `#${string}`;
+	stroke : `#${string}`;
+}>;
+
+type TProperties<TLayer extends boolean> = TLayer extends true
+	? OlLayerProperties
+	: OlFeatureProperties;
+
+interface OlObject<TLayer extends boolean> {
+	getProperties : () => TProperties< TLayer>;
+	setProperties : (properties: Partial<TProperties<TLayer>>, silent?: true) => void;
+}
+
+interface OlLayerProperties {
+	name   : string | undefined;
+	zIndex : number;
+}
+
+interface OlFeatureProperties {
+	team   : Team;
+	mine   : boolean;
+	shared : boolean;
+}
+
+interface OlGeometry {
+	flatCoordinates : OlFlatCoordinates;
 }
 
 type OlFlatCoordinates = number[];
@@ -239,106 +249,106 @@ type OlCoordsString = `${OlCoords[0]},${OlCoords[1]}`;
 type OlGuid = string;
 type Team = 0 | 1 | 2 | 3 | 4;
 
-type OlFill = {};
-type OlStroke = {};
-type OlStyle = {};
-type OlStyles = {
-	fill?: OlFill;
-	stroke?: OlStroke;
-};
+/* eslint-disable @typescript-eslint/no-empty-interface -- interfaces for compatibility */
+interface OlFill {}
+interface OlStroke {}
+interface OlStyle {}
+interface OlPixel {}
+/* eslint-enable @typescript-eslint/no-empty-interface */
 
-type OlPoint = OlFeature<'points'>;
-type OlLine = OlFeature<'lines'>;
-type OlRegion = OlFeature<'regions'>;
+interface OlStyles {
+	fill?   : OlFill;
+	stroke? : OlStroke;
+}
 
 type OlSourceEventName = 'addfeature';
-type OlSourceEvents<TLayerName extends LayerName> = {
+interface OlSourceEvents {
 	addfeature: {
-		feature: OlFeature<TLayerName>;
-	},
-};
+		feature : OlFeature;
+	};
+}
 
 type OlView = MapView<OlCoords> & {
-	prototype: OlView;
-	animate: (...args: Array<Record<'duration', number>>) => void;
+	prototype : OlView;
+	animate   : (...args: Array<Record<'duration', number>>) => void;
 };
 
-type OlPixel = {};
-
-type OlMapEventType = 'click' | 'movestart' | 'moveend' | 'pointerdrag';
+type OlMapEventType = 'click' | 'moveend' | 'movestart' | 'pointerdrag';
 type OlMapEventListener<TMapEventType extends OlMapEventType> = (ev: OlMapEvents[TMapEventType]) => void;
 
-type OlMapEvents = {
-	click: OlMapClickEvent,
-	movestart: OlMapEvent,
-	moveend: OlMapEvent,
-	pointerdrag: OlMapEvent,
+interface OlMapEvents {
+	click       : OlMapClickEvent;
+	movestart   : OlMapEvent;
+	moveend     : OlMapEvent;
+	pointerdrag : OlMapEvent;
 }
 
 type OlMapClickEvent = OlMapEvent & {
-	pixel: OlPixel;
-}
-
-type OlMapEvent = {
-	target: OlMap;
-}
-
-type OlProj = {
-	fromLonLat: (coords: OlCoords) => OlFlatCoordinates;
-	toLonLat: (flatCoordinates: OlFlatCoordinates) => OlCoords;
+	pixel : OlPixel;
 };
 
-type OlFormat = {
-	readFeature: (arc: Arc) => OlLine;
-};
+interface OlMapEvent {
+	target : OlMap;
+}
 
-type Arc = {
+interface OlProj {
+	fromLonLat : (coords: OlCoords) => OlFlatCoordinates;
+	toLonLat   : (flatCoordinates: OlFlatCoordinates) => OlCoords;
+}
+
+interface OlFormat {
+	readFeature : (arc: Arc) => OlFeature;
+}
+
+interface Arc {
 	geometry: {
-		coordinates: OlLineCoords;
-	}
+		coordinates : OlLineCoords;
+	};
 }
 
-type Turf = {
-	greatCircle: (coord1: OlCoords, coord2: OlCoords, options: { npoints: number }) => Arc;
+interface Turf {
+	greatCircle : (coord1: OlCoords, coord2: OlCoords, options: { npoints : number }) => Arc;
 }
 
-type MapView<TCoords extends [number, number]> = {
-	getZoom: () => number;
-	setZoom: (zoom: number) => void;
-	getCenter: () => TCoords;
-	setCenter: (coords: TCoords) => void;
+interface MapView<TCoords extends [number, number]> {
+	getZoom   : () => number;
+	setZoom   : (zoom: number) => void;
+	getCenter : () => TCoords;
+	setCenter : (coords: TCoords) => void;
 }
 
-type Splide = {
-	defaults: {
-		speed: number;
-	}
-	go: (index: number) => void;
-	on: (type: string, handler: (event: SplideEvent) => void) => void;
-};
+interface Splide {
+	defaults?: {
+		speed : number;
+	};
+	go : (index: number) => void;
+	on : (type: string, handler: (event: SplideEvent) => void) => void;
+}
 
-type SplideEvent = { index: number, slide: HTMLElement };
+interface SplideEvent {
+	index : number; slide : HTMLElement;
+}
 
-type ToastifyOptions = {
-	text: string;
-	duration: number;
-	forceDuration: boolean;
-	gravity: 'top' | 'bottom';
-	position: 'left' | 'right' | 'center';
-	className: string;
-};
+interface ToastifyOptions {
+	text          : string;
+	duration      : number;
+	forceDuration : boolean;
+	gravity       : 'bottom' | 'top';
+	position      : 'center' | 'left' | 'right';
+	className     : string;
+}
 
-type Toastify = {
+interface Toastify {
 	(options: ToastifyOptions): Toastify;
-	showToast: () => void;
+	showToast : () => void;
 	prototype: {
-		init: (options: ToastifyOptions) => void;
-	}
+		init : (options: ToastifyOptions) => void;
+	};
 }
 
-type I18Next = {
-	t: (key: string, data?: any) => string;
-	translator: unknown;
+interface I18Next {
+	t          : (key: string, data?: unknown) => string;
+	translator : unknown;
 }
 
 const urlTypes = [ 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
@@ -346,8 +356,8 @@ const urlTypes = [ 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as con
 type UrlType = typeof urlTypes[number];
 
 type Urls = Record<UrlType, {
-	local: string;
-	remote: string;
+	local  : string;
+	remote : string;
 }>;
 
 const langs = [ 'ru', 'en' ] as const;
@@ -357,148 +367,151 @@ type Lang = typeof langs[number];
 type Level = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 type CUIPointHighlighting =
-	| 'fav'
-	| 'ref'
-	| 'uniqc'
-	| 'uniqv'
-	| 'cores'
-	| 'highlevel'
-	| 'off';
+	'cores' | 'fav' | 'highlevel' | 'off' | 'ref' | 'uniqc' | 'uniqv';
 
-type CUIConfig = {
+interface CUIConfig {
 	maxAmountInBag: {
-		cores: Record<Level, number>,
-		catalysers: Record<Level, number>,
-		references: { allied: number, hostile: number },
-	},
+		cores      : Record<Level, number>;
+		catalysers : Record<Level, number>;
+		references : { allied : number; hostile : number };
+	};
 	autoSelect: {
-		deploy: 'min' | 'max' | 'off',
-		upgrade: 'min' | 'max' | 'off',
-		attack: 'max' | 'latest',
-	},
+		deploy  : 'max' | 'min' | 'off';
+		upgrade : 'max' | 'min' | 'off';
+		attack  : 'latest' | 'max';
+	};
 	mapFilters: {
-		invert: number,
-		hueRotate: number,
-		brightness: number,
-		grayscale: number,
-		sepia: number,
-		blur: number,
-		branding: 'default' | 'custom',
-		brandingColor: string,
-	},
+		invert        : number;
+		hueRotate     : number;
+		brightness    : number;
+		grayscale     : number;
+		sepia         : number;
+		blur          : number;
+		branding      : 'custom' | 'default';
+		brandingColor : string;
+	};
 	tinting: {
-		map: 0 | 1,
-		point: 'level' | 'team' | 'off',
-		profile: 0 | 1,
-	},
+		map     : 0 | 1;
+		point   : 'level' | 'off' | 'team';
+		profile : 0 | 1;
+	};
 	vibration: {
-		buttons: 0 | 1,
-		notifications: 0 | 1,
-	},
+		buttons       : 0 | 1;
+		notifications : 0 | 1;
+	};
 	ui: {
-		doubleClickZoom: 0 | 1,
-		pointBgImage: 0 | 1,
-		pointBtnsRtl: 0 | 1,
-		pointBgImageBlur: 0 | 1,
-		pointDischargeTimeout: 0 | 1,
-		speedometer: 0 | 1,
-	},
+		doubleClickZoom       : 0 | 1;
+		pointBgImage          : 0 | 1;
+		pointBtnsRtl          : 0 | 1;
+		pointBgImageBlur      : 0 | 1;
+		pointDischargeTimeout : 0 | 1;
+		speedometer           : 0 | 1;
+	};
 	pointHighlighting: {
-		inner: CUIPointHighlighting,
-		outer: CUIPointHighlighting,
-		outerTop: CUIPointHighlighting,
-		outerBottom: CUIPointHighlighting,
-		text: 'energy' | 'level' | 'lines' | 'refsAmount' | 'off',
-		innerColor: string,
-		outerColor: string,
-		outerTopColor: string,
-		outerBottomColor: string,
-	},
+		inner            : CUIPointHighlighting;
+		outer            : CUIPointHighlighting;
+		outerTop         : CUIPointHighlighting;
+		outerBottom      : CUIPointHighlighting;
+		text             : 'energy' | 'level' | 'lines' | 'off' | 'refsAmount';
+		innerColor       : string;
+		outerColor       : string;
+		outerTopColor    : string;
+		outerBottomColor : string;
+	};
 	drawing: {
-		minDistance: number,
-		maxDistance: number,
-	},
+		minDistance : number;
+		maxDistance : number;
+	};
 	notifications: {
-		status: 'all' | 'fav' | 'off',
-		onClick: 'close' | 'jumpto',
-		interval: number,
-		duration: number,
-	},
+		status   : 'all' | 'fav' | 'off';
+		onClick  : 'close' | 'jumpto';
+		interval : number;
+		duration : number;
+	};
 }
 
-type SelfData = {
-	g: string;
-	l: number;
-	n: string;
-	t: number;
-	td: boolean;
-	x: number;
+interface SelfData {
+	g  : string;
+	l  : number;
+	n  : string;
+	t  : number;
+	td : boolean;
+	x  : number;
 }
 
-type Notif = {
-	id: number;
-	g: string;
-	na: string;
-	ta: number;
-	ti: string;
-	c: OlCoords;
-	t: string;
-};
+interface Notif {
+	id : number;
+	g  : string;
+	na : string;
+	ta : number;
+	ti : string;
+	c  : OlCoords;
+	t  : string;
+}
 
-type ReadableVariable<T> = { get: () => T };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type WritableVariable<T> = { set: (value: T) => void } & ReadableVariable<T>;
+interface InventoryItem {
+	g : string;
+	a : number;
+	t : number;
+}
+
+interface ReadableVariable<T> {
+	get : () => T;
+}
+type WritableVariable<T> = ReadableVariable<T> & { set : (value: T) => void };
 
 type ApiQueryType = 'point' | 'profile';
 
-type ApiQuery = <T extends ApiQueryType>(kind: T, data: { guid: OlGuid }) => Promise<ApiResponse<ApiData[T]>>;
+type ApiQuery = <T extends ApiQueryType>(kind: T, data: { guid : OlGuid }) => Promise<ApiResponse<ApiData[T]>>;
 
-type ApiResponse<T> = { response: { data: T }};
-
-type ApiData = {
-	point: ApiPointData;
-	profile: ApiProfileData;
+interface ApiResponse<T> {
+	response : { data : T };
 }
 
-type ApiPointData = { t: string };
+interface ApiData {
+	point   : ApiPointData;
+	profile : ApiProfileData;
+}
 
-type ApiProfileData = {
-	name: string;
-	team: Team;
-	level: number;
-} & Record<string, number>;
+interface ApiPointData {
+	t : string;
+}
+
+type ApiProfileData = Record<string, number> & {
+	name  : string;
+	team  : Team;
+	level : number;
+};
 
 (function() {
-	type EventWatcherListenerOptions = {
-		once?: boolean;
-		previous?: boolean;
+	interface EventWatcherListenerOptions {
+		once?     : boolean;
+		previous? : boolean;
 	}
 
-	type EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> = {
-		handler: (eventData: TEventData) => void;
-		enabled: boolean;
-		listenerOptions: TListenerOptions;
-	};
+	interface EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> {
+		handler         : (eventData: TEventData) => void;
+		enabled         : boolean;
+		listenerOptions : TListenerOptions;
+	}
 
-	type EventWatcherEvent<TEventData, TEventOptions = void> = {
-		eventData: TEventData;
-		eventOptions: TEventOptions;
-	};
+	interface EventWatcherEvent<TEventData, TEventOptions = void> {
+		eventData    : TEventData;
+		eventOptions : TEventOptions;
+	}
 
 	abstract class EventWatcher<
 		TEventTypes extends string,
-		TEventDataTypes extends Record<TEventTypes, any>,
+		TEventDataTypes extends Record<TEventTypes, unknown>,
 		TEventOptions = void,
-		TListenerOptions extends EventWatcherListenerOptions & TEventOptions = EventWatcherListenerOptions & TEventOptions
+		TListenerOptions extends EventWatcherListenerOptions & TEventOptions = EventWatcherListenerOptions & TEventOptions,
 	> {
-		protected eventTypes: readonly TEventTypes[];
-
+		protected eventTypes : readonly TEventTypes[];
 		protected listeners: {
 			[TEventType in TEventTypes]: Array<
 				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
 			>
 		};
-
 		protected events: {
 			[TEventType in TEventTypes]: Array<
 				EventWatcherEvent<TEventDataTypes[TEventType], TEventOptions>
@@ -516,44 +529,6 @@ type ApiProfileData = {
 			});
 
 			this.watch();
-		}
-
-		protected abstract watch(): void;
-
-		protected filter<TEventType extends TEventTypes>(
-			listeners: typeof this.listeners[TEventType],
-			_filterData: {
-				eventOptions?: TEventOptions
-			},
-		): typeof this.listeners[TEventType] {
-			return listeners;
-		}
-
-		private trigger<TEventType extends TEventTypes>(
-			listeners: typeof this.listeners[TEventType],
-			{ eventData, eventOptions }: {
-				eventData: TEventDataTypes[TEventType],
-				eventOptions: TEventOptions
-			},
-		) {
-			listeners.filter((listener) => this.isMatchEventOptions(listener, eventOptions)).map((listener) => {
-				if (!listener.enabled) {
-					return;
-				}
-
-				if (listener.listenerOptions.once) {
-					listener.enabled = false;
-				}
-
-				listener.handler(eventData);
-			});
-		}
-
-		protected isMatchEventOptions<TEventType extends TEventTypes>(
-			_listener: EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>,
-			_eventOptions: TEventOptions,
-		): boolean {
-			return true;
 		}
 
 		emit<TEventType extends TEventTypes>(
@@ -593,17 +568,55 @@ type ApiProfileData = {
 
 			return this;
 		}
+
+		protected filter<TEventType extends TEventTypes>(
+			listeners: typeof this.listeners[TEventType],
+			_filterData: {
+				eventOptions? : TEventOptions;
+			},
+		): typeof this.listeners[TEventType] {
+			return listeners;
+		}
+
+		protected isMatchEventOptions<TEventType extends TEventTypes>(
+			_listener: EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>,
+			_eventOptions: TEventOptions,
+		): boolean {
+			return true;
+		}
+
+		private trigger<TEventType extends TEventTypes>(
+			listeners: typeof this.listeners[TEventType],
+			{ eventData, eventOptions }: {
+				eventData    : TEventDataTypes[TEventType];
+				eventOptions : TEventOptions;
+			},
+		): void {
+			listeners.filter((listener) => this.isMatchEventOptions(listener, eventOptions)).map((listener) => {
+				if (!listener.enabled) {
+					return;
+				}
+
+				if (listener.listenerOptions.once) {
+					listener.enabled = false;
+				}
+
+				listener.handler(eventData);
+			});
+		}
+
+		protected abstract watch(): void;
 	}
 
 	const consoleWatcherEventTypes = [ 'log', 'warn', 'error', 'info', 'debug', 'trace' ] as const;
 
-	type ConsoleWatcherEventDataTypes = {
-		log: { message: string };
-		warn: { message: string };
-		error: { message: string };
-		info: { message: string };
-		debug: { message: string };
-		trace: { message: string };
+	interface ConsoleWatcherEventDataTypes {
+		log   : { message : string };
+		warn  : { message : string };
+		error : { message : string };
+		info  : { message : string };
+		debug : { message : string };
+		trace : { message : string };
 	}
 
 	class ConsoleWatcher extends EventWatcher<
@@ -615,18 +628,21 @@ type ApiProfileData = {
 			super(consoleWatcherEventTypes);
 		}
 
-		protected override watch() {
+		protected override watch(): void {
 			consoleWatcherEventTypes.map((eventType) => {
 				((originalMethod, originalError) => {
-					console[eventType] = (...args: any[]) => {
+					console[eventType] = (...args: unknown[]) => {
 						const isError = eventType === 'error' || args.filter((arg) => arg instanceof Error).length > 0;
-						const lines   = args.map((arg) => arg instanceof Error ? [ arg.message, arg.stack ].join('\n') : !arg ? ((arg) => {
-							console.error('null argument', { arg, args });
-							return 'null';
-						})(arg) : arg.toString());
-						const result  = (isError ? originalError : originalMethod).call(console, ...args);
+						const lines   = args.map((arg) => arg instanceof Error
+							? [ arg.message, arg.stack ].join('\n')
+							: !arg
+								? ((arg) => {
+									console.error('null argument', { arg, args });
+									return 'null';
+								})(arg)
+								: stringify(arg, 'string'));
+						(isError ? originalError : originalMethod).call(console, ...args);
 						this.emit(isError ? 'error' : eventType, { message : lines.map((line) => line.trim()).join('\n') }, {});
-						return result;
 					};
 				})(console[eventType], console.error);
 			});
@@ -637,10 +653,10 @@ type ApiProfileData = {
 	const logs           = [] as string[];
 	const logParts       = [ 'time', 'eventType', 'message' ] as const;
 
-	type LogBuilderPart = {
-		enabled: boolean,
-		format: (eventType: typeof consoleWatcherEventTypes[number], message: string) => string
-	};
+	interface LogBuilderPart {
+		enabled : boolean;
+		format  : (eventType: typeof consoleWatcherEventTypes[number], message: string) => string;
+	}
 
 	const logBuilder: Record<typeof logParts[number], LogBuilderPart> = {
 		time : {
@@ -657,7 +673,7 @@ type ApiProfileData = {
 		},
 	} as const;
 
-	function getLogDate() {
+	function getLogDate(): string {
 		const date = new Date();
 		const time = [ date.getHours(), date.getMinutes(), date.getSeconds() ].map((value) => value.toString().padStart(2, '0')).join('.');
 		return `${time}:${date.getMilliseconds()}`;
@@ -688,9 +704,9 @@ type ApiProfileData = {
 			case 'keys':
 				return `[${Object.keys(obj).join(', ')}]`;
 			case 'string':
-				return obj.toString();
+				return String(obj);
 			default:
-				return `unknown mode '${mode}', expected one of [${stringifyModes.join(', ')}]`;
+				return `unknown mode '${String(mode)}', expected one of [${stringifyModes.join(', ')}]`;
 		}
 	}
 
@@ -704,11 +720,15 @@ type ApiProfileData = {
 
 	window.__sbg_onerror_handlers = [];
 	window.__sbg_onerror_handlers.push((event, _source, lineno, colno, error) => {
-		console.error(`${event} on ${lineno}:${colno}`, error);
+		const eventType = typeof event === 'string' ? event : event.type;
+		console.error(`${eventType} on ${lineno}:${colno}`, error);
 	});
 
 	window.onerror = function(event, source, lineno, colno, error) {
-		window.__sbg_onerror_handlers.map((handler) => handler(event, source, lineno, colno, error));
+		window.__sbg_onerror_handlers.forEach((handler) => {
+			handler(event, source, lineno, colno, error);
+		});
+
 		return true;
 	};
 
@@ -716,59 +736,62 @@ type ApiProfileData = {
 	console.log(`started at ${new Date().toISOString()}`);
 	console.log(`userAgent: ${navigator.userAgent}`);
 
-	type Labels = {
-		save: Label;
-		close: Label;
-		ymaps: Label;
+	interface Labels {
+		save     : Label;
+		close    : Label;
+		ymaps    : Label;
 		settings: {
-			title: Label;
-			button: Label;
-			version: Label;
-			logs: Label;
-			advanced: Label;
-		},
+			title    : Label;
+			button   : Label;
+			version  : Label;
+			logs     : Label;
+			advanced : Label;
+		};
 		toasts: {
-			back: Label;
-			logs: Label;
-			cuiUpdated: Label;
-			localWarning: Label;
-			noGeoApp: Label;
-			featureSwitchedOff: Label;
-		}
+			back               : Label;
+			logs               : Label;
+			cuiUpdated         : Label;
+			localWarning       : Label;
+			noGeoApp           : Label;
+			noLayer            : Label;
+			featureSwitchedOff : Label;
+		};
 		builder: {
-			buttons: Record<BuilderButtons, BuilderButtonLabel>;
+			buttons  : Record<BuilderButtons, BuilderButtonLabel>;
 			messages: {
-				setHome: Label;
-				deleteHome: Label;
-				copied: Label;
-			}
+				setHome    : Label;
+				deleteHome : Label;
+				copied     : Label;
+			};
 			issues: {
-				title: Label;
-				list: Label[];
-			},
+				title : Label;
+				list  : Label[];
+			};
 			help: {
-				title: Label;
-				buttons: Label;
-			},
+				title   : Label;
+				buttons : Label;
+			};
 			validationErrors: {
-				json: Label;
-				empty: Label;
-				object: Label;
-				objectProperties: Label;
-				pointProperties: Label;
-				pointCoords: Label;
-				lines: Label;
-				linesCoords: Label;
-				unknownError: Label;
-			}
-		}
+				json             : Label;
+				empty            : Label;
+				object           : Label;
+				objectProperties : Label;
+				pointProperties  : Label;
+				pointCoords      : Label;
+				lines            : Label;
+				linesCoords      : Label;
+				unknownError     : Label;
+			};
+		};
 	}
 
-	type BuilderButtonLabel = { title: Label; description: Label };
+	interface BuilderButtonLabel {
+		title : Label; description : Label;
+	}
 
 	const builderButtons = [ 'home', 'allLines', 'builder', 'undo', 'clear', 'route', 'copy', 'paste', 'help' ] as const;
 	type BuilderButtons = typeof builderButtons[number];
-	type BuilderAction = (previousState: boolean) => Promise<boolean | void>;
+	type BuilderAction = (previousState: boolean) => boolean | undefined;
 	type BuilderActions = Record<BuilderButtons, BuilderAction>;
 	type BuilderStates = Record<BuilderButtons, boolean>;
 	type BuilderFeatures = Record<BuilderButtons, BuilderFeature>;
@@ -781,11 +804,11 @@ type ApiProfileData = {
 		) {
 		}
 
-		format(data: Record<string, string | Label>): Label {
+		format(data: Record<string, Label | string>): Label {
 			const formattedLabel = new Label({ ... this.values });
 
 			for (const lang of langs) {
-				formattedLabel.values[lang] = formattedLabel.values[lang].replace(/\$\{(.+?)\}/g, (_, key) => {
+				formattedLabel.values[lang] = formattedLabel.values[lang].replace(/\$\{(.+?)\}/g, (_, key: string) => {
 					const value = data[key];
 
 					if (!value) {
@@ -863,6 +886,10 @@ type ApiProfileData = {
 			noGeoApp : new Label({
 				ru : 'Не найдено ни одного приложения карт. Координаты скопированы в буфер обмена.',
 				en : 'Maps application is not found. Coordinates has been copied to the clipboard.',
+			}),
+			noLayer : new Label({
+				ru : 'Слой ${layerName} не существует',
+				en : 'Layer ${layerName} does not exist',
 			}),
 			featureSwitchedOff : new Label({
 				ru : '${label} временно не работает и отключён до исправления его автором',
@@ -1050,41 +1077,47 @@ type ApiProfileData = {
 	console.log('created labels');
 
 	class Settings {
-		private storageKey = 'sbg-plus-settings';
-		private features: Record<string, boolean>;
+		private readonly storageKey = 'sbg-plus-settings';
+		private readonly features : Map<string, boolean>;
 
 		constructor() {
 			try {
-				const str     = localStorage[this.storageKey];
-				const json    = JSON.parse(str);
-				this.features = json.features;
+				const str = localStorage.getItem(this.storageKey);
+
+				const savedFeatures = str
+					? jsonSelect<Record<string, boolean>>(str, [ 'features' ])
+					: {};
+
+				this.features = new Map(Object.typedEntries(savedFeatures, Object.keys(savedFeatures)));
 			} catch {
-				this.features = {};
+				this.features = new Map();
 			}
 		}
 
 		getFeature(featureKey: string): boolean | undefined {
-			return this.features[featureKey];
+			return this.features.get(featureKey);
 		}
 
-		setFeature(featureKey: string, value: boolean): Settings {
-			this.features[featureKey] = value;
+		setFeature(featureKey: string, value: boolean): this {
+			this.features.set(featureKey, value);
 			return this;
 		}
 
-		cleanupFeatures() {
+		cleanupFeatures(): void {
 			const featureKeys = Object.keys(features.keys);
 
 			Object.keys(this.features)
 				.filter((key) => !featureKeys.includes(key))
-				.forEach((key) => delete this.features[key]);
+				.forEach((key) => {
+					this.features.delete(key);
+				});
 		}
 
-		save() {
-			const json                    = {} as Record<string, any>;
-			json['features']              = this.features;
-			const str                     = JSON.stringify(json);
-			localStorage[this.storageKey] = str;
+		save(): void {
+			const json       = {} as Record<string, unknown>;
+			json['features'] = this.features;
+			const str        = JSON.stringify(json);
+			localStorage.setItem(this.storageKey, str);
 		}
 	}
 
@@ -1117,56 +1150,60 @@ type ApiProfileData = {
 	type FeatureGroup = keyof typeof featureGroups;
 	type FeatureTrigger = typeof featureTriggers[number];
 
-	type FeatureParent = {
-		dependency: 'any' | 'all';
-	};
-
-	type FeatureParents = {
-		parent: FeatureBase<any, any>,
-		dependency: 'any' | 'all';
-	};
-
-	interface FeatureOptions {
-		group: FeatureGroup;
-		trigger: FeatureTrigger;
-		broken?: boolean;
-		public?: boolean;
-		simple?: boolean;
-		desktop?: boolean;
-		unchecked?: boolean | (() => boolean);
-		parent?: FeatureParent;
+	interface FeatureParent {
+		dependency : 'all' | 'any';
 	}
 
-	abstract class FeatureBase<TArgument, TData> {
-		key: string;
-		label: Label;
-		group: FeatureGroup;
-		trigger: FeatureTrigger;
-		abstract func: ((data: TData) => TArgument);
-		broken: boolean;
-		private public: boolean;
-		private simple: boolean;
-		private desktop: boolean;
-		private unchecked: boolean | (() => boolean);
-		parent?: FeatureParent;
+	interface FeatureParents {
+		parent     : FeatureBase<never>;
+		dependency : 'all' | 'any';
+	}
+
+	interface FeatureOptions {
+		group      : FeatureGroup;
+		trigger    : FeatureTrigger;
+		broken?    : boolean;
+		public?    : boolean;
+		simple?    : boolean;
+		desktop?   : boolean;
+		unchecked? : boolean | (() => boolean);
+		parent?    : FeatureParent;
+	}
+
+	abstract class FeatureBase<TData> {
+		readonly kind              : 'feature' | 'transformer';
+		key                        : string;
+		label                      : Label;
+		group                      : FeatureGroup;
+		trigger                    : FeatureTrigger;
+		broken                     : boolean;
+		parent?                    : FeatureParent;
+		private readonly public    : boolean;
+		private readonly simple    : boolean;
+		private readonly desktop   : boolean;
+		private readonly unchecked : boolean | (() => boolean);
 		private toggleValue = false;
 
+		abstract func: ((data: TData) => void);
+
 		constructor(
-			func: ((data: TData) => TArgument),
+			kind: 'feature' | 'transformer',
+			func: ((data: TData) => void),
 			labelValues: LabelValues,
 			options : FeatureOptions,
 		) {
+			this.kind  = kind;
 			this.key   = func.name;
 			this.label = new Label(labelValues);
 
 			this.group   = options.group;
 			this.trigger = options.trigger;
 
-			this.broken    = options.broken || false;
-			this.public    = options.public || false;
-			this.simple    = options.simple || false;
-			this.desktop   = options.desktop || false;
-			this.unchecked = options.unchecked || false;
+			this.broken    = options.broken ?? false;
+			this.public    = options.public ?? false;
+			this.simple    = options.simple ?? false;
+			this.desktop   = options.desktop ?? false;
+			this.unchecked = options.unchecked ?? false;
 
 			features.add(this, options);
 		}
@@ -1189,14 +1226,16 @@ type ApiProfileData = {
 		}
 
 		isAvailable(): boolean {
+			const lastUsername = localStorage.getItem('sbg-plus-last-username');
+
 			return (
 				isMobile()
 				|| this.desktop
 			) && (
 				this.public
-				|| (localStorage['sbg-plus-last-username'] && protectedFeatures[localStorage['sbg-plus-last-username']]?.includes(this))
+				|| !!lastUsername && (protectedFeatures[lastUsername]?.includes(this) ?? false)
 				|| this.getPreset() === 'full'
-				|| localStorage['sbg-plus-test-mode']
+				|| !!localStorage.getItem('sbg-plus-test-mode')
 			);
 		}
 
@@ -1204,9 +1243,7 @@ type ApiProfileData = {
 			return this.simple;
 		}
 
-		protected abstract getData(argument: TArgument): TData;
-
-		toggle(value: boolean = !this.toggleValue): boolean {
+		toggle(value = !this.toggleValue): boolean {
 			const attributeKey = `data-feat-${this.key}`;
 			this.toggleValue   = value;
 
@@ -1220,81 +1257,93 @@ type ApiProfileData = {
 			return value;
 		}
 
-		exec(argument: TArgument): TArgument {
+		exec(data: TData): void {
 			if (!this.isEnabled()) {
 				console.log(`skipped ${this.func.name}`);
-				return argument;
 			}
 
 			try {
-				const data   = this.getData(argument);
-				const result = this.func(data);
+				this.func(data);
 				this.toggle(true);
 				console.log(`executed ${this.func.name}`);
-				return result;
 			} catch (ex) {
 				console.error(`failed ${this.func.name}`, ex);
-				return argument;
 			}
 		}
 
-		private isIncluded(presetName: Presets): boolean {
-			const preset = presets[presetName] || presets['base'];
+		private isIncluded(presetName: unknown): boolean {
+			const preset = isPreset(presetName)
+				? presets[presetName]
+				: presets.base;
+
 			return preset.length === 0 || preset.includes(this);
 		}
 
-		private getPreset(): Presets {
-			return window.__sbg_preset as Presets;
+		private getPreset(): unknown {
+			return window.__sbg_preset;
 		}
 	}
 
-	class Feature<TRequiredElement = never> extends FeatureBase<void, TRequiredElement> {
-		func: (element: TRequiredElement) => void;
-		requires?: (() => TRequiredElement);
+	class Feature<TRequiredElement = never> extends FeatureBase<TRequiredElement | undefined> {
+		override func              : (el: TRequiredElement | undefined) => void;
+		private readonly requires? : () => TRequiredElement | undefined;
 
 		constructor(
-			func: (element: TRequiredElement) => void,
+			func: (required: TRequiredElement) => void,
 			labelValues: LabelValues,
 			options : FeatureOptions & {
-				requires?: (() => TRequiredElement)
-		}) {
-			super(func, labelValues, options);
-			this.func     = func;
+				requires? : () => TRequiredElement | undefined;
+			},
+		) {
+			const wrapper = (): void => {
+				const el = this.getElement();
+
+				if (el) {
+					func(el);
+				}
+			};
+
+			super('feature', wrapper, labelValues, options);
+			this.func     = wrapper;
 			this.requires = options.requires;
 		}
 
-		override getData(): TRequiredElement {
+		private getElement(): TRequiredElement | undefined {
 			if (this.requires) {
-				const data = this.requires();
+				const required = this.requires();
 
-				if (!data || typeof data === 'object' && 'length' in data && data.length === 0) {
-					throw 'requirement not met';
+				if (!required || typeof required === 'object' && 'length' in required && required.length === 0) {
+					throw new Error('requirement not met');
 				}
 
-				return data;
+				return required;
 			}
 
-			return undefined as TRequiredElement;
+			return undefined;
 		}
 	}
 
 	window.Feature = Feature;
 
-	class Transformer extends FeatureBase<Script, Script> {
-		func: (script: Script) => Script;
+	class Transformer extends FeatureBase<Script> {
+		func : (script: Script) => void;
 
 		constructor(
-			func: (script: Script) => Script,
+			func: (script: Script) => void,
 			labelValues: LabelValues,
 			options : FeatureOptions,
 		) {
-			super(func, labelValues, options);
+			super('transformer', func, labelValues, options);
 			this.func = func;
 		}
+	}
 
-		override getData(arg: Script): Script {
-			return arg;
-		}
+	// function isFeature(feature: FeatureBase<never>): feature is Feature {
+	// 	return feature.kind === 'feature';
+	// }
+
+	function isTransformer(feature: FeatureBase<never>): feature is Transformer {
+		return feature.kind === 'transformer';
 	}
 
 	const featuresEventTypes = [
@@ -1303,20 +1352,20 @@ type ApiProfileData = {
 		'toggle',
 	] as const;
 
-	type FeaturesEventDataTypes = {
-		add: FeatureBase<any, any>,
-		inherit: { feature: FeatureBase<any, any>, value: boolean },
-		toggle: { feature: FeatureBase<any, any>, value: boolean },
-	};
+	interface FeaturesEventDataTypes {
+		add     : FeatureBase<never>;
+		inherit : { feature : FeatureBase<never>; value : boolean };
+		toggle  : { feature : FeatureBase<never>; value : boolean };
+	}
 
 	class Features extends EventWatcher<
 		typeof featuresEventTypes[number],
 		FeaturesEventDataTypes,
 		EventWatcherListenerOptions
 	> {
-		keys = {} as Record<string, FeatureBase<any, any>>;
-		groups = {} as Record<FeatureGroup, FeatureBase<any, any>[]>;
-		triggers = {} as Record<FeatureTrigger, FeatureBase<any, any>[]>;
+		keys = {} as Record<string, FeatureBase<never>>;
+		groups = {} as Record<FeatureGroup, FeatureBase<never>[]>;
+		triggers = {} as Record<FeatureTrigger, FeatureBase<never>[]>;
 		parents = {} as Partial<Record<FeatureGroup, FeatureParents>>;
 
 		constructor() {
@@ -1325,14 +1374,12 @@ type ApiProfileData = {
 			featureTriggers.map((key) => this.triggers[key] = []);
 		}
 
-		protected override watch() {
-		}
-
-		get<TFeature extends Transformer | Feature<any>>(func: TFeature['func']): FeatureBase<any, any> | undefined {
+		// eslint-disable-next-line @typescript-eslint/ban-types -- allow any functions to be passed to get according features
+		get(func: Function): FeatureBase<never> | undefined {
 			return this.keys[func.name];
 		}
 
-		add(feature : FeaturesEventDataTypes['add'], { parent } : FeatureOptions) {
+		add(feature : FeaturesEventDataTypes['add'], { parent } : FeatureOptions): void {
 			this.keys[feature.key] = feature;
 			this.groups[feature.group].push(feature);
 			this.triggers[feature.trigger].push(feature);
@@ -1347,7 +1394,7 @@ type ApiProfileData = {
 			this.emit('add', feature, {});
 		}
 
-		inheritAll() {
+		inheritAll(): void {
 			Object.values(this.parents).forEach(({ parent, dependency }) => {
 				const children = this.getChildren(parent);
 
@@ -1361,7 +1408,7 @@ type ApiProfileData = {
 			});
 		}
 
-		inherit(feature: FeatureBase<any, any>, value: boolean) {
+		inherit(feature: FeatureBase<never>, value: boolean): void {
 			const featureParent = this.parents[feature.group];
 
 			if (!featureParent) {
@@ -1375,19 +1422,23 @@ type ApiProfileData = {
 			if (parent) {
 				const children = this.getChildren(parent);
 
-				if (value === !parent.isEnabled() && ((dependency === 'any') === value || children.filter((child) => child.isEnabled() !== value).length === 0)) {
+				if (value === !parent.isEnabled() && (dependency === 'any' === value || children.filter((child) => child.isEnabled() !== value).length === 0)) {
 					this.emit('inherit', { feature : parent, value }, {});
 				}
 			} else {
 				const children = this.getChildren(feature);
 
-				if ((dependency === 'all') === value) {
+				if (dependency === 'all' === value) {
 					children.forEach((child) =>  this.emit('inherit', { feature : child, value }, {}));
 				}
 			}
 		}
 
-		private getParent(feature: FeatureBase<any, any>): FeatureBase<any, any> | undefined {
+		protected override watch(): void {
+			return;
+		}
+
+		private getParent(feature: FeatureBase<never>): FeatureBase<never> | undefined {
 			const parents = this.parents[feature.group];
 			const parent  = parents?.parent;
 
@@ -1396,7 +1447,7 @@ type ApiProfileData = {
 				: undefined;
 		}
 
-		private getChildren(feature: FeatureBase<any, any>): FeatureBase<any, any>[] {
+		private getChildren(feature: FeatureBase<never>): FeatureBase<never>[] {
 			const parents = this.parents[feature.group];
 			const parent  = parents?.parent;
 
@@ -1643,39 +1694,43 @@ type ApiProfileData = {
 
 	settings.cleanupFeatures();
 
-	type Presets = 'base' | 'nicoscript' | 'egorscript' | 'allscripts' | 'full';
-	const presets = {} as Record<Presets, FeatureBase<any, any>[]>;
+	const presetTypes = [ 'allscripts', 'base', 'egorscript', 'full', 'nicoscript' ] as const;
+	type Presets = typeof presetTypes[number];
+	const presets = {} as Record<Presets, FeatureBase<never>[]>;
 
-	presets['base'] = [
+	function isPreset(preset: unknown): preset is Presets {
+		return presetTypes.includes(preset as Presets);
+	}
+
+	presets.base = [
 		...features.groups.base,
 	];
 
 	if (window.innerWidth >= 800) {
-		presets['base'].push(features.get(showBuilderPanel)!);
+		presets.base.push(features.get(showBuilderPanel)!);
 	}
 
-	presets['nicoscript'] = [
-		...presets['base'],
+	presets.nicoscript = [
+		...presets.base,
 		...features.groups.cui,
 		features.get(loadCUI)!,
 	];
 
-	presets['egorscript'] = [
-		...presets['base'],
+	presets.egorscript = [
+		...presets.base,
 		...features.groups.eui,
 		features.get(loadEUI)!,
 	];
 
-	presets['allscripts'] = [
-		...presets['nicoscript'],
-		...presets['egorscript'],
+	presets.allscripts = [
+		...presets.nicoscript,
+		...presets.egorscript,
 		features.get(restoreCUISort)!,
 	];
 
-	presets['full'] = [];
+	presets.full = [];
 
-	const protectedFeatures: Record<string, Array<FeatureBase<any, any>>> = {
-		/* eslint-disable quote-props */
+	const protectedFeatures: Record<string, Array<FeatureBase<never>>> = {
 		'MadMaxNsK' : [ features.get(joinFireButtons)! ],
 	};
 
@@ -1684,14 +1739,28 @@ type ApiProfileData = {
 	console.log('created features');
 
 	class Layers {
-		layers = {} as {[ key in LayerName ] : OlLayer<any> };
+		private readonly layers : Map<LayerName, OlLayer>;
 
-		get<TLayerName extends LayerName>(layerName: TLayerName): OlLayer<TLayerName> {
-			return this.layers[layerName];
+		constructor() {
+			this.layers = new Map();
 		}
 
-		set<TLayerName extends LayerName>(layerName: TLayerName, layer: OlLayer<TLayerName>) {
-			this.layers[layerName] = layer;
+		get<TLayerName extends LayerName>(layerName: TLayerName): OlLayer {
+			const layer = this.layers.get(layerName);
+
+			if (!layer) {
+				throw new Error(labels.toasts.noLayer.format({ layerName }).toString());
+			}
+
+			return layer;
+		}
+
+		set<TLayerName extends LayerName>(layerName: TLayerName, layer: OlLayer): void {
+			this.layers.set(layerName, layer);
+		}
+
+		has<TLayerName extends LayerName>(layerName: TLayerName): boolean {
+			return this.layers.has(layerName);
 		}
 	}
 
@@ -1699,84 +1768,59 @@ type ApiProfileData = {
 
 	console.log('created layers');
 
-	type ScriptReplacer<TSearchValue extends string | RegExp> = TSearchValue extends string ? string : (string | ((substring: string, ...args: any[]) => string));
+	type ScriptReplacer<TSearchValue extends RegExp | string> = TSearchValue extends string
+		? string
+		: (string | ((substring: string, ...args: string[]) => string));
 
 	class Script {
 		constructor(private data: string | undefined) {}
 
-		static async create({ src, prefix, transformer, data }: { src: string, data?: string, prefix: `__sbg_${string}`, transformer: (script: Script) => void }): Promise<Script> {
+		static async create({ src, prefix, transformer, data }: {
+			src         : string;
+			data?       : string;
+			prefix      : `__sbg_${string}`;
+			transformer : (script: Script) => void;
+		}): Promise<Script> {
 			if (!data) {
 				console.log('load script: started');
-				data = await fetch(src).then((r) => r.text());
+				data = await fetch(src).then(async (r) => r.text());
 				console.log('load script: finished');
 			} else {
 				console.log('used build-in script');
 			}
 
 			const script = new Script(data);
-			console.log(`before: ${script.data?.length || '0'} bytes`);
+			console.log(`before: ${script.data?.length ?? '0'} bytes`);
 
-			const originalScriptName = `${prefix}_original` as `__sbg_${string}_original`;
-			const modifiedScriptName = `${prefix}_modified` as `__sbg_${string}_modified`;
+			const originalScriptName = `${prefix}_original` as const;
+			const modifiedScriptName = `${prefix}_modified` as const;
 
-			window[originalScriptName] = script.data || '';
+			window[originalScriptName] = script.data ?? '';
 			script.transform(transformer);
-			window[modifiedScriptName] = script.data || '';
+			window[modifiedScriptName] = script.data ?? '';
 
-			console.log(`after: ${script.data?.length || '0'} bytes`);
+			console.log(`after: ${script.data?.length ?? '0'} bytes`);
 			return script;
 		}
 
-		valueOf(): string | undefined {
-			return this.data;
-		}
-
-		replace<TSearchValue extends string | RegExp>(searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
-			this.data = Script.replaceData(this.data, searchValue, replacer);
-			return this;
-		}
-
-		replaceAll(searchValue: string, replacement: string): Script {
-			this.data = Script.replaceData(this.data, searchValue, replacement, { global : true });
-			return this;
-		}
-
-		replaceCUIBlock<TSearchValue extends string | RegExp>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): Script {
-			let replaced = false;
-
-			this.data = this.data
-				?.replace(
-					new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`),
-					(_data, open, _, block, close) => {
-						replaced = true;
-						return open + Script.replaceData(block, searchValue, replacer) + close;
-					},
-				)
-			;
-
-			if (!replaced) {
-				console.error(`replace CUI block '${block}': not found`);
-			}
-
-			return this;
-		}
-
-		removeCUIBlock(block: string) {
-			return this.replaceCUIBlock(block, /[\s\S]+/, '');
+		static appendScript(src: string): void {
+			console.log('append script: started');
+			Script.append((el) => el.src = src);
+			console.log('append script: finished');
 		}
 
 		private static regexEscape(str: string): string {
 			return str.replace(/[.\-$^*?+\\/\\|[\]{}()]/g, '\\$&');
 		}
 
-		private static replaceData<TSearchValue extends string | RegExp>(
+		private static replaceData<TSearchValue extends RegExp | string>(
 			data: string | undefined,
 			searchValue: TSearchValue,
 			replacer: ScriptReplacer<TSearchValue>,
-			options?: TSearchValue extends string ? { global: boolean } : never,
+			options?: TSearchValue extends string ? { global : boolean } : never,
 		): typeof data {
 			if (typeof data === 'undefined') {
-				console.error(`replace ${searchValue}: data is undefined`);
+				console.error(`replace ${searchValue.toString()}: data is undefined`);
 				return data;
 			}
 
@@ -1791,22 +1835,64 @@ type ApiProfileData = {
 					data = data.replace(searchValue, replacer);
 				}
 			} else {
-				console.error(`replace '${searchValue}': not found`);
+				console.error(`replace '${searchValue.toString()}': not found`);
 			}
 
 			return data;
 		}
 
-		transform(func: (script: Script) => void) {
-			console.log(`transform: ${func.name}`);
-			func(this);
+		private static append(fill: (el: HTMLScriptElement) => void): void {
+			const el = document.createElement('script');
+			el.type  = 'text/javascript';
+			fill(el);
+			document.head.appendChild(el);
+		}
+
+		valueOf(): string | undefined {
+			return this.data;
+		}
+
+		replace<TSearchValue extends RegExp | string>(searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): this {
+			this.data = Script.replaceData(this.data, searchValue, replacer);
 			return this;
 		}
 
+		replaceAll(searchValue: string, replacement: string): this {
+			this.data = Script.replaceData(this.data, searchValue, replacement, { global : true });
+			return this;
+		}
+
+		replaceCUIBlock<TSearchValue extends RegExp | string>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): this {
+			const oldData = this.data;
+
+			const newData = oldData
+				?.replace(
+					new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`),
+					(_data: string, open: string, _, block: string, close: string) => open + Script.replaceData(block, searchValue, replacer) + close,
+				)
+			;
+
+			if (oldData !== newData) {
+				console.error(`replace CUI block '${block}': not found`);
+			}
+
+			this.data = newData;
+			return this;
+		}
+
+		removeCUIBlock(block: string): this {
+			return this.replaceCUIBlock(block, /[\s\S]+/, '');
+		}
+
+		transform(func: (script: Script) => void): void {
+			console.log(`transform: ${func.name}`);
+			func(this);
+		}
+
 		expose(prefix: `__sbg${string}`, { variables, functions }: {
-			variables?: { readable?: string[], writable?: string[] },
-			functions?: { readable?: string[], writable?: string[], disabled?: string[] },
-		}): Script {
+			variables? : { readable? : string[]; writable? : string[] };
+			functions? : { readable? : string[]; writable? : string[]; disabled? : string[] };
+		}): this {
 			if (!this.data) {
 				console.error('expose: data is undefined');
 				return this;
@@ -1818,29 +1904,38 @@ type ApiProfileData = {
 				}
 
 				if (variables?.writable?.includes(variableName)) {
-					return `${before}window.${prefix}_variable_${variableName} = { get: () => ${variableName}, set: (value) => ${variableName} = value };\n${before}let ${variableName}`;
+					return `
+${before}window.${prefix}_variable_${variableName} = {
+	get: () => ${variableName},
+	set: (value) => ${variableName} = value
+};
+${before}let ${variableName}`;
 				}
 
 				return text;
 			});
 
-			this.data = this.data.replace(/(?:^|\n)\s*(async\s+)?function\s+(\w+)\s*\((.*?)\)\s*\{/g, (text, async, functionName, args) => {
-				async = async || '';
+			this.data = this.data.replace(
+				/(?:^|\n)\s*(async\s+)?function\s+(\w+)\s*\((.*?)\)\s*\{/g,
+				(text: string, async: string | undefined, functionName: string, args: string | undefined) => {
+					if (functions?.disabled?.includes(functionName)) {
+						return `${text} return;`;
+					}
 
-				if (functions?.disabled?.includes(functionName)) {
-					return `${text} return;`;
-				}
+					if (functions?.readable?.includes(functionName)) {
+						return `\nwindow.${prefix}_function_${functionName} = ${functionName};\n${text}`;
+					}
 
-				if (functions?.readable?.includes(functionName)) {
-					return `\nwindow.${prefix}_function_${functionName} = ${functionName};\n${text}`;
-				}
+					if (functions?.writable?.includes(functionName)) {
+						return `
+${text}
+	return window.${prefix}_function_${functionName}(...arguments);
+}
+window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}) {`;
+					}
 
-				if (functions?.writable?.includes(functionName)) {
-					return `${text}\n\treturn window.${prefix}_function_${functionName}(...arguments);\n}\nwindow.${prefix}_function_${functionName} = ${async}function(${args}) {`;
-				}
-
-				return text;
-			});
+					return text;
+				});
 
 			return this;
 		}
@@ -1852,21 +1947,8 @@ type ApiProfileData = {
 			}
 
 			console.log('embed script: started');
-			Script.append((el) => el.textContent = this.data || '');
+			Script.append((el) => el.textContent = this.data ?? '');
 			console.log('embed script: finished');
-		}
-
-		static appendScript(src: string): void {
-			console.log('append script: started');
-			Script.append((el) => el.src = src);
-			console.log('append script: finished');
-		}
-
-		private static append(fill: (el: HTMLScriptElement) => void) {
-			const el = document.createElement('script');
-			el.type  = 'text/javascript';
-			fill(el);
-			document.head.appendChild(el);
 		}
 	}
 
@@ -1874,10 +1956,10 @@ type ApiProfileData = {
 
 	const versionWatcherEventTypes = [ 'init', 'update' ] as const;
 
-	type VersionWatcherEventDataTypes = {
-		init: { currentVersion: string },
-		update: { previousVersion: string, currentVersion: string },
-	};
+	interface VersionWatcherEventDataTypes {
+		init   : { currentVersion : string };
+		update : { previousVersion : string; currentVersion : string };
+	}
 
 	class VersionWatcher extends EventWatcher<
 		typeof versionWatcherEventTypes[number],
@@ -1885,17 +1967,17 @@ type ApiProfileData = {
 		EventWatcherListenerOptions
 	> {
 		constructor(
-			private storageKey: string,
-			private getter: () => ReadableVariable<string>,
+			private readonly storageKey: string,
+			private readonly getter: () => ReadableVariable<string> | undefined,
 		) {
 			super(versionWatcherEventTypes);
 		}
 
-		get(): string {
-			return this.getter().get();
+		get(): string | undefined {
+			return this.getter()?.get();
 		}
 
-		protected override watch() {
+		protected override watch(): void {
 			const waitForVersion = setInterval(() => {
 				const variable = this.getter();
 				if (!variable) {
@@ -1910,8 +1992,8 @@ type ApiProfileData = {
 				clearInterval(waitForVersion);
 				this.emit('init', { currentVersion }, {});
 
-				const previousVersion         = localStorage[this.storageKey];
-				localStorage[this.storageKey] = currentVersion;
+				const previousVersion = localStorage.getItem(this.storageKey) ?? '';
+				localStorage.setItem(this.storageKey, currentVersion);
 
 				if (previousVersion !== currentVersion) {
 					this.emit('update', { previousVersion, currentVersion }, {});
@@ -1920,7 +2002,7 @@ type ApiProfileData = {
 		}
 	}
 
-	const versionWatchers: Record<'native' | 'cui', VersionWatcher> = {
+	const versionWatchers: Record<'cui' | 'native', VersionWatcher> = {
 		native : new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION),
 		cui    : new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION),
 	};
@@ -1929,17 +2011,17 @@ type ApiProfileData = {
 
 	const localStorageWatcherEventTypes = [ 'getItem', 'setItem', 'removeItem' ] as const;
 
-	type LocalStorageWatcherEventOptions = {
-		key: string;
-		when: 'before' | 'after';
+	interface LocalStorageWatcherEventOptions {
+		key  : string;
+		when : 'after' | 'before';
 	}
 
-	type LocalStorageWatcherListenerOptions = LocalStorageWatcherEventOptions & EventWatcherListenerOptions;
+	type LocalStorageWatcherListenerOptions = EventWatcherListenerOptions & LocalStorageWatcherEventOptions;
 
-	type LocalStorageWatcherEventDataTypes = {
-		getItem: { key: string };
-		setItem: { key: string, value: string };
-		removeItem: { key: string };
+	interface LocalStorageWatcherEventDataTypes {
+		getItem    : { key : string };
+		setItem    : { key : string; value : string };
+		removeItem : { key : string };
 	}
 
 	class LocalStorageWatcher extends EventWatcher<
@@ -1952,7 +2034,7 @@ type ApiProfileData = {
 			super(localStorageWatcherEventTypes);
 		}
 
-		protected override watch() {
+		protected override watch(): void {
 			((originalMethod) => {
 				localStorage.getItem = (key: string) => {
 					this.emit('getItem', { key }, { key, when : 'before' });
@@ -1960,6 +2042,7 @@ type ApiProfileData = {
 					this.emit('getItem', { key }, { key, when : 'after' });
 					return result;
 				};
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 			})(localStorage.getItem);
 
 			((originalMethod) => {
@@ -1968,6 +2051,7 @@ type ApiProfileData = {
 					originalMethod.call(localStorage, key, value);
 					this.emit('setItem', { key, value }, { key, when : 'after' });
 				};
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 			})(localStorage.setItem);
 
 			((originalMethod) => {
@@ -1976,20 +2060,21 @@ type ApiProfileData = {
 					originalMethod.call(localStorage, key);
 					this.emit('removeItem', { key }, { key, when : 'after' });
 				};
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 			})(localStorage.removeItem);
 		}
 
 		protected override isMatchEventOptions<TEventType extends typeof localStorageWatcherEventTypes[number]>(
 			listener: EventWatcherListener<LocalStorageWatcherEventDataTypes[TEventType], LocalStorageWatcherListenerOptions>,
 			eventOptions: LocalStorageWatcherEventOptions,
-		) {
+		): boolean {
 			return listener.listenerOptions.key === eventOptions.key && listener.listenerOptions.when === eventOptions.when;
 		}
 	}
 
 	console.log('created storage watcher');
 
-	async function main() {
+	async function main(): Promise<void> {
 		if (location.pathname.startsWith('/login')) {
 			return;
 		}
@@ -2009,13 +2094,13 @@ type ApiProfileData = {
 		await waitHTMLLoaded();
 		initCSS();
 		initSettings();
-		window.__sbg_plus_modifyFeatures && window.__sbg_plus_modifyFeatures(features);
+		window.__sbg_plus_modifyFeatures(features);
 		execFeatures('pageLoad');
 
 		window.__sbg_plus_localStorage_watcher = new LocalStorageWatcher();
 
 		const nativeScript = await getNativeScript();
-		await loadCUI(nativeScript);
+		await embedCUI(nativeScript);
 
 		console.log('wait map: started');
 		await wait(() => window.__sbg_variable_map);
@@ -2030,8 +2115,9 @@ type ApiProfileData = {
 		console.log(`finished at ${new Date().toISOString()}`);
 	}
 
-	async function copyLogs() {
-		return navigator.clipboard.writeText(logs.join('\n')).then(() => showToast(labels.toasts.logs, 2000));
+	async function copyLogs(): Promise<void> {
+		await navigator.clipboard.writeText(logs.join('\n'));
+		showToast(labels.toasts.logs, 2000);
 	}
 
 	function showToast(label: Label, duration: number): void {
@@ -2045,27 +2131,69 @@ type ApiProfileData = {
 		}).showToast();
 	}
 
-	// @ts-expect-error 6133
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	function replaceColor(selector: string, propertyName: string, color: string) {
-		setCSS(`
-			${selector} {
-				${propertyName}: ${$(selector).css(propertyName).replace(/((rgb|hsl)a?\(.*?\)|#[0-9a-fA-F]{3,6})/, color).replace(/\s+!important/, '')} !important;
-			}
-		`);
+	// function replaceColor(selector: string, propertyName: string, color: string) {
+	// 	setCSS(`
+	// 		${selector} {
+	// 			${propertyName}: ${$(selector).css(propertyName).replace(/((rgb|hsl)a?\(.*?\)|#[0-9a-fA-F]{3,6})/, color).replace(/\s+!important/, '')} !important;
+	// 		}
+	// 	`);
+	// }
+
+	function isRecord(obj: unknown): obj is Record<string, unknown> {
+		return typeof obj === 'object' && obj !== null;
 	}
 
-	function addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLike: LayerName) {
-		const source = new window.ol.source.Vector<TLayerName>();
-		const layer  = new window.ol.layer.Vector<TLayerName>({ source, className : `ol-layer__${layerName}` });
-		layer.setProperties({ name : layerName, zIndex : layers.get(layerLike).getProperties().zIndex }, true);
+	function isObjectContaining(obj: unknown, properties: Record<string, ValidTypeOf>): boolean {
+		if (!isRecord(obj)) {
+			return false;
+		}
+
+		if (Object.keys(obj).length < Object.keys(properties).length) {
+			return false;
+		}
+
+		for (const propertyName in properties) {
+			const propertyType = properties[propertyName];
+
+			if (!(propertyName in obj && typeof obj[propertyName] === propertyType)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	function jsonSelect<T>(text: string, keys: string[]): T {
+		const json = JSON.parse(text) as unknown;
+		let value  = json;
+
+		for (const key of keys) {
+			if (!isRecord(value)) {
+				throw new Error(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
+			}
+
+			if (!(key in value)) {
+				throw new Error(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
+			}
+
+			value = value[key];
+		}
+
+		return value as T;
+	}
+
+	function addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLikeName: LayerName): OlLayer {
+		const source = new window.ol.source.Vector();
+		const layer  = new window.ol.layer.Vector({ source, className : `ol-layer__${layerName}` });
+		layer.setProperties({ name : layerName }, true);
+		layer.setProperties({ zIndex : layers.get(layerLikeName).getProperties().zIndex }, true);
 		window.__sbg_variable_map.get().addLayer(layer);
 		return layer;
 	}
 
-	function preventLoadingScript() {
+	function preventLoadingScript(): void {
 		((append) => {
-			Element.prototype.append = function(...nodes: (string | Node)[]) {
+			Element.prototype.append = function(...nodes: (Node | string)[]) {
 				if (nodes.length === 0) {
 					return;
 				}
@@ -2077,28 +2205,29 @@ type ApiProfileData = {
 				}
 				append.apply(this, nodes);
 			};
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 		})(Element.prototype.append);
 
 		console.log('prevented loading script');
 	}
 
-	function detectLocal() {
-		if (window.__sbg_local && window.__sbg_preset !== 'full' && !localStorage['sbg-plus-disable-local-warning']) {
+	function detectLocal(): void {
+		if (window.__sbg_local && window.__sbg_preset !== 'full' && !localStorage.getItem('sbg-plus-disable-local-warning')) {
 			alert(labels.toasts.localWarning.toString());
 		}
 	}
 
-	function checkEssentialFeatures(...features: FeatureBase<any, any>[]) {
+	function checkEssentialFeatures(...features: FeatureBase<never>[]): void {
 		for (const feature of features) {
 			const storageKey = `sbg-plus-feature-disabled-${feature.key}`;
 
 			if (!feature.isEnabled() && feature.isEnabled(true)) {
-				if (!localStorage[storageKey]) {
-					localStorage[storageKey] = 1;
+				if (!localStorage.getItem(storageKey)) {
+					localStorage.setItem(storageKey, '1');
 					alert(labels.toasts.featureSwitchedOff.format({ label : feature.label }).toString());
 				}
 			} else {
-				delete localStorage[storageKey];
+				localStorage.removeItem(storageKey);
 			}
 		}
 	}
@@ -2108,18 +2237,19 @@ type ApiProfileData = {
 	}
 
 	function getCUIScriptSrc(): string {
-		return window.__sbg_urls['cui'].remote;
+		return window.__sbg_urls.cui.remote;
 	}
 
 	function getEUIScriptSrc(): string {
-		return window.__sbg_urls['eui'].remote;
+		return window.__sbg_urls.eui.remote;
 	}
 
-	function enhanceEventListeners() {
+	function enhanceEventListeners(): void {
 		((addEventListener, removeEventListener) => {
 			function initEventListeners<TEventType extends string>(target: EventTarget, type: TEventType): EventTargetWithEventType<TEventType> {
-				target.__events       = target.__events || {};
-				target.__events[type] = target.__events[type] || { listeners : [], sealed : false };
+				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- __events might not be initialized in native target
+				target.__events       = target.__events ?? {};
+				target.__events[type] = target.__events[type] ?? { listeners : [], sealed : false };
 				return target;
 			}
 
@@ -2164,24 +2294,12 @@ type ApiProfileData = {
 
 			EventTarget.prototype.getEventListeners = function<T extends string>(type: T): EventListenerOrEventListenerObject[] {
 				const target = initEventListeners(this, type);
-
-				const listeners = [];
-
-				for (const listener of target.__events[type].listeners) {
-					if (!listener) {
-						continue;
-					}
-
-					listeners.push(listener);
-				}
-
-				return listeners;
+				return target.__events[type].listeners;
 			};
 
 			EventTarget.prototype.getEventHandlers = function<T = EventListener>(type: string): T[] {
-				const target = this as EventTarget;
-
-				return target.getEventListeners(type)
+				return this.getEventListeners(type)
+					// eslint-disable-next-line @typescript-eslint/unbound-method -- intentionally unbound listener method to use statically then
 					.map((listener) => 'handleEvent' in listener ? listener.handleEvent : listener)
 					.map((handler) => handler as T);
 			};
@@ -2219,19 +2337,19 @@ type ApiProfileData = {
 
 			EventTarget.prototype.addRepeatingEventListener = function<TEvent extends Event>(
 				type: string,
-				callback: (ev: TEvent) => void,
+				handler: (ev: TEvent) => void,
 				{
 					repeats: limit,
 					timeout,
-					tick = () => {},
+					tick = () => { /* do nothing */ },
 					filter = () => true,
 					cancel = () => true,
 				}: {
-					repeats: number,
-					timeout: number,
-					tick?: (ev: TEvent, iteration: number) => void,
-					filter?: (ev: TEvent) => boolean,
-					cancel?: (ev: TEvent) => boolean,
+					repeats : number;
+					timeout : number;
+					tick?   : (ev: TEvent, iteration: number) => void;
+					filter? : (ev: TEvent) => boolean;
+					cancel? : (ev: TEvent) => boolean;
 				}): void {
 				let repeats = 0;
 
@@ -2249,7 +2367,7 @@ type ApiProfileData = {
 
 					if (repeats >= limit) {
 						repeats = 0;
-						callback(ev as TEvent);
+						handler(ev as TEvent);
 						return;
 					}
 
@@ -2261,38 +2379,41 @@ type ApiProfileData = {
 				});
 
 			};
+		// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 		})(EventTarget.prototype.addEventListener, EventTarget.prototype.removeEventListener);
 
 		console.log('enhanced event listeners');
 	}
 
 	function getLanguage(): Lang {
-		let lang;
+		let lang: string;
 
 		try {
-			lang = JSON.parse(localStorage['settings']).lang;
+			lang = jsonSelect<string>(localStorage.getItem('settings') ?? '{}', [ 'lang' ]);
 		} catch {
 			lang = navigator.language;
 		}
 
-		const result = [ 'ru', 'uk', 'be', 'kk' ].includes(lang.split('-')[0]) ? 'ru' : 'en';
+		const result = [ 'ru', 'uk', 'be', 'kk' ].includes(lang.split('-')[0]!) ? 'ru' : 'en';
 		console.log(`detected language: ${result}`);
 		return result;
 	}
 
-	function initFeedback() {
+	function initFeedback(): void {
 		const feedbackClickTimeout = 1000;
 		const feedbackTouches      = 3;
 		const feedbackTouchRepeats = 2;
 
-		document.addRepeatingEventListener<TouchEvent>('touchstart', () => copyLogs(), {
+		document.addRepeatingEventListener<TouchEvent>('touchstart', () => {
+			void copyLogs();
+		}, {
 			repeats : feedbackTouchRepeats,
 			timeout : feedbackClickTimeout,
 			filter  : (ev: TouchEvent) => ev.touches.length === feedbackTouches,
 		});
 	}
 
-	function initUrls() {
+	function initUrls(): void {
 		// which urls should be always loaded by forced values below
 		// TODO: remove "eui" in the new version of the APK
 		const alwaysForced: UrlType[] = [ 'eui' ];
@@ -2324,7 +2445,8 @@ type ApiProfileData = {
 			},
 		};
 
-		window.__sbg_urls = window.__sbg_urls || {} as typeof window.__sbg_urls;
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- __sbg_urls might not be initialized if didn't come from APK
+		window.__sbg_urls = window.__sbg_urls ?? {} as typeof window.__sbg_urls;
 
 		for (const urlType of urlTypes) {
 			if (alwaysForced.includes(urlType) || !(urlType in window.__sbg_urls)) {
@@ -2333,28 +2455,29 @@ type ApiProfileData = {
 		}
 	}
 
-	function fixPermissionsCompatibility() {
+	function fixPermissionsCompatibility(): void {
 		if (typeof navigator.permissions === 'undefined') {
 			Object.defineProperty(navigator, 'permissions', {
 				value : {
-					query : async () => ({ state : 'granted' }),
+					query : () => ({ state : 'granted' }),
 				},
 			});
 		}
 
 		if (typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
+			// eslint-disable-next-line @typescript-eslint/require-await -- always return 'granted'
 			window.DeviceOrientationEvent.requestPermission = async () => 'granted';
 		}
 	}
 
-	async function loadCUI(nativeScript: Script): Promise<void> {
+	async function embedCUI(nativeScript: Script): Promise<void> {
 		if (!features.get(loadCUI)!.isEnabled()) {
-			console.log('skipped loadCUI; loading native script');
+			console.log('skipped embedCUI; loading native script');
 			nativeScript.embed();
 			return;
 		}
 
-		console.log('loadCUI: started');
+		console.log('embedCUI: started');
 
 		const cuiScript = await Script.create({
 			src         : getCUIScriptSrc(),
@@ -2364,33 +2487,35 @@ type ApiProfileData = {
 
 		cuiScript.embed();
 
-		console.log('loadCUI: wait window.cuiEmbedded');
+		console.log('embedCUI: wait window.cuiEmbedded');
 		await wait(() => window.cuiEmbedded);
 
-		console.log('loadCUI: wait window.ol');
+		console.log('embedCUI: wait window.ol');
 		await wait(() => window.ol);
 
-		console.log('loadCUI: set view animation duration');
+		console.log('embedCUI: set view animation duration');
 		setViewAnimationDuration();
 
 		return new Promise((resolve) => {
-			window.addEventListener('mapReady', async () => {
-				console.log('loadCUI: wait cuiStatus === loaded');
-				await wait(() => window.cuiStatus === 'loaded');
-				console.log('loadCUI: finished');
-				console.log(`SBG Custom UI, version ${versionWatchers['cui'].get()}`);
-				resolve();
+			window.addEventListener('mapReady', () => {
+				void (async () => {
+					console.log('embedCUI: wait cuiStatus === loaded');
+					await wait(() => window.cuiStatus === 'loaded');
+					console.log('embedCUI: finished');
+					console.log(`SBG Custom UI, version ${versionWatchers.cui.get()}`);
+					resolve();
+				})();
 			});
 
-			console.log('loadCUI: wait dbReady');
+			console.log('embedCUI: wait dbReady');
 			window.addEventListener('dbReady', () => {
-				console.log('loadCUI: emit olReady');
+				console.log('embedCUI: emit olReady');
 				window.dispatchEvent(new Event('olReady'));
 			});
 		});
 	}
 
-	function transformCUIScript(script: Script): Script {
+	function transformCUIScript(script: Script): void {
 		script.transform(exposeCUIScript);
 		script.transform(fixCompatibility);
 		script.transform(fixGotoReference);
@@ -2398,23 +2523,23 @@ type ApiProfileData = {
 		script.transform(fixCUIWarnings);
 		script.transform(fixPointNavigation);
 
-		features.triggers['cuiTransform'].map((transformer: FeatureBase<any, any>) => {
-			script = transformer.exec(script);
+		features.triggers.cuiTransform.filter(isTransformer).map((transformer) => {
+			transformer.exec(script);
 		});
-
-		return script;
 	}
 
 	async function waitHTMLLoaded(): Promise<void> {
-		await resolveOnce((resolver) => document.addEventListener('DOMContentLoaded', resolver), () => document.readyState !== 'loading');
+		await resolveOnce((resolver) => {
+			document.addEventListener('DOMContentLoaded', resolver);
+		}, () => document.readyState !== 'loading');
 		console.log('loaded DOM content');
 	}
 
-	async function resolveOnce(addListener: (resolver: () => any) => void, immediateCondition: () => boolean): Promise<void> {
+	async function resolveOnce(addListener: (resolver: () => unknown) => void, immediateCondition: () => boolean): Promise<void> {
 		return new Promise((resolve) => {
 			let resolved = false;
 
-			function singleResolver() {
+			function singleResolver(): void {
 				if (resolved) {
 					return;
 				}
@@ -2440,30 +2565,41 @@ type ApiProfileData = {
 
 	function isMobile(): boolean {
 		if ('maxTouchPoints' in navigator) {
-			return navigator['maxTouchPoints'] > 0;
-		} else if ('msMaxTouchPoints' in navigator) {
-			return navigator['msMaxTouchPoints'] > 0;
-		} else if ('orientation' in window) {
-			return true;
-		} else {
-			return /\b(BlackBerry|webOS|iPhone|IEMobile|Android|Windows Phone|iPad|iPod)\b/i.test(navigator['userAgent']);
+			return navigator.maxTouchPoints > 0;
 		}
+
+		if ('msMaxTouchPoints' in navigator) {
+			// @ts-expect-error 2339 -- navigator is narrowed to never because TS assumes navigator always has 'maxTouchPoints' property
+			return navigator.msMaxTouchPoints > 0;
+		}
+
+		if ('orientation' in window) {
+			return true;
+		}
+
+		// @ts-expect-error 2339 -- navigator is narrowed to never because TS assumes navigator always has 'maxTouchPoints' property
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+		return /\b(BlackBerry|webOS|iPhone|IEMobile|Android|Windows Phone|iPad|iPod)\b/i.test(navigator.userAgent);
 	}
 
-	function loadEUI() {
+	function loadCUI(): void {
+		// stub function. CUI is actually loaded with `embedCUI` function and is called directly from main()
+		return;
+	}
+
+	function loadEUI(): void {
 		window.cuiStatus = 'loaded';
 		Script.appendScript(getEUIScriptSrc());
 	}
 
-	function transformNativeScript(script: Script): Script {
-		return script
-			.transform(exposeNativeScript)
-			.transform(includeYMaps)
-			.transform(exposeAttackSliderData);
+	function transformNativeScript(script: Script): void {
+		script.transform(exposeNativeScript);
+		script.transform(includeYMaps);
+		script.transform(exposeAttackSliderData);
 	}
 
-	function exposeNativeScript(script: Script): Script {
-		return script.expose('__sbg', {
+	function exposeNativeScript(script: Script): void {
+		script.expose('__sbg', {
 			variables : {
 				readable : [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
 				writable : [ 'self_data' ],
@@ -2471,27 +2607,23 @@ type ApiProfileData = {
 			functions : {
 				readable : [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
 				writable : [ 'drawLeaderboard', 'manageDrawing', 'movePlayer', 'showInfo', 'timeToString' ],
-				disabled : !isMobile() && localStorage['homeCoords'] ? [ 'movePlayer' ] : undefined,
+				disabled : !isMobile() && localStorage.getItem('homeCoords') ? [ 'movePlayer' ] : undefined,
 			},
 		});
 	}
 
-	function includeYMaps(script: Script): Script {
+	function includeYMaps(script: Script): void {
 		const layerName = 'ymaps';
-		let isChecked;
 
-		try {
-			JSON.parse(localStorage['settings']).base === layerName;
-		} catch {
-			isChecked = localStorage['sbg-plus-state-ymaps'] === '1';
-		}
+		// TODO: make ymaps by default after cleaning up theme logic
+		const isChecked = localStorage.getItem('sbg-plus-state-ymaps') === '1';
 
 		const ymapsInput = $('<input type="radio" />').attr('name', 'baselayer').val(layerName).prop('checked', isChecked);
 		const ymapsSpan  = $('<span></span>').text(labels.ymaps.toString());
 		const ymapsLabel = $('<label></label>').addClass('layers-config__entry').append(ymapsInput).append(' ').append(ymapsSpan);
 		$('input[value="osm"]').parent().after(ymapsLabel);
 
-		return script
+		script
 			.replace(
 				'if (type == \'osm\') {',
 				`if (type == '${layerName}') { \n  theme = is_dark ? 'dark' : 'light';\n  source = new ol.source.XYZ({ url: \`https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&projection=web_mercator&theme=\${theme}&lang=\${window.__sbg_language}\` });\n} else if (type == 'osm') {\n`,
@@ -2499,8 +2631,8 @@ type ApiProfileData = {
 		;
 	}
 
-	function exposeAttackSliderData(script: Script): Script {
-		return script
+	function exposeAttackSliderData(script: Script): void {
+		script
 			.replace(
 				/\$\('#catalysers-list'\)\.append\(el\)/g,
 				'if (e.l > self_data.l) el.attr(\'data-disabled\', 1);\n$(\'#catalysers-list\').append(el)',
@@ -2508,13 +2640,13 @@ type ApiProfileData = {
 		;
 	}
 
-	function setCSS(css: string) {
+	function setCSS(css: string): void {
 		$('<style></style>').html(css).appendTo(document.body);
 	}
 
 	window.setCSS = setCSS;
 
-	function initCSS() {
+	function initCSS(): void {
 		setCSS(`
 			.topleft-container,
 			.bottom-container {
@@ -2612,7 +2744,7 @@ type ApiProfileData = {
 		console.log('initialized CSS');
 	}
 
-	function wait<T>(func: (...args: any[]) => T | null | undefined): Promise<T> {
+	async function wait<T>(func: () => T | null | undefined): Promise<T> {
 		return new Promise((resolve) => {
 			const waitInterval = setInterval(() => {
 				const result = func();
@@ -2626,12 +2758,12 @@ type ApiProfileData = {
 		});
 	}
 
-	function initSettings() {
+	function initSettings(): void {
 		new SettingsPopup();
 		console.log('initialized settings');
 	}
 
-	function createPopup(cssClass: string, options: { roundClose: boolean } = { roundClose : true }): JQuery<HTMLElement> {
+	function createPopup(cssClass: string, options: { roundClose : boolean } = { roundClose : true }): JQuery {
 		const closeButton = $('<button></button>')
 			.addClass(options.roundClose ? 'popup-close' : 'popup-button-secondary')
 			.attr('data-round', options.roundClose ? 'true' : null)
@@ -2653,43 +2785,49 @@ type ApiProfileData = {
 		return popup;
 	}
 
-	function initHome() {
-		if (isMobile() || !('homeCoords' in localStorage)) {
+	function initHome(): void {
+		if (isMobile()) {
 			return;
 		}
 
-		const center = JSON.parse(localStorage['homeCoords']);
+		const homeCoords = localStorage.getItem('homeCoords');
+
+		if (!homeCoords) {
+			return;
+		}
+
+		const center = JSON.parse(homeCoords) as OlCoords;
 		window.__sbg_variable_map.get().getView().setCenter(center);
 		console.log('initialized home location');
 	}
 
-	function initLayers() {
+	function initLayers(): void {
 		for (const layer of window.__sbg_variable_map.get().getAllLayers()) {
 			const layerName = layer.getProperties().name;
 
 			const key = !layerName
 				? 'base'
-				: layerName === 'lines' && layers.get('lines')
+				: layerName === 'lines' && layers.has('lines')
 					? 'lines_temp'
 					: layerName;
 
-			layers.set(key, layer);
+			layers.set(key as LayerName, layer);
 		}
 
 		console.log('initialized layers');
 	}
 
-	function execFeatures(trigger: FeatureTrigger) {
+	function execFeatures(trigger: FeatureTrigger): void {
 		features.triggers[trigger].map((feature) => {
 			if (feature instanceof Feature) {
-				feature.exec();
+				feature.exec(undefined);
 			}
 		});
 
 		console.log(`executed all features on ${trigger}`);
 	}
 
-	function execFireFeatures() {
+	function execFireFeatures(): void {
 		let fireClicked = false;
 
 		$('#attack-menu').on('click', () => {
@@ -2700,12 +2838,12 @@ type ApiProfileData = {
 		});
 	}
 
-	function saveUsername() {
-		localStorage['sbg-plus-last-username'] = window.__sbg_variable_self_data.get().n;
+	function saveUsername(): void {
+		localStorage.setItem('sbg-plus-last-username', window.__sbg_variable_self_data.get().n);
 	}
 
-	function exposeCUIScript(script: Script): Script {
-		return script
+	function exposeCUIScript(script: Script): void {
+		script
 			.expose('__sbg_cui', {
 				variables : {
 					readable : [ 'USERSCRIPT_VERSION', 'config', 'database' ],
@@ -2717,8 +2855,8 @@ type ApiProfileData = {
 			});
 	}
 
-	function fixCompatibility(script: Script): Script {
-		return script
+	function fixCompatibility(script: Script): void {
+		script
 			.replace(
 				'fetch(\'/app/script.js\')',
 				'(async () => ({ text: async () => window.__sbg_script_modified }))()',
@@ -2755,7 +2893,7 @@ type ApiProfileData = {
 		;
 	}
 
-	function setViewAnimationDuration() {
+	function setViewAnimationDuration(): void {
 		if (typeof window.__sbg_plus_animation_duration === 'number') {
 			((animate) => {
 				window.ol.View.prototype.animate = function(...args) {
@@ -2766,7 +2904,7 @@ type ApiProfileData = {
 		}
 	}
 
-	function fixGotoReference(script: Script): Script {
+	function fixGotoReference(script: Script): void {
 		$(document).on('click', 'a[href*="point="]', (ev) => {
 			const guid = (ev.currentTarget as HTMLLinkElement).href.split('point=').pop()?.split('&').shift();
 			window.__sbg_function_showInfo(guid);
@@ -2774,7 +2912,7 @@ type ApiProfileData = {
 			return false;
 		});
 
-		return script
+		script
 			.replace(
 				'window.location.href = `/app/?point=${guid}`',
 				'window.__sbg_function_showInfo(guid)',
@@ -2782,16 +2920,16 @@ type ApiProfileData = {
 		;
 	}
 
-	function fixCUIDefaults(script: Script): Script {
-		return script
+	function fixCUIDefaults(script: Script): void {
+		script
 			.replace(
 				'sepia: 1',
 				'sepia: 0',
 			);
 	}
 
-	function fixCUIWarnings(script: Script): Script {
-		return script
+	function fixCUIWarnings(script: Script): void {
+		script
 			.replace(
 				'!viewportMeta.content.match(yaRegexp)',
 				'!viewportMeta.content.match(yaRegexp) && navigator.userAgent.toLowerCase().includes("yabrowser")',
@@ -2799,7 +2937,7 @@ type ApiProfileData = {
 		;
 	}
 
-	function fixPointNavigation(script: Script) {
+	function fixPointNavigation(script: Script): void {
 		const obj: keyof Window              = '__sbg_share';
 		const func: keyof Window[typeof obj] = 'open';
 
@@ -2807,7 +2945,7 @@ type ApiProfileData = {
 			return;
 		}
 
-		return script
+		script
 			.replaceCUIBlock(
 				'Навигация и переход к точке',
 				'window.location.href = url',
@@ -2819,8 +2957,8 @@ type ApiProfileData = {
 		;
 	}
 
-	function disableClusters(script: Script): Script {
-		return script
+	function disableClusters(script: Script): void {
+		script
 			.replace(
 				'function mapClickHandler(event) {',
 				'function mapClickHandler(event) { event.isSilent = true;',
@@ -2828,14 +2966,14 @@ type ApiProfileData = {
 		;
 	}
 
-	function disableAttackZoom(script: Script): Script {
+	function disableAttackZoom(script: Script): void {
 		setCSS(`
 			.sbgcui_lock_rotation[sbgcui_locked="true"]::before {
 				transition: none !important;
 			}
 		`);
 
-		return script
+		script
 			.replace(
 				'fitBlastRange(isCompleted) {',
 				'fitBlastRange(isCompleted) { isCompleted = true;',
@@ -2843,8 +2981,8 @@ type ApiProfileData = {
 		;
 	}
 
-	function unlockCompassWhenRotateMap(script: Script): Script {
-		return script
+	function unlockCompassWhenRotateMap(script: Script): void {
+		script
 			.replaceCUIBlock(
 				'Вращение карты',
 				'if (latestTouchPoint == null) { return; }',
@@ -2853,12 +2991,11 @@ type ApiProfileData = {
 		;
 	}
 
-	function disableCarouselAnimation() {
-		window.Splide.defaults       = window.Splide.defaults || {};
-		window.Splide.defaults.speed = 0;
+	function disableCarouselAnimation(splide: Splide): void {
+		(splide.defaults ||= {} as { speed : number }).speed = 0;
 	}
 
-	function disablePopupAnimation() {
+	function disablePopupAnimation(): void {
 		setCSS(`
 			.popup {
 				transition: none !important;
@@ -2866,11 +3003,11 @@ type ApiProfileData = {
 		`);
 	}
 
-	function disableMapAnimation() {
+	function disableMapAnimation(): void {
 		window.__sbg_plus_animation_duration = 0;
 	}
 
-	function disableAttackButtonAnimation() {
+	function disableAttackButtonAnimation(): void {
 		setCSS(`
 			#attack-menu,
 			#attack-menu:after {
@@ -2879,9 +3016,9 @@ type ApiProfileData = {
 		`);
 	}
 
-	function closeToastsAfter1sec() {
+	function closeToastsAfter1sec(toastify: Toastify): void {
 		((_init) => {
-			window.Toastify.prototype.init = function(options) {
+			toastify.prototype.init = function(options) {
 				if (!options.forceDuration) {
 					if (!options.duration) {
 						options.duration = 0;
@@ -2895,22 +3032,25 @@ type ApiProfileData = {
 				_init.call(this, options);
 				return this;
 			};
-			window.Toastify.prototype.init.prototype = _init.prototype;
-		})(window.Toastify.prototype.init);
+
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- intentional assignment of prototype
+			toastify.prototype.init.prototype = _init.prototype;
+		})(toastify.prototype.init);
 	}
 
-	function disableAllAnimations() {
+	function disableAllAnimations(): void {
+		return;
 	}
 
-	function enableBackButton() {
+	function enableBackButton(): void {
 		const backClickTimeout = 1000;
 
-		const popups: Array<{ hiddenClass: string, selectors: string[] }> = [
+		const popups: Array<{ hiddenClass : string; selectors : string[] }> = [
 			{ hiddenClass : 'hidden', selectors : [ '.popup', '.draw-slider-wrp', '.attack-slider-wrp' ] },
 			{ hiddenClass : 'sbgcui_hidden', selectors : [ '.sbgcui_settings' ] },
 		];
 
-		function isPopupClosed() {
+		function isPopupClosed(): boolean {
 			let isClosed = false;
 
 			for (const { hiddenClass, selectors } of popups) {
@@ -2936,19 +3076,26 @@ type ApiProfileData = {
 			return isClosed;
 		}
 
-		document.addRepeatingEventListener('backbutton', () => location.replace('/window.close'), {
+		document.addRepeatingEventListener('backbutton', () => {
+			location.replace('/window.close');
+		}, {
 			repeats : 2,
 			timeout : backClickTimeout,
-			tick    : () => showToast(labels.toasts.back, backClickTimeout),
-			cancel  : () => !isPopupClosed(),
+			tick    : () => {
+				showToast(labels.toasts.back, backClickTimeout);
+			},
+			cancel : () => !isPopupClosed(),
 		});
 	}
 
-	function showBuilderPanel() {
-		wait(() => $('.topleft-container')).then((buttonsSection) => new Builder(buttonsSection));
+	function showBuilderPanel(): void {
+		void (async () => {
+			const buttonsSection = await wait(() => $('.topleft-container'));
+			new Builder(buttonsSection);
+		})();
 	}
 
-	function showFeatureToggles() {
+	function showFeatureToggles(): void {
 		const containers = {
 			info      : $('.info.popup .i-image-box'),
 			inventory : $('.inventory.popup'),
@@ -2956,7 +3103,7 @@ type ApiProfileData = {
 
 		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
 
-		const featureToggles: Array<{ container: keyof typeof containers, title: string, feature: FeatureBase<any, any> }> = [
+		const featureToggles: Array<{ container : keyof typeof containers; title : string; feature : FeatureBase<never> }> = [
 			{ container : 'info', title : 'ARR', feature : features.get(arrangeButtons)! },
 			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton)! },
 			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton)! },
@@ -3004,14 +3151,14 @@ type ApiProfileData = {
 		`);
 	}
 
-	function updateLangCacheAutomatically() {
-		versionWatchers['native'].on('update', ({ currentVersion }) => {
+	function updateLangCacheAutomatically(): void {
+		versionWatchers.native.on('update', ({ currentVersion }) => {
 			console.log(`update lang cache to ${currentVersion} version`);
 			$('#lang-cache').trigger('click');
 		}, { previous : true });
 	}
 
-	function fixBlurryBackground() {
+	function fixBlurryBackground(): void {
 		setCSS(`
 			.popup.pp-center {
 				backdrop-filter: none;
@@ -3032,7 +3179,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function alignSettingsButtonsVertically() {
+	function alignSettingsButtonsVertically(): void {
 		setCSS(`
 			.settings-section__button {
 				justify-self: unset !important;
@@ -3048,14 +3195,16 @@ type ApiProfileData = {
 		`);
 	}
 
-	function fixCompass() {
+	function fixCompass(): void {
 		const handlers = [ ...window.getEventHandlers<(ev: DeviceOrientationEvent) => void>('deviceorientation') ];
 
-		function triggerHandlers(webkitCompassHeading: number) {
-			handlers.map((handler) => handler({ webkitCompassHeading } as DeviceOrientationEvent));
+		function triggerHandlers(webkitCompassHeading: number): void {
+			handlers.map((handler) => {
+				handler({ webkitCompassHeading } as DeviceOrientationEvent);
+			});
 		}
 
-		function deviceOrientationAbsoluteListener(ev: DeviceOrientationEvent) {
+		function deviceOrientationAbsoluteListener(ev: DeviceOrientationEvent): void {
 			if (!ev.absolute || ev.alpha == null || ev.beta == null || ev.gamma == null) {
 				return;
 			}
@@ -3067,7 +3216,7 @@ type ApiProfileData = {
 			triggerHandlers(webkitCompassHeading);
 		}
 
-		const deviceOrientationListener = (ev: DeviceOrientationEvent) => {
+		const deviceOrientationListener = (ev: DeviceOrientationEvent): void => {
 			const { webkitCompassHeading } = ev;
 
 			if (webkitCompassHeading !== null && !isNaN(webkitCompassHeading)) {
@@ -3076,27 +3225,28 @@ type ApiProfileData = {
 			}
 		};
 
-		function addListeners() {
+		function addListeners(): void {
 			window.addEventListener('deviceorientationabsolute', deviceOrientationAbsoluteListener);
 			window.addEventListener('deviceorientation', deviceOrientationListener);
 		}
 
-		window.DeviceOrientationEvent.requestPermission()
-			.then((response) => {
-				if (response === 'granted') {
-					addListeners();
-				} else {
-					console.warn('DeviceOrientationEvent permission is not granted');
-				}
-			});
+		void (async () => {
+			const response = await window.DeviceOrientationEvent.requestPermission();
+
+			if (response === 'granted') {
+				addListeners();
+			} else {
+				console.warn('DeviceOrientationEvent permission is not granted');
+			}
+		})();
 	}
 
-	function showLevelUpCongratulations() {
+	function showLevelUpCongratulations(): void {
 		const storageKey = 'lastUserLevel';
 		const selfData   = window.__sbg_variable_self_data.get();
 
-		if (!localStorage[storageKey]) {
-			localStorage[storageKey] = selfData.l;
+		if (!localStorage.getItem(storageKey)) {
+			localStorage.setItem(storageKey, selfData.l.toString());
 		}
 
 		const congratulation = $(`
@@ -3114,10 +3264,10 @@ type ApiProfileData = {
 			.append(congratulation)
 			.appendTo(overlay);
 
-		const showPopup = () => {
+		const showPopup = (): void => {
 			popup
 				.find('.value')
-				.text(localStorage[storageKey]);
+				.text(localStorage.getItem(storageKey)!);
 
 			overlay.show();
 
@@ -3136,15 +3286,17 @@ type ApiProfileData = {
 			}, 1000);
 		};
 
-		const checkPopup = (newValue: number) => {
-			if (newValue.toString() !== localStorage[storageKey]) {
-				localStorage[storageKey] = newValue.toString();
+		const checkPopup = (newValue: number): void => {
+			if (newValue.toString() !== localStorage.getItem(storageKey)) {
+				localStorage.setItem(storageKey, newValue.toString());
 				showPopup();
 			}
 		};
 
 		document.querySelector('#self-info__explv')!
-			.addRepeatingEventListener('click', () => showPopup(), {
+			.addRepeatingEventListener('click', () => {
+				showPopup();
+			}, {
 				repeats : 3,
 				timeout : 1000,
 			});
@@ -3214,7 +3366,7 @@ type ApiProfileData = {
 
 	/* eui */
 
-	function centerIconsInGraphicalButtons() {
+	function centerIconsInGraphicalButtons(): void {
 		setCSS(`
 			.material-symbols-outlined {
 				line-height: 1 !important;
@@ -3222,7 +3374,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function showReloadButtonInCompactMode() {
+	function showReloadButtonInCompactMode(): void {
 		setCSS(`
 			.game-menu button.fa-solid-rotate:first-child:last-child {
 				height: 2em;
@@ -3233,7 +3385,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function useTeamColorForButtonsInIngressTheme() {
+	function useTeamColorForButtonsInIngressTheme(): void {
 		setCSS(`
 			:root {
 				--ingress-btn-color: var(--sbgcui-branding-color);
@@ -3256,7 +3408,7 @@ type ApiProfileData = {
 
 	/* fire */
 
-	function alwaysCenterAlignFireItemsCount() {
+	function alwaysCenterAlignFireItemsCount(): void {
 		setCSS(`
 		.splide__slide[data-rarity] .catalysers-list__amount {
 			display: block !important;
@@ -3275,7 +3427,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function replaceHighlevelWarningWithIcon() {
+	function replaceHighlevelWarningWithIcon(): void {
 		setCSS(`
 			#attack-slider {
 				padding: 4px 0;
@@ -3298,7 +3450,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function joinFireButtons(attackMenu: JQuery<HTMLElement>) {
+	function joinFireButtons(attackMenu: JQuery): void {
 		const menuHeight = attackMenu.outerHeight();
 
 		setCSS(`
@@ -3350,7 +3502,7 @@ type ApiProfileData = {
 
 	/* toolbar */
 
-	function showQuickAutoSelectButton(toolbar: JQuery<HTMLElement>) {
+	function showQuickAutoSelectButton(toolbar: JQuery): void {
 		const autoSelect = window.__sbg_cui_variable_config.get().autoSelect;
 		const cssClass   = autoSelect.deploy === 'max' ? 'fa-rotate-180' : '';
 
@@ -3374,7 +3526,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function moveAllSidebarsRight(control: JQuery<HTMLElement>) {
+	function moveAllSidebarsRight(control: JQuery): void {
 		$('.ol-control').first()
 			.addClass('toolbar')
 			.prepend(control.children());
@@ -3408,7 +3560,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function hideCUIToolbarToggleButton() {
+	function hideCUIToolbarToggleButton(): void {
 		setCSS(`
 			.sbgcui_toolbar {
 				display: flex !important;
@@ -3423,7 +3575,7 @@ type ApiProfileData = {
 
 	/* inventory */
 
-	function showAutoDeleteSettingsButton(inventoryPopup: JQuery<HTMLElement>) {
+	function showAutoDeleteSettingsButton(inventoryPopup: JQuery): void {
 		$('<button></button>')
 			.text('Auto-delete')
 			.css({ height : '40px' })
@@ -3435,7 +3587,7 @@ type ApiProfileData = {
 			});
 	}
 
-	function moveReferenceButtonsDown() {
+	function moveReferenceButtonsDown(): void {
 		setCSS(`
 			[data-feat-moveReferenceButtonsDown] .inventory__controls {
 				height: 0;
@@ -3476,7 +3628,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function hideManualClearButtons() {
+	function hideManualClearButtons(): void {
 		setCSS(`
 			[data-feat-hideManualClearButtons] .inventory__controls {
 				height: 0;
@@ -3517,7 +3669,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function alwaysShowSelfStatistics(drawLeaderboard: typeof window.__sbg_function_drawLeaderboard) {
+	function alwaysShowSelfStatistics(drawLeaderboard: typeof window.__sbg_function_drawLeaderboard): void {
 		window.__sbg_function_drawLeaderboard = async function() {
 			await drawLeaderboard();
 
@@ -3525,16 +3677,20 @@ type ApiProfileData = {
 				owned : 'owned_points',
 			};
 
-			const stat  = $('#leaderboard__term-select').val()?.toString() || '';
-			const data  = (await window.__sbg_function_apiQuery('profile', { guid : $('#self-info__name').data('guid') })).response.data;
-			const value = data[statMap[stat] || stat];
+			const stat  = $('#leaderboard__term-select').val()?.toString() ?? '';
+			const data  = (await window.__sbg_function_apiQuery('profile', { guid : String($('#self-info__name').data('guid')) })).response.data;
+			const value = data[statMap[stat] ?? stat];
 
 			const entry = window.__sbg_function_jquerypassargs(
 				$('<li>'),
 				'$1$ — $2$; $3$ $4$',
-				$('<span>', { class : 'profile-link' }).text(data.name).css('color', `var(--team-${data.team})`).attr('data-name', data.name).on('click', window.__sbg_function_openProfile),
+				$('<span>', { class : 'profile-link' })
+					.text(data.name)
+					.css('color', `var(--team-${data.team})`)
+					.attr('data-name', data.name)
+					.on('click', (el) => void window.__sbg_function_openProfile(el)),
 				$('<span>').text(window.i18next.t('leaderboard.level', { count : data.level })).css('color', `var(--level-${data.level})`),
-				...window.__sbg_function_takeUnits(value || 0),
+				...window.__sbg_function_takeUnits(value ?? 0),
 			);
 
 			const list = $('<ol>')
@@ -3557,7 +3713,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function restoreCUISort() {
+	function restoreCUISort(): void {
 		setCSS(`
 			[data-feat-restoreCUISort] .inventory__content[data-tab="3"] ~ .inventory__controls > #eui-sort {
 				display: none !important;
@@ -3570,7 +3726,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function fixSortButton(_button: JQuery<HTMLElement>) {
+	function fixSortButton(_button: JQuery): void {
 		setCSS(`
 			.sbgcui_refs-sort-button {
 				z-index: 100 !important;
@@ -3578,8 +3734,8 @@ type ApiProfileData = {
 		`);
 	}
 
-	function reportCUIUpdates() {
-		versionWatchers['cui'].on('update', ({ currentVersion }) => {
+	function reportCUIUpdates(): void {
+		versionWatchers.cui.on('update', ({ currentVersion }) => {
 			const message = labels.toasts.cuiUpdated.format({ currentVersion });
 			showToast(message, 2000);
 
@@ -3589,14 +3745,14 @@ type ApiProfileData = {
 		}, { previous : true });
 	}
 
-	function moveDestroyNotificationsToTop() {
+	function moveDestroyNotificationsToTop(): void {
 		((createToast) => {
 			window.__sbg_cui_function_createToast = function(content, position, duration, className, oldestFirst) {
 				if (className === 'sbgcui_destroy_notif_toast') {
 					position = 'top left';
 				}
 
-				return createToast(content, position, duration, className, oldestFirst);
+				createToast(content, position, duration, className, oldestFirst);
 			};
 		})(window.__sbg_cui_function_createToast);
 
@@ -3620,7 +3776,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function quickRecycleAllRefs(inventoryContent: JQuery<HTMLElement>) {
+	function quickRecycleAllRefs(inventoryContent: JQuery): void {
 		setCSS(`
 			.inventory__content[data-tab="3"] .inventory__item {
 				display: flex;
@@ -3646,9 +3802,11 @@ type ApiProfileData = {
 		`);
 
 		const inventoryContentEl = inventoryContent.get(0) as Element;
-		inventoryContentEl.getEventListeners('click').forEach((listener) => inventoryContentEl.removeEventListener('click', listener));
+		inventoryContentEl.getEventListeners('click').forEach((listener) => {
+			inventoryContentEl.removeEventListener('click', listener);
+		});
 
-		$(document).on('click', '.inventory__content', async function(ev) {
+		$(document).on('click', '.inventory__content', function(ev) {
 			if (!ev.target) {
 				return;
 			}
@@ -3658,12 +3816,16 @@ type ApiProfileData = {
 					ev.offsetX = 0;
 				}
 
-				inventoryContentEl.getEventHandlers('click').map((func) => ev.originalEvent && func(ev.originalEvent));
+				inventoryContentEl.getEventHandlers('click').map((func) => {
+					ev.originalEvent && func(ev.originalEvent);
+				});
+
 				return;
 			}
 
-			const el   = $(ev.target).parents('.inventory__item');
-			const item = (JSON.parse(localStorage.getItem('inventory-cache') || '[]') || []).find((f: { g: string }) => f.g == el.attr('data-guid'));
+			const el        = $(ev.target).parents('.inventory__item');
+			const inventory = (JSON.parse(localStorage.getItem('inventory-cache') ?? '[]') || []) as Array<InventoryItem>;
+			const item      = inventory.find((item: { g : string }) => item.g == el.attr('data-guid'));
 			if (!item) {
 				return;
 			}
@@ -3677,13 +3839,13 @@ type ApiProfileData = {
 			el.append(fakeEl);
 			el.attr('data-tab', item.t);
 
-			await window.__sbg_function_deleteInventoryItem(el);
+			void window.__sbg_function_deleteInventoryItem(el);
 		});
 	}
 
 	/* info popup */
 
-	function makeInfoPopupSemiTransparent() {
+	function makeInfoPopupSemiTransparent(): void {
 		setCSS(`
 			.info.popup {
 				background-color: transparent;
@@ -3691,7 +3853,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function alwaysShowSecondsForCoolDowns() {
+	function alwaysShowSecondsForCoolDowns(): void {
 		const cooldownSeconds        = 90;
 		const visibleSeconds         = 100;
 		const visibleSecondsPrevious = 60;
@@ -3710,7 +3872,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function increaseItemsFont() {
+	function increaseItemsFont(): void {
 		setCSS(`
 			.inventory__content:not([data-tab="3"]) {
 				display: flex;
@@ -3750,7 +3912,7 @@ type ApiProfileData = {
 		itemTypes[4] = 'Br';
 	}
 
-	function enlargeCoreSlots() {
+	function enlargeCoreSlots(): void {
 		setCSS(`
 			.i-stat__cores {
 				padding: 4px 0;
@@ -3762,14 +3924,14 @@ type ApiProfileData = {
 		`);
 	}
 
-	function arrangeButtons() {
+	function arrangeButtons(): void {
 		const buttons = [
 			$('.sbgcui_jumpToButton'),
 			$('.info .popup-close'),
 			$('.sbgcui_navbutton'),
 		];
 
-		function toggle(value: boolean) {
+		function toggle(value: boolean): void {
 			buttons.map((button) => button.appendTo(value ? '.i-stat .i-buttons' : '.info.popup'));
 		}
 
@@ -3884,7 +4046,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function colorizeTimer() {
+	function colorizeTimer(): void {
 		setCSS(`
 			[data-feat-colorizeTimer] #discover:after {
 				border: var(--buttons-border) solid currentColor;
@@ -3921,10 +4083,10 @@ type ApiProfileData = {
 		`);
 	}
 
-	function replaceSwipeWithButton(arrow: JQuery<HTMLElement>) {
+	function replaceSwipeWithButton(arrow: JQuery): void {
 		arrow.hide();
 
-		function createTouch(touchData: Partial<Touch> & { target: EventTarget }): { touches: TouchEvent['touches'] } {
+		function createTouch(touchData: Partial<Touch> & { target : EventTarget }): { touches : TouchEvent['touches'] } {
 			const touch = {
 				clientX       : touchData.clientX ?? 0,
 				clientY       : touchData.clientY ?? 0,
@@ -3957,7 +4119,7 @@ type ApiProfileData = {
 			target: EventTarget,
 			[ startX, startY ]: [ number, number ],
 			[ endX, endY ]: [ number, number ],
-		) {
+		): void {
 			const identifier = Math.random() * Number.MAX_SAFE_INTEGER;
 			const startTouch = createTouch({ target, identifier, clientX : startX, clientY : startY });
 			const endTouch   = createTouch({ target, identifier, clientX : endX, clientY : endY });
@@ -3966,17 +4128,25 @@ type ApiProfileData = {
 			const touchMoveHandlers  = target.getEventHandlers<CustomTouchEvent>('touchmove').filter((f) => f.name === 'touchMoveHandler');
 			const touchEndHandlers   = target.getEventHandlers<CustomTouchEvent>('touchend').filter((f) => f.name === 'touchEndHandler');
 
-			touchStartHandlers.map((handler) => handler(startTouch));
-			touchMoveHandlers.map((handler) => handler(startTouch));
-			touchMoveHandlers.map((handler) => handler(endTouch));
-			touchEndHandlers.map((handler) => handler(endTouch));
+			touchStartHandlers.map((handler) => {
+				handler(startTouch);
+			});
+			touchMoveHandlers.map((handler) => {
+				handler(startTouch);
+			});
+			touchMoveHandlers.map((handler) => {
+				handler(endTouch);
+			});
+			touchEndHandlers.map((handler) => {
+				handler(endTouch);
+			});
 		}
 
 		const button = $('<button></button>')
 			.addClass('next')
 			.html('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" focusable="false"><path d="m15.5 0.932-4.3 4.38 14.5 14.6-14.5 14.5 4.3 4.4 14.6-14.6 4.4-4.3-4.4-4.4-14.6-14.6z"></path></svg>')
 			.on('click', (ev) => {
-				const infoPopup = document.querySelector('.info.popup') as Element;
+				const infoPopup = document.querySelector('.info.popup')!;
 				swipe(infoPopup, [ 200, 0 ], [ 0, 0 ]);
 				ev.stopPropagation();
 				return false;
@@ -3988,7 +4158,7 @@ type ApiProfileData = {
 			.map(() => {
 				button.prop('disabled', arrow.hasClass('sbgcui_hidden'));
 			}),
-		).observe(arrow.get(0) as HTMLElement, { attributes : true });
+		).observe(arrow.get(0)!, { attributes : true });
 
 		setCSS(`
 			.i-stat .i-buttons .next {
@@ -4003,7 +4173,11 @@ type ApiProfileData = {
 				right: calc(var(--buttons-col-width) + var(--buttons-gap) - var(--buttons-border));
 				top: calc(-1 * var(--buttons-border) + var(--buttons-col-width) + var(--buttons-gap));
 				color: var(--ingress-btn-color);
-				background: linear-gradient(to top, var(--ingress-btn-glow-color) 0%, var(--ingress-btn-bg-color) 30%, var(--ingress-btn-bg-color) 70%, var(--ingress-btn-glow-color) 100%), var(--ingress-btn-bg-color);
+				background: linear-gradient(to top,
+					var(--ingress-btn-glow-color) 0%,
+					var(--ingress-btn-bg-color) 30%,
+					var(--ingress-btn-bg-color) 70%,
+					var(--ingress-btn-glow-color) 100%), var(--ingress-btn-bg-color);
 				border: 2px solid var(--ingress-btn-border-color);
 			}
 
@@ -4029,7 +4203,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function hideCloseButton() {
+	function hideCloseButton(): void {
 		$('#draw').on('click', (ev) => $('.draw-slider-buttons button').css({ height : `${$(ev.target).outerHeight()}px` }));
 
 		setCSS(`
@@ -4065,7 +4239,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function hideRepairButton() {
+	function hideRepairButton(): void {
 		setCSS(`
 			[data-feat-hideRepairButton] #repair,
 			[data-feat-hideRepairButton] #eui-repair {
@@ -4080,7 +4254,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function selectTargetPointByClick() {
+	function selectTargetPointByClick(): void {
 		((showInfo) => {
 			window.__sbg_function_showInfo = function(data) {
 				if (!$('#draw-slider').is(':visible')) {
@@ -4096,7 +4270,7 @@ type ApiProfileData = {
 		})(window.__sbg_function_showInfo);
 	}
 
-	function highlightSelectedTargetPoint() {
+	function highlightSelectedTargetPoint(): void {
 		const highlightsLayer = addLayer('highlights', 'points');
 
 		((clear) => {
@@ -4113,7 +4287,7 @@ type ApiProfileData = {
 				const tempLine       = window.__sbg_variable_temp_lines_source.get().getFeatures()[0];
 				const tempLineCoords = tempLine!.getGeometry().flatCoordinates;
 
-				const highlightFeature = new window.ol.Feature<'highlights'>({
+				const highlightFeature = new window.ol.Feature({
 					geometry : new window.ol.geom.Circle([ tempLineCoords.slice(tempLineCoords.length - 2) ], 16),
 				});
 
@@ -4127,10 +4301,10 @@ type ApiProfileData = {
 		})(window.__sbg_function_manageDrawing);
 	}
 
-	function matchDrawSliderButtons(slider: JQuery<HTMLElement>) {
+	function matchDrawSliderButtons(slider: JQuery): void {
 		$('#draw').on('click', (ev) => {
-			slider.css({ bottom : `${($(window).height() as number) - ($(ev.target).offset()?.top as number) - ($('#draw').outerHeight() as number)}px` });
-			slider.find('.draw-slider-buttons').css({ padding : `0 ${($(ev.target).offset()?.left as number)}px` });
+			slider.css({ bottom : `${($(window).height()!) - $(ev.target).offset()!.top - ($('#draw').outerHeight()!)}px` });
+			slider.find('.draw-slider-buttons').css({ padding : `0 ${$(ev.target).offset()!.left}px` });
 		});
 
 		setCSS(`
@@ -4163,7 +4337,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function enableOldWebViewCompatibility() {
+	function enableOldWebViewCompatibility(): void {
 		setCSS(`
 			@media (max-width: 425px) {
 				.popup.pp-center {
@@ -4175,7 +4349,7 @@ type ApiProfileData = {
 		`);
 	}
 
-	function testNotifications() {
+	function testNotifications(): void {
 		window.__sbg_cui_function_getNotifs = function<TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) {
 			if (typeof latest === 'number') {
 				return 1 as TResult;
@@ -4195,25 +4369,25 @@ type ApiProfileData = {
 				] as TResult;
 			}
 
-			throw `'latest' is not number or undefined: ${latest}`;
+			throw new Error(`'latest' is not number or undefined: ${latest}`);
 		};
 	}
 
 	class Builder {
 		features = {} as BuilderFeatures;
-		points: Record<OlGuid, string> = {};
-		pointStyles: Record<OlGuid, OlStyle> = {};
-		lines: CoordsMap<OlLineCoords, OlLine> = new CoordsMap();
-		regions: CoordsMap<OlRegionCoords, OlRegion> = new CoordsMap();
-		linesMap: CoordsMap<OlCoords, { coords: OlCoords; mine: boolean}[]> = new CoordsMap();
-		regionsMap: CoordsMap<OlLineCoords, { region: OlRegion, mine: boolean}[]> = new CoordsMap();
-		data: BuilderData = new BuilderData(this);
-		startPoint?: OlPoint;
-		ownTeam: Team = 0;
-		drawTeam: Team = 4;
+		points      : Record<OlGuid, string> = {};
+		pointStyles : Record<OlGuid, OlStyle> = {};
+		lines        = new CoordsMap<OlLineCoords, OlFeature>();
+		regions      = new CoordsMap<OlRegionCoords, OlFeature>();
+		linesMap     = new CoordsMap<OlCoords, { coords : OlCoords; mine : boolean }[]>();
+		regionsMap   = new CoordsMap<OlLineCoords, { region : OlFeature; mine : boolean }[]>();
+		data        : BuilderData = new BuilderData(this);
+		startPoint? : OlFeature;
+		ownTeam     : Team = 0;
+		drawTeam    : Team = 4;
 		maxDrawAttempts = 3;
 
-		constructor(buttonsSection: JQuery<HTMLElement>) {
+		constructor(buttonsSection: JQuery) {
 			this.initCSS();
 			this.initTeam();
 			this.initLayers();
@@ -4229,7 +4403,305 @@ type ApiProfileData = {
 			Object.defineProperty(window, 'builder', { value : this });
 		}
 
-		private initCSS() {
+		setHome(previousState: boolean): boolean {
+			if (previousState) {
+				if (!confirm(labels.builder.messages.deleteHome.toString())) {
+					return false;
+				}
+				localStorage.removeItem('homeCoords');
+			} else {
+				if (!confirm(labels.builder.messages.setHome.toString())) {
+					return false;
+				}
+				localStorage.setItem('homeCoords', JSON.stringify(window.__sbg_variable_map.get().getView().getCenter()));
+			}
+
+			return true;
+		}
+
+		toggleAllLines(previousState: boolean): boolean {
+			layers.get('lines').setVisible(!previousState);
+			layers.get('regions').setVisible(!previousState);
+			layers.get('regions_shared').setVisible(!previousState && this.features.builder.getState());
+
+			return true;
+		}
+
+		toggle(previousState: boolean): undefined {
+			layers.get('lines_built').setVisible(!previousState);
+			layers.get('regions_built').setVisible(!previousState);
+			layers.get('regions_shared').setVisible(!previousState && this.features.allLines.getState());
+
+			this.features.builder.setState(!previousState);
+			this.data.updateStates();
+		}
+
+		undo(previousState: boolean): boolean {
+			if (!previousState) {
+				return false;
+			}
+
+			const { lineCoords } = this.data.pop() ?? {};
+
+			if (lineCoords) {
+				const lastLine = this.lines.get(lineCoords);
+
+				if (!lastLine) {
+					console.log(`undo: line not found, coords: ${JSON.stringify(lineCoords)}`);
+					return false;
+				}
+
+				layers.get('lines_built').getSource().removeFeature(lastLine);
+				this.lines.deleteMine(lineCoords);
+
+				const regions = this.regionsMap.get(lineCoords);
+
+				if (regions) {
+					regions.filter(({ mine }) => mine).forEach(({ region }) => {
+						layers.get('regions_built').getSource().removeFeature(region);
+						layers.get('regions_shared').getSource().removeFeature(region);
+						this.regions.deleteMine(this.getRegionCoords(region));
+					});
+				}
+			}
+
+			return false;
+		}
+
+		clear(previousState: boolean): boolean {
+			if (!previousState) {
+				return false;
+			}
+
+			layers.get('lines_built').getSource().clear();
+			layers.get('regions_built').getSource().clear();
+			layers.get('regions_shared').getSource().clear();
+
+			this.data.clear();
+			this.lines.clearMine();
+			this.regions.clearMine();
+			this.linesMap.clearMine();
+			this.regionsMap.clearMine();
+			this.startPoint = undefined;
+
+			return false;
+		}
+
+		printRoute(previousState: boolean): boolean | undefined {
+			if (!previousState) {
+				return false;
+			}
+
+			const route = this.data.getRoute();
+			$('.route.popup').find('textarea').val(route).end().removeClass('hidden');
+			return undefined;
+		}
+
+		copy(previousState: boolean): boolean | undefined {
+			return this.data.copy(previousState);
+		}
+
+		paste(previousState: boolean): boolean | undefined {
+			return this.data.paste(previousState);
+		}
+
+		showHelp(_previousState: boolean): undefined {
+			$('.help').removeClass('hidden');
+		}
+
+		getCoords(flatCoordinates: OlFlatCoordinates): OlCoords {
+			const coordsList = window.ol.proj.toLonLat(flatCoordinates);
+			return coordsList.map((coord) => parseFloat(coord.toFixed(6))) as typeof coordsList;
+		}
+
+		getFlatCoordinates(coords: OlCoords): OlFlatCoordinates {
+			return window.ol.proj.fromLonLat(coords);
+		}
+
+		getArcFlatCoordinates(coordsList: OlCoords[]): OlFlatCoordinates[] {
+			const arcCoords: OlLineCoords[] = [];
+
+			for (let i = 1; i < coordsList.length; i++) {
+				const arc = window.turf.greatCircle(coordsList[i - 1]!, coordsList[i]!, { npoints : this.getNPoints() });
+				arcCoords.push(arc.geometry.coordinates);
+			}
+
+			return arcCoords.flat().map((coords) => this.getFlatCoordinates(coords));
+		}
+
+		getPointCoords(point: OlFeature): OlCoords {
+			const { flatCoordinates } = point.getGeometry();
+			return this.getCoords(flatCoordinates);
+		}
+
+		getLineCoords(line: OlFeature): OlLineCoords {
+			const { flatCoordinates } = line.getGeometry();
+
+			const startCoords = this.getCoords([ flatCoordinates[0]!, flatCoordinates[1]! ]);
+			const endCoords   = this.getCoords([ flatCoordinates[flatCoordinates.length - 2]!, flatCoordinates[flatCoordinates.length - 1]! ]);
+
+			return this.createLineCoords(startCoords, endCoords);
+		}
+
+		getRegionCoords(region: OlFeature): OlRegionCoords {
+			const { flatCoordinates } = region.getGeometry();
+
+			const startCoords  = this.getCoords([ flatCoordinates[0]!, flatCoordinates[1]! ]);
+			const middleCoords = this.getCoords([ flatCoordinates[flatCoordinates.length * 1 / 3]!, flatCoordinates[flatCoordinates.length * 1 / 3 + 1]! ]);
+			const endCoords    = this.getCoords([ flatCoordinates[flatCoordinates.length * 2 / 3]!, flatCoordinates[flatCoordinates.length * 2 / 3 + 1]! ]);
+
+			return this.createRegionCoords(startCoords, middleCoords, endCoords);
+		}
+
+		createLineCoords(...coordsList: [OlCoords, OlCoords]): OlLineCoords {
+			const sortedCoords = coordsList.sort(function(c1, c2) {
+				return c1[0] - c2[0] || c1[1] - c2[1];
+			});
+			return [ sortedCoords[0], sortedCoords[1] ];
+		}
+
+		createRegionCoords(...coordsList: [OlCoords, OlCoords, OlCoords]): OlRegionCoords {
+			const sortedCoords = coordsList.sort(function(c1, c2) {
+				return c1[0] - c2[0] || c1[1] - c2[1];
+			});
+			return [ sortedCoords[0], sortedCoords[1], sortedCoords[2], sortedCoords[0] ];
+		}
+
+		addLine(line: OlFeature, lineCoords: OlLineCoords, { mine }: { mine : boolean }): void {
+			if (![ this.ownTeam, this.drawTeam ].includes(line.getProperties().team)) {
+				return;
+			}
+
+			this.linesMap.create(lineCoords[0], []).push({ coords : lineCoords[1], mine });
+			this.linesMap.create(lineCoords[1], []).push({ coords : lineCoords[0], mine });
+			this.lines.set(lineCoords, line);
+			this.checkRegions(lineCoords, { mine });
+		}
+
+		addRegion(region: OlFeature, regionCoords: OlRegionCoords, { mine }: { mine : boolean }): void {
+			if (![ this.ownTeam, this.drawTeam ].includes(region.getProperties().team)) {
+				return;
+			}
+
+			this.regionsMap.create([ regionCoords[0], regionCoords[1] ], []).push({ region, mine });
+			this.regionsMap.create([ regionCoords[0], regionCoords[2] ], []).push({ region, mine });
+			this.regionsMap.create([ regionCoords[1], regionCoords[2] ], []).push({ region, mine });
+			this.regions.set(regionCoords, region);
+		}
+
+		buildLine({ linePoints, lineCoords }: LineData, attempt = 0): OlFeature | undefined {
+			const id        = `line.built.${new Date().getTime()}`;
+			const layerName = 'lines_built';
+
+			const existingLine = this.lines.get(lineCoords);
+
+			if (existingLine) {
+				if (this.features.allLines.getState() || existingLine.getProperties().mine) {
+					console.log(`BUILDER buildLine cancelled, already exists, coords: ${JSON.stringify(lineCoords)}`);
+					return;
+				} else {
+					console.log(`BUILDER buildLine duplicated, layer: ${layerName}, coords: ${JSON.stringify(lineCoords)}`);
+				}
+			} else {
+				console.log(`BUILDER buildLine, layer: ${layerName}, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
+			}
+
+			const arcFlatCoordinates = this.getArcFlatCoordinates(lineCoords);
+			const feature            = new window.ol.Feature({ geometry : new window.ol.geom.LineString(arcFlatCoordinates) });
+			feature.setId(id);
+			feature.setProperties({ team : this.drawTeam, mine : true });
+			feature.setStyle(new window.ol.style.Style({
+				stroke : new window.ol.style.Stroke({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.stroke ?? '', width : 2 }),
+			}));
+
+			const source        = layers.get(layerName).getSource();
+			const featuresCount = source.getFeatures().length;
+			source.addFeature(feature);
+
+			if (source.getFeatures().length === featuresCount) {
+				attempt++;
+				console.log(`BUILDER buildLine failed, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
+
+				if (attempt >= this.maxDrawAttempts) {
+					return;
+				}
+
+				this.buildLine({ linePoints, lineCoords }, attempt);
+				return;
+			}
+
+			this.addLine(feature, lineCoords, { mine : true });
+			this.data.add({ linePoints, lineCoords });
+			return feature;
+		}
+
+		buildRegion(coordsList: [OlCoords, OlCoords, OlCoords], shared: boolean, attempt = 0): OlFeature | undefined {
+			const id           = `region.built.${new Date().getTime()}`;
+			const layerName    = shared ? 'regions_shared' : 'regions_built';
+			const regionCoords = this.createRegionCoords(...coordsList);
+
+			const existingRegion = this.regions.get(regionCoords);
+
+			if (existingRegion) {
+				if (!this.features.allLines.getState() && !shared && (!existingRegion.getProperties().mine || existingRegion.getProperties().shared)) {
+					console.log(`BUILDER buildRegion duplicated, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
+				} else {
+					console.log(`BUILDER buildRegion cancelled, already exists, coords: ${JSON.stringify(regionCoords)}`);
+					return;
+				}
+			} else {
+				console.log(`BUILDER buildRegion, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
+			}
+
+			const arcFlatCoordinates = this.getArcFlatCoordinates(regionCoords);
+			const feature            = new window.ol.Feature({ geometry : new window.ol.geom.Polygon([ arcFlatCoordinates ]) });
+			feature.setId(id);
+			feature.setProperties({ team : this.drawTeam, mine : true, shared });
+			feature.setStyle(new window.ol.style.Style({
+				fill : new window.ol.style.Fill({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.fill ?? '' }),
+			}));
+
+			const layer         = layers.get(layerName);
+			const source        = layer.getSource();
+			const featuresCount = source.getFeatures().length;
+			source.addFeature(feature);
+
+			if (source.getFeatures().length === featuresCount) {
+				attempt++;
+				console.error(`BUILDER buildRegion failed, attempt: ${attempt}, coords: ${JSON.stringify(regionCoords)}`);
+
+				if (attempt >= this.maxDrawAttempts) {
+					return;
+				}
+
+				this.buildRegion(coordsList, shared, attempt);
+				return;
+			}
+
+			this.addRegion(feature, regionCoords, { mine : true });
+			return feature;
+		}
+
+		checkRegions(lineCoords: OlLineCoords, { mine }: { mine : boolean }): void {
+			const startSiblings = this.linesMap.get(lineCoords[0]);
+			const endSiblings   = this.linesMap.get(lineCoords[1]);
+			if (!startSiblings || !endSiblings) {
+				return;
+			}
+
+			for (const startSibling of startSiblings) {
+				for (const endSibling of endSiblings) {
+					if (startSibling.coords[0] === endSibling.coords[0] && startSibling.coords[1] === endSibling.coords[1]) {
+						if (mine || startSibling.mine || endSibling.mine) {
+							const shared = !(mine && startSibling.mine && endSibling.mine);
+							this.buildRegion([ ...lineCoords, startSibling.coords ], shared);
+						}
+					}
+				}
+			}
+		}
+
+		private initCSS(): void {
 			setCSS(`
 				.builder {
 					position: relative;
@@ -4261,7 +4733,7 @@ type ApiProfileData = {
 			`);
 		}
 
-		private initTeam() {
+		private initTeam(): void {
 			const style = $('#self-info__name').attr('style');
 
 			if (style) {
@@ -4275,7 +4747,7 @@ type ApiProfileData = {
 			window.__sbg_variable_TeamColors.get().push({ fill : '#FF880030', stroke : '#F80' });
 		}
 
-		private initLayers() {
+		private initLayers(): void {
 			this.addLayer('lines_built', 'lines');
 			this.addLayer('regions_built', 'regions');
 			this.addLayer('regions_shared', 'regions');
@@ -4285,7 +4757,8 @@ type ApiProfileData = {
 			});
 
 			layers.get('regions').getSource().on('addfeature', (ev) => {
-				this.addRegion(ev.feature, this.getRegionCoords(ev.feature), { mine : false });
+				const feature = ev.feature;
+				this.addRegion(feature, this.getRegionCoords(feature), { mine : false });
 			});
 
 			layers.get('lines').getSource().getFeatures().forEach((line) => {
@@ -4297,18 +4770,18 @@ type ApiProfileData = {
 			});
 		}
 
-		private addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLike: LayerName) {
+		private addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLike: LayerName): void {
 			const layer = addLayer(layerName, layerLike);
 			layers.set(layerName, layer);
 		}
 
-		private initButtons(container: JQuery<HTMLElement>): JQuery<HTMLElement> {
+		private initButtons(container: JQuery): JQuery {
 			return $('<div></div>')
 				.addClass('builder')
 				.appendTo(container);
 		}
 
-		private initFeatures(buttonContainer: JQuery<HTMLElement>) {
+		private initFeatures(buttonContainer: JQuery): void {
 			const initialStates: BuilderStates = {
 				home     : false,
 				allLines : true,
@@ -4321,6 +4794,7 @@ type ApiProfileData = {
 				help     : true,
 			};
 
+			/* eslint-disable @typescript-eslint/unbound-method -- intended to be bound in BuilderFeature constructor */
 			const actions: BuilderActions = {
 				home     : this.setHome,
 				allLines : this.toggleAllLines,
@@ -4332,6 +4806,7 @@ type ApiProfileData = {
 				paste    : this.paste,
 				help     : this.showHelp,
 			};
+			/* eslint-enable @typescript-eslint/unbound-method */
 
 			for (const button of builderButtons) {
 				this.features[button] = new BuilderFeature({
@@ -4345,15 +4820,15 @@ type ApiProfileData = {
 			}
 		}
 
-		private initData() {
+		private initData(): void {
 			this.data = new BuilderData(this);
 			this.data.load();
 		}
 
-		private initMapClick() {
+		private initMapClick(): void {
 			const originalMapClick = window.__sbg_variable_map.get().getListeners('click')[0];
 
-			const extendedMapClick = (ev: OlMapClickEvent) => {
+			const extendedMapClick = (ev: OlMapClickEvent): void => {
 				if (this.features.builder.getState()) {
 					this.mapClick(ev);
 				} else {
@@ -4370,8 +4845,8 @@ type ApiProfileData = {
 			window.__sbg_variable_map.get().on('click', extendedMapClick);
 		}
 
-		private mapClick(ev: OlMapClickEvent) {
-			window.__sbg_variable_map.get().forEachFeatureAtPixel<'points'>(ev.pixel, async (feature, layer) => {
+		private mapClick(ev: OlMapClickEvent): void {
+			window.__sbg_variable_map.get().forEachFeatureAtPixel(ev.pixel, (feature, layer) => {
 				console.log(`BUILDER click layer: ${layer.getProperties().name}`);
 
 				if (layer.getProperties().name !== 'points') {
@@ -4382,29 +4857,31 @@ type ApiProfileData = {
 				const pointCoords = this.getPointCoords(point);
 				this.setPointDrawing(point, true);
 
-				if (!this.startPoint) {
+				const [ startPoint, endPoint ] = [ this.startPoint, point ];
+
+				if (!startPoint) {
 					console.log(`BUILDER clicked: start coords: ${JSON.stringify(pointCoords)}`);
 					this.startPoint = point;
 					return;
 				}
 
-				const endPoint = point;
-
-				if (endPoint.getId() === this.startPoint.getId()) {
+				if (endPoint.getId() === startPoint.getId()) {
 					return;
 				}
 
 				console.log(`BUILDER clicked: end coords: ${JSON.stringify(pointCoords)}`);
 
-				const lineData  = await LineData.load([ this.startPoint, endPoint ], this);
-				const lineBuilt = this.buildLine(lineData);
+				void (async () => {
+					const lineData  = await LineData.load([ startPoint, endPoint ], this);
+					const lineBuilt = this.buildLine(lineData);
 
-				this.setPointDrawing(this.startPoint, false);
-				this.setPointDrawing(endPoint, false);
+					this.setPointDrawing(startPoint, false);
+					this.setPointDrawing(endPoint, false);
 
-				if (lineBuilt) {
-					this.startPoint = undefined;
-				}
+					if (lineBuilt) {
+						this.startPoint = undefined;
+					}
+				})();
 			});
 		}
 
@@ -4419,7 +4896,7 @@ type ApiProfileData = {
 			return 50;
 		}
 
-		private setPointDrawing(point: OlPoint, drawing: boolean) {
+		private setPointDrawing(point: OlFeature, drawing: boolean): void {
 			if (drawing) {
 				this.pointStyles[point.getId()] = point.getStyle();
 				point.setStyle(window.__sbg_variable_FeatureStyles.get().POINT(point.getGeometry().flatCoordinates, this.drawTeam, 1, true));
@@ -4429,18 +4906,18 @@ type ApiProfileData = {
 				if (style) {
 					point.setStyle(style);
 				} else {
-					throw `Attempt to get non-existing style for point id = '${point.getId()}'`;
+					throw new Error(`Attempt to get non-existing style for point id = '${point.getId()}'`);
 				}
 			}
 		}
 
-		private initStates() {
+		private initStates(): void {
 			this.toggleAllLines(!this.features.allLines.getState());
 			this.toggle(!this.features.builder.getState());
 			this.data.updateStates();
 		}
 
-		private initHelpPopup() {
+		private initHelpPopup(): void {
 			const contents = `
 				<h3>${labels.builder.help.title.toString()}</h3>
 				<b>${labels.builder.help.buttons.toString()}:</b>
@@ -4456,15 +4933,19 @@ type ApiProfileData = {
 			createPopup('help').prepend(contents);
 		}
 
-		private initRoutePopup() {
+		private initRoutePopup(): void {
 			const routeElement = $('<textarea></textarea>')
-				.on('click', (ev) => ev.stopPropagation())
-				.on('keydown', (ev) => ev.stopPropagation());
+				.on('click', (ev) => {
+					ev.stopPropagation();
+				})
+				.on('keydown', (ev) => {
+					ev.stopPropagation();
+				});
 
 			createPopup('route').prepend(routeElement);
 		}
 
-		private initCopyPaste() {
+		private initCopyPaste(): void {
 			$(document).on('keydown', (ev) => {
 				if (ev.ctrlKey) {
 					switch (ev.key) {
@@ -4478,311 +4959,13 @@ type ApiProfileData = {
 				return false;
 			});
 		}
-
-		getCoords(flatCoordinates: OlFlatCoordinates): OlCoords {
-			const coordsList = window.ol.proj.toLonLat(flatCoordinates);
-			return coordsList.map((coord) => parseFloat(coord.toFixed(6))) as typeof coordsList;
-		}
-
-		getFlatCoordinates(coords: OlCoords): OlFlatCoordinates {
-			return window.ol.proj.fromLonLat(coords);
-		}
-
-		getArcFlatCoordinates(coordsList: OlCoords[]): OlFlatCoordinates[] {
-			const arcCoords: OlLineCoords[] = [];
-
-			for (let i = 1; i < coordsList.length; i++) {
-				const arc = window.turf.greatCircle(coordsList[i - 1]!, coordsList[i]!, { npoints : this.getNPoints() });
-				arcCoords.push(arc.geometry.coordinates);
-			}
-
-			return arcCoords.flat().map((coords) => this.getFlatCoordinates(coords));
-		}
-
-		getPointCoords(point: OlPoint): OlCoords {
-			const { flatCoordinates } = point.getGeometry();
-			return this.getCoords(flatCoordinates);
-		}
-
-		getLineCoords(line: OlLine): OlLineCoords {
-			const { flatCoordinates } = line.getGeometry();
-
-			const startCoords = this.getCoords([ flatCoordinates[0]!, flatCoordinates[1]! ]);
-			const endCoords   = this.getCoords([ flatCoordinates[flatCoordinates.length - 2]!, flatCoordinates[flatCoordinates.length - 1]! ]);
-
-			return this.createLineCoords(startCoords, endCoords);
-		}
-
-		getRegionCoords(region: OlRegion): OlRegionCoords {
-			const { flatCoordinates } = region.getGeometry();
-
-			const startCoords  = this.getCoords([ flatCoordinates[0]!, flatCoordinates[1]! ]);
-			const middleCoords = this.getCoords([ flatCoordinates[flatCoordinates.length * 1 / 3]!, flatCoordinates[flatCoordinates.length * 1 / 3 + 1]! ]);
-			const endCoords    = this.getCoords([ flatCoordinates[flatCoordinates.length * 2 / 3]!, flatCoordinates[flatCoordinates.length * 2 / 3 + 1]! ]);
-
-			return this.createRegionCoords(startCoords, middleCoords, endCoords);
-		}
-
-		createLineCoords(...coordsList: [OlCoords, OlCoords]): OlLineCoords {
-			const sortedCoords = coordsList.sort(function(c1, c2) {
-				return c1[0] - c2[0] || c1[1] - c2[1];
-			});
-			return [ sortedCoords[0], sortedCoords[1] ];
-		}
-
-		createRegionCoords(...coordsList: [OlCoords, OlCoords, OlCoords]): OlRegionCoords {
-			const sortedCoords = coordsList.sort(function(c1, c2) {
-				return c1[0] - c2[0] || c1[1] - c2[1];
-			});
-			return [ sortedCoords[0], sortedCoords[1], sortedCoords[2], sortedCoords[0] ];
-		}
-
-		addLine(line: OlLine, lineCoords: OlLineCoords, { mine }: { mine: boolean }) {
-			if (![ this.ownTeam, this.drawTeam ].includes(line.getProperties().team)) {
-				return;
-			}
-
-			this.linesMap.create(lineCoords[0], []).push({ coords : lineCoords[1], mine });
-			this.linesMap.create(lineCoords[1], []).push({ coords : lineCoords[0], mine });
-			this.lines.set(lineCoords, line);
-			this.checkRegions(lineCoords, { mine });
-		}
-
-		addRegion(region: OlRegion, regionCoords: OlRegionCoords, { mine }: { mine: boolean }) {
-			if (![ this.ownTeam, this.drawTeam ].includes(region.getProperties().team)) {
-				return;
-			}
-
-			this.regionsMap.create([ regionCoords[0], regionCoords[1] ], []).push({ region, mine });
-			this.regionsMap.create([ regionCoords[0], regionCoords[2] ], []).push({ region, mine });
-			this.regionsMap.create([ regionCoords[1], regionCoords[2] ], []).push({ region, mine });
-			this.regions.set(regionCoords, region);
-		}
-
-		buildLine({ linePoints, lineCoords }: LineData, attempt = 0) {
-			const id        = `line.built.${new Date().getTime()}`;
-			const layerName = 'lines_built';
-
-			const existingLine = this.lines.get(lineCoords);
-
-			if (existingLine) {
-				if (this.features.allLines.getState() || existingLine.getProperties().mine) {
-					console.log(`BUILDER buildLine cancelled, already exists, coords: ${JSON.stringify(lineCoords)}`);
-					return;
-				} else {
-					console.log(`BUILDER buildLine duplicated, layer: ${layerName}, coords: ${JSON.stringify(lineCoords)}`);
-				}
-			} else {
-				console.log(`BUILDER buildLine, layer: ${layerName}, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
-			}
-
-			const arcFlatCoordinates = this.getArcFlatCoordinates(lineCoords);
-			const feature            = new window.ol.Feature<'lines'>({ geometry : new window.ol.geom.LineString(arcFlatCoordinates) });
-			feature.setId(id);
-			feature.setProperties({ team : this.drawTeam, mine : true });
-			feature.setStyle(new window.ol.style.Style({
-				stroke : new window.ol.style.Stroke({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.stroke || '', width : 2 }),
-			}));
-
-			const source        = layers.get(layerName).getSource();
-			const featuresCount = source.getFeatures().length;
-			source.addFeature(feature);
-
-			if (source.getFeatures().length === featuresCount) {
-				attempt++;
-				console.log(`BUILDER buildLine failed, attempt: ${attempt}, coords: ${JSON.stringify(lineCoords)}`);
-
-				if (attempt >= this.maxDrawAttempts) {
-					return;
-				}
-
-				this.buildLine({ linePoints, lineCoords }, attempt);
-				return;
-			}
-
-			this.addLine(feature, lineCoords, { mine : true });
-			this.data.add({ linePoints, lineCoords });
-			return feature;
-		}
-
-		buildRegion(coordsList: [OlCoords, OlCoords, OlCoords], shared: boolean, attempt = 0) {
-			const id           = `region.built.${new Date().getTime()}`;
-			const layerName    = shared ? 'regions_shared' : 'regions_built';
-			const regionCoords = this.createRegionCoords(...coordsList);
-
-			const existingRegion = this.regions.get(regionCoords);
-
-			if (existingRegion) {
-				if (!this.features.allLines.getState() && !shared && (!existingRegion.getProperties().mine || existingRegion.getProperties().shared)) {
-					console.log(`BUILDER buildRegion duplicated, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
-				} else {
-					console.log(`BUILDER buildRegion cancelled, already exists, coords: ${JSON.stringify(regionCoords)}`);
-					return;
-				}
-			} else {
-				console.log(`BUILDER buildRegion, layer: ${layerName}, coords: ${JSON.stringify(regionCoords)}`);
-			}
-
-			const arcFlatCoordinates = this.getArcFlatCoordinates(regionCoords);
-			const feature            = new window.ol.Feature<'regions'>({ geometry : new window.ol.geom.Polygon([ arcFlatCoordinates ]) });
-			feature.setId(id);
-			feature.setProperties({ team : this.drawTeam, mine : true, shared });
-			feature.setStyle(new window.ol.style.Style({
-				fill : new window.ol.style.Fill({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.fill || '' }),
-			}));
-
-			const layer         = layers.get(layerName);
-			const source        = layer.getSource();
-			const featuresCount = source.getFeatures().length;
-			source.addFeature(feature);
-
-			if (source.getFeatures().length === featuresCount) {
-				attempt++;
-				console.error(`BUILDER buildRegion failed, attempt: ${attempt}, coords: ${JSON.stringify(regionCoords)}`);
-
-				if (attempt >= this.maxDrawAttempts) {
-					return;
-				}
-
-				this.buildRegion(coordsList, shared, attempt);
-				return;
-			}
-
-			this.addRegion(feature, regionCoords, { mine : true });
-			return feature;
-		}
-
-		checkRegions(lineCoords: OlLineCoords, { mine }: { mine: boolean }) {
-			const startSiblings = this.linesMap.get(lineCoords[0]);
-			const endSiblings   = this.linesMap.get(lineCoords[1]);
-			if (!startSiblings || !endSiblings) {
-				return;
-			}
-
-			for (const startSibling of startSiblings) {
-				for (const endSibling of endSiblings) {
-					if (startSibling.coords[0] === endSibling.coords[0] && startSibling.coords[1] === endSibling.coords[1]) {
-						if (mine || startSibling.mine || endSibling.mine) {
-							const shared = !(mine && startSibling.mine && endSibling.mine);
-							this.buildRegion([ ...lineCoords, startSibling.coords ], shared);
-						}
-					}
-				}
-			}
-		}
-
-		async setHome(previousState: boolean) {
-			if (previousState) {
-				if (!confirm(labels.builder.messages.deleteHome.toString())) {
-					return false;
-				}
-				delete localStorage['homeCoords'];
-			} else {
-				if (!confirm(labels.builder.messages.setHome.toString())) {
-					return false;
-				}
-				localStorage['homeCoords'] = JSON.stringify(window.__sbg_variable_map.get().getView().getCenter());
-			}
-
-			return true;
-		}
-
-		async toggleAllLines(previousState: boolean) {
-			layers.get('lines').setVisible(!previousState);
-			layers.get('regions').setVisible(!previousState);
-			layers.get('regions_shared').setVisible(!previousState && this.features.builder.getState());
-
-			return true;
-		}
-
-		async toggle(previousState: boolean) {
-			layers.get('lines_built').setVisible(!previousState);
-			layers.get('regions_built').setVisible(!previousState);
-			layers.get('regions_shared').setVisible(!previousState && this.features.allLines.getState());
-
-			this.features.builder.setState(!previousState);
-			this.data.updateStates();
-		}
-
-		async undo(previousState: boolean) {
-			if (!previousState) {
-				return false;
-			}
-
-			const { lineCoords } = this.data.pop() || {};
-
-			if (lineCoords) {
-				const lastLine = this.lines.get(lineCoords);
-
-				if (!lastLine) {
-					console.log(`undo: line not found, coords: ${JSON.stringify(lineCoords)}`);
-					return false;
-				}
-
-				layers.get('lines_built').getSource().removeFeature(lastLine);
-				this.lines.deleteMine(lineCoords);
-
-				const regions = this.regionsMap.get(lineCoords);
-
-				if (regions) {
-					regions.filter(({ mine }) => mine).forEach(({ region }) => {
-						layers.get('regions_built').getSource().removeFeature(region);
-						layers.get('regions_shared').getSource().removeFeature(region);
-						this.regions.deleteMine(this.getRegionCoords(region));
-					});
-				}
-			}
-
-			return false;
-		}
-
-		async clear(previousState: boolean) {
-			if (!previousState) {
-				return false;
-			}
-
-			layers.get('lines_built').getSource().clear();
-			layers.get('regions_built').getSource().clear();
-			layers.get('regions_shared').getSource().clear();
-
-			this.data.clear();
-			this.lines.clearMine();
-			this.regions.clearMine();
-			this.linesMap.clearMine();
-			this.regionsMap.clearMine();
-			this.startPoint = undefined;
-
-			return false;
-		}
-
-		async printRoute(previousState: boolean) {
-			if (!previousState) {
-				return false;
-			}
-
-			const route = this.data.getRoute();
-			$('.route.popup').find('textarea').val(route).end().removeClass('hidden');
-			return undefined;
-		}
-
-		async copy(previousState: boolean) {
-			return this.data.copy(previousState);
-		}
-
-		async paste(previousState: boolean) {
-			return this.data.paste(previousState);
-		}
-
-		async showHelp(_previousState: boolean) {
-			$('.help').removeClass('hidden');
-		}
 	}
 
 	class BuilderFeature {
-		name: string;
-		action: BuilderAction;
-		private state: { value: boolean };
-		button: JQuery<HTMLElement>;
+		name                   : string;
+		action                 : BuilderAction;
+		button                 : JQuery;
+		private readonly state : { value : boolean };
 
 		constructor({
 			name,
@@ -4792,12 +4975,12 @@ type ApiProfileData = {
 			buttonContainer,
 			builder,
 		}: {
-			name: BuilderButtons,
-			buttonContainer: JQuery<HTMLElement>,
-			initialState: boolean,
-			label: BuilderButtonLabel,
-			action: BuilderAction,
-			builder: Builder
+			name            : BuilderButtons;
+			buttonContainer : JQuery;
+			initialState    : boolean;
+			label           : BuilderButtonLabel;
+			action          : BuilderAction;
+			builder         : Builder;
 		}) {
 			this.name   = name;
 			this.action = action.bind(builder);
@@ -4816,9 +4999,9 @@ type ApiProfileData = {
 					property: keyof typeof this.state,
 					value: typeof this.state[keyof typeof this.state],
 				): boolean => {
-					const storageKey         = this.getStorageKey();
-					localStorage[storageKey] = value ? '1' : '0';
-					data[property]           = value;
+					const storageKey = this.getStorageKey();
+					localStorage.setItem(storageKey, value ? '1' : '0');
+					data[property] = value;
 					this.setButtonState();
 					return true;
 				},
@@ -4831,32 +5014,32 @@ type ApiProfileData = {
 			return this.state.value;
 		}
 
-		setState(value: boolean) {
+		setState(value: boolean): void {
 			this.state.value = value;
 		}
 
-		setButtonState() {
+		setButtonState(): void {
 			this.button.toggleClass('active', this.state.value);
 		}
 
 		private loadState(initialState: boolean): boolean {
 			const storageKey   = this.getStorageKey();
-			const storageValue = localStorage[storageKey];
-			return storageValue === undefined || storageValue.length === 0 ? initialState : storageValue === '1';
+			const storageValue = localStorage.getItem(storageKey);
+			return storageValue ? storageValue === '1' : initialState;
 		}
 
 		private getStorageKey(): string {
 			return `sbg-plus-state-${this.name}`;
 		}
 
-		private createButton(label: BuilderButtonLabel, buttonContainer: JQuery<HTMLElement>): JQuery<HTMLElement> {
+		private createButton(label: BuilderButtonLabel, buttonContainer: JQuery): JQuery {
 			const element = $('<button></button>')
 				.html(label.title.toString().toUpperCase())
 				.attr('title', label.description.toString())
 				.appendTo(buttonContainer);
 
-			element.on('click', async () => {
-				if (await this.action(this.state.value)) {
+			element.on('click', () => {
+				if (this.action(this.state.value)) {
 					this.state.value = !this.state.value;
 				}
 			});
@@ -4866,81 +5049,13 @@ type ApiProfileData = {
 	}
 
 	class BuilderData {
-		private data: LineData[];
-		private builder: Builder;
 		storageKey = 'builderData';
+		private data             : LineData[];
+		private readonly builder : Builder;
 
 		constructor(builder: Builder) {
 			this.builder = builder;
 			this.data    = [];
-		}
-
-		add(lineData: LineData) {
-			this.data.push(lineData);
-			this.updateStates();
-			this.save();
-		}
-
-		pop(): LineData | undefined {
-			const lastLineData = this.data.pop();
-			this.updateStates();
-			this.save();
-			return lastLineData;
-		}
-
-		clear() {
-			this.data = [];
-			this.updateStates();
-			this.save();
-		}
-
-		count(): number {
-			return this.data.length;
-		}
-
-		updateStates() {
-			const isActive = this.builder.features.builder.getState();
-			const isData   = this.data.length > 0;
-
-			this.builder.features.undo.setState(isActive && isData);
-			this.builder.features.clear.setState(isActive && isData);
-			this.builder.features.route.setState(isActive && isData);
-			this.builder.features.copy.setState(isActive && isData);
-			this.builder.features.paste.setState(isActive);
-		}
-
-		save() {
-			localStorage[this.storageKey] = JSON.stringify(BuilderData.pack(this.data));
-			console.log(`BUILDER saved lines: ${this.data.length}`);
-		}
-
-		load() {
-			const stored = localStorage[this.storageKey];
-
-			if (stored) {
-				this.set(stored);
-			}
-		}
-
-		private set(text: string): LineData[] | undefined {
-			const parsed = this.parse(text);
-
-			if ('error' in parsed) {
-				if (parsed.error) {
-					alert(parsed.error.toString());
-				} else {
-					alert(labels.builder.validationErrors.unknownError.toString());
-				}
-				return;
-			}
-
-			const data = BuilderData.unpack(parsed.pack);
-
-			for (const lineCoords of data) {
-				this.builder.buildLine(lineCoords);
-			}
-
-			return undefined;
 		}
 
 		private static pack(data: LineData[]): BuilderDataPack {
@@ -4971,8 +5086,111 @@ type ApiProfileData = {
 			return data;
 		}
 
-		private parse(text: string): { pack: BuilderDataPack } | { error: Label | undefined } {
-			let pack;
+		add(lineData: LineData): void {
+			this.data.push(lineData);
+			this.updateStates();
+			this.save();
+		}
+
+		pop(): LineData | undefined {
+			const lastLineData = this.data.pop();
+			this.updateStates();
+			this.save();
+			return lastLineData;
+		}
+
+		clear(): void {
+			this.data = [];
+			this.updateStates();
+			this.save();
+		}
+
+		count(): number {
+			return this.data.length;
+		}
+
+		updateStates(): void {
+			const isActive = this.builder.features.builder.getState();
+			const isData   = this.data.length > 0;
+
+			this.builder.features.undo.setState(isActive && isData);
+			this.builder.features.clear.setState(isActive && isData);
+			this.builder.features.route.setState(isActive && isData);
+			this.builder.features.copy.setState(isActive && isData);
+			this.builder.features.paste.setState(isActive);
+		}
+
+		save(): void {
+			localStorage.setItem(this.storageKey, JSON.stringify(BuilderData.pack(this.data)));
+			console.log(`BUILDER saved lines: ${this.data.length}`);
+		}
+
+		load(): void {
+			const stored = localStorage.getItem(this.storageKey);
+
+			if (stored) {
+				this.set(stored);
+			}
+		}
+
+		copy(previousState: boolean) : boolean | undefined {
+			if (!previousState) {
+				return false;
+			}
+
+			void (async () => {
+				await navigator.clipboard.writeText(JSON.stringify(BuilderData.pack(this.data)));
+				alert(labels.builder.messages.copied.toString());
+			})();
+
+			return undefined;
+		}
+
+		paste(previousState: boolean) : boolean | undefined {
+			if (!previousState) {
+				return false;
+			}
+
+			void (async () => {
+				const text = await navigator.clipboard.readText();
+
+				if (!text.trim()) {
+					alert(labels.builder.validationErrors.empty.toString());
+				}
+
+				this.set(text);
+			})();
+
+			return undefined;
+		}
+
+		getRoute(): string {
+			return this.data.map((line) => line.linePoints.map((point) => point.title).join(' => ')).join('\n');
+		}
+
+		private set(text: string): LineData[] | undefined {
+			const parsed = this.parse(text);
+
+			if ('error' in parsed) {
+				if (parsed.error) {
+					alert(parsed.error.toString());
+				} else {
+					alert(labels.builder.validationErrors.unknownError.toString());
+				}
+				return;
+			}
+
+			const data = BuilderData.unpack(parsed.pack);
+
+			for (const lineCoords of data) {
+				this.builder.buildLine(lineCoords);
+			}
+
+			return undefined;
+		}
+
+		private parse(text: string): { error : Label | undefined } | { pack : BuilderDataPack } {
+			let pack: unknown;
 
 			try {
 				pack = JSON.parse(text);
@@ -4988,35 +5206,6 @@ type ApiProfileData = {
 
 			return { pack };
 		}
-
-		async copy(previousState: boolean) : Promise<boolean | undefined> {
-			if (!previousState) {
-				return false;
-			}
-
-			await navigator.clipboard.writeText(JSON.stringify(BuilderData.pack(this.data)));
-			alert(labels.builder.messages.copied.toString());
-			return undefined;
-		}
-
-		async paste(previousState: boolean) : Promise<boolean | undefined> {
-			if (!previousState) {
-				return false;
-			}
-
-			const text = await navigator.clipboard.readText();
-
-			if (!text.trim()) {
-				alert(labels.builder.validationErrors.empty.toString());
-			}
-
-			this.set(text);
-			return undefined;
-		}
-
-		getRoute(): string {
-			return this.data.map((line) => line.linePoints.map((point) => point.title).join(' => ')).join('\n');
-		}
 	}
 
 	class LineData {
@@ -5028,8 +5217,8 @@ type ApiProfileData = {
 			this.lineCoords = lineCoords;
 		}
 
-		static async load(points: [OlPoint, OlPoint], builder: Builder) {
-			const promises   = points.map((point) => PointData.resolve(point, builder));
+		static async load(points: [OlFeature, OlFeature], builder: Builder): Promise<LineData> {
+			const promises   = points.map(async (point) => PointData.resolve(point, builder));
 			const linePoints = await Promise.all(promises) as [PointData, PointData];
 			const lineCoords = builder.createLineCoords(linePoints[0].coords, linePoints[1].coords);
 			return new LineData(linePoints, lineCoords);
@@ -5043,7 +5232,7 @@ type ApiProfileData = {
 			public coords: OlCoords,
 		) {}
 
-		static async resolve(point: OlPoint, builder: Builder): Promise<PointData> {
+		static async resolve(point: OlFeature, builder: Builder): Promise<PointData> {
 			const guid   = point.getId();
 			const title  = await PointData.getPointTitle(guid, builder.points);
 			const coords = builder.getPointCoords(point);
@@ -5062,17 +5251,17 @@ type ApiProfileData = {
 		}
 	}
 
-	type BuilderDataPack = {
-		points: Record<string, PointData>;
-		lines: OlLineCoords[];
+	interface BuilderDataPack {
+		points : Map<string, PointData>;
+		lines  : OlLineCoords[];
 	}
 
 	const validTypeOf = typeof {};
 	type ValidTypeOf = typeof validTypeOf;
 
 	class BuilderDataPackValidator {
-		private validationErrors: Labels['builder']['validationErrors'];
-		private validationError: Label | undefined;
+		private readonly validationErrors : Labels['builder']['validationErrors'];
+		private validationError           : Label | undefined;
 
 		constructor(validationErrors: Labels['builder']['validationErrors']) {
 			this.validationErrors = validationErrors;
@@ -5088,23 +5277,11 @@ type ApiProfileData = {
 			;
 		}
 
-		private isObject(obj: any, properties: Record<string, ValidTypeOf>): boolean {
-			if (Object.keys(obj).length !== Object.keys(properties).length) {
-				return false;
-			}
-
-			for (const propertyName in properties) {
-				const propertyType = properties[propertyName];
-
-				if (!(propertyName in obj && typeof obj[propertyName] === propertyType)) {
-					return false;
-				}
-			}
-
-			return true;
+		getError(): Label | undefined {
+			return this.validationError;
 		}
 
-		private isArray(array: any, length: number, type: ValidTypeOf): boolean {
+		private isArray(array: unknown, length: number, type: ValidTypeOf): boolean {
 			if (!Array.isArray(array)) {
 				return false;
 			}
@@ -5131,8 +5308,8 @@ type ApiProfileData = {
 			return true;
 		}
 
-		private checkObjectProperties(pack: object): pack is { points: any, lines: any } {
-			if (!this.isObject(pack, { points : 'object', lines : 'object' })) {
+		private checkObjectProperties(pack: object): pack is { points : unknown; lines : unknown } {
+			if (!isObjectContaining(pack, { points : 'object', lines : 'object' })) {
 				this.validationError = this.validationErrors.objectProperties;
 				return false;
 			}
@@ -5140,8 +5317,8 @@ type ApiProfileData = {
 			return true;
 		}
 
-		private checkPoints(points: any): points is Record<string, { guid: string; title: string; coords: any }> {
-			if (Object.values(points).filter((point) => !this.isObject(point, { guid : 'string', title : 'string', coords : 'object' })).length > 0) {
+		private checkPoints(points: unknown): points is Record<string, { guid : string; title : string; coords : unknown }> {
+			if (!isRecord(points) || Object.values(points).filter((point) => !isObjectContaining(point, { guid : 'string', title : 'string', coords : 'object' })).length > 0) {
 				this.validationError = this.validationErrors.pointProperties;
 				return false;
 			}
@@ -5149,7 +5326,8 @@ type ApiProfileData = {
 			return true;
 		}
 
-		private checkPointsCoords(points: Record<string, { guid: string; title: string; coords: any }>): points is Record<string, { guid: string; title: string; coords: [number, number] }> {
+		private checkPointsCoords(points: Record<string, { guid : string; title : string; coords : unknown }>)
+			: points is Record<string, { guid : string; title : string; coords : [number, number] }> {
 			if (Object.values(points).map((point) => point.coords).filter((coords) => !this.isArray(coords, 2, 'number')).length > 0) {
 				this.validationError = this.validationErrors.pointCoords;
 				return false;
@@ -5158,7 +5336,7 @@ type ApiProfileData = {
 			return true;
 		}
 
-		private checkLines(lines: any): lines is [any, any][] {
+		private checkLines(lines: unknown): lines is Array<[unknown, unknown]> {
 			if (!Array.isArray(lines) || lines.filter((lineCoords) => !this.isArray(lineCoords, 2, 'object')).length > 0) {
 				this.validationError = this.validationErrors.lines;
 				return false;
@@ -5167,7 +5345,7 @@ type ApiProfileData = {
 			return true;
 		}
 
-		private checkLinesCoords(lines: [any, any][]): lines is [[number, number], [number, number]][] {
+		private checkLinesCoords(lines: Array<[unknown, unknown]>): lines is Array<[[number, number], [number, number]]> {
 			if (lines.flat().filter((coords) => !this.isArray(coords, 2, 'number')).length > 0) {
 				this.validationError = this.validationErrors.linesCoords;
 				return false;
@@ -5175,34 +5353,24 @@ type ApiProfileData = {
 
 			return true;
 		}
-
-		getError() {
-			return this.validationError;
-		}
 	}
 
 	class CoordsMap<K extends OlCoords | OlLineCoords | OlRegionCoords, V> {
 		constructor(
-			private data: Record<string, V> = {},
+			private readonly data: Map<string, V> = new Map(),
 		) {
 		}
 
-		private stringifyKey(key: K | string): string {
-			return typeof key === 'string'
-				? key
-				: key.map((item) => Array.isArray(item) ? item.join(',') : item).join(',');
-		}
-
-		getData(): Record<string, V> {
+		getData(): Map<string, V> {
 			return this.data;
 		}
 
 		get(key: K | string): V | undefined {
-			return this.data[this.stringifyKey(key)];
+			return this.data.get(this.stringifyKey(key));
 		}
 
-		set(key: K | string, value: V) {
-			this.data[this.stringifyKey(key)] = value;
+		set(key: K | string, value: V): void {
+			this.data.set(this.stringifyKey(key), value);
 		}
 
 		create(key: K | string, initialValue: V): V {
@@ -5213,44 +5381,52 @@ type ApiProfileData = {
 			return this.get(key) as V;
 		}
 
-		has(key: K | string) {
+		has(key: K | string): boolean {
 			return this.stringifyKey(key) in this.data;
 		}
 
-		forEach(func: (value: V, key: string) => void) {
-			Object.entries(this.data).forEach(([ key, value ]) => func(value, key));
+		forEach(func: (value: V, key: string) => void): void {
+			this.data.forEach((value: V, key: string) => {
+				func(value, key);
+			});
 		}
 
-		deleteMine(key: K | string) {
+		deleteMine(key: K | string): void {
 			const stringKey = this.stringifyKey(key);
-			const item      = this.data[stringKey];
+			const item      = this.data.get(stringKey) as Array<{ mine : boolean }>;
 
 			if (item instanceof window.ol.Feature && item.getProperties().mine) {
-				delete this.data[stringKey];
+				this.data.delete(stringKey);
 			}
 
 			if (Array.isArray(item)) {
-				const others = item.filter((subItem) => !subItem.mine) as V & any[];
+				const others = item.filter((subItem) => !subItem.mine) as unknown[] & V;
 
 				if (others.length === 0) {
-					delete this.data[stringKey];
+					this.data.delete(stringKey);
 				} else {
-					this.data[stringKey] = others;
+					this.data.set(stringKey, others);
 				}
 			}
 		}
 
-		clearMine() {
+		clearMine(): void {
 			Object.keys(this.data).forEach((key) => {
 				this.deleteMine(key);
 			});
 		}
+
+		private stringifyKey(key: K | string): string {
+			return typeof key === 'string'
+				? key
+				: key.map((item) => Array.isArray(item) ? item.join(',') : item).join(',');
+		}
 	}
 
 	class SettingsPopup {
-		private container: JQuery<HTMLElement> | undefined;
-		private sections = {} as Record<FeatureGroup, JQuery<HTMLElement>>;
-		private checkboxes = {} as Record<string, JQuery<HTMLElement>>;
+		private container : JQuery | undefined;
+		private sections = {} as Record<FeatureGroup, JQuery>;
+		private checkboxes = {} as Record<string, JQuery>;
 
 		constructor() {
 			this.render();
@@ -5263,14 +5439,32 @@ type ApiProfileData = {
 				}
 
 				this.addGroup(group);
-				groupFeatures.map((feature) => this.addFeature(feature));
+				groupFeatures.map((feature) => {
+					this.addFeature(feature);
+				});
 			});
 
-			features.on('add', (feature) => this.addFeature(feature), {});
-			features.on('inherit', ({ feature, value }) => this.check(feature, value), {});
+			features.on('add', (feature) => {
+				this.addFeature(feature);
+			}, {});
+			features.on('inherit', ({ feature, value }) => {
+				this.check(feature, value);
+			}, {});
 		}
 
-		private render() {
+		addFeature(feature: FeatureBase<never>): void {
+			const checkbox = this.renderFeatureCheckbox(feature);
+			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
+			this.sections[feature.group].find('h4').before(setting);
+			this.checkboxes[feature.key] = checkbox;
+		}
+
+		check(feature: FeatureBase<never>, value: boolean): void {
+			settings.setFeature(feature.key, value);
+			this.checkboxes[feature.key]?.prop('checked', value);
+		}
+
+		private render(): void {
 			const parentSettingsPopup = $('.settings');
 			const settingsPopup       = createPopup('sbg-plus-settings', { roundClose : false }).appendTo(parentSettingsPopup);
 			this.container            = $('<div></div>').addClass('settings-content');
@@ -5289,7 +5483,7 @@ type ApiProfileData = {
 				.addClass('popup-button-secondary')
 				.text(labels.settings.logs.toString())
 				.on('click', () => {
-					copyLogs();
+					void copyLogs();
 				});
 
 			const advancedButton = $('<button></button>')
@@ -5317,7 +5511,7 @@ type ApiProfileData = {
 			$('.settings [data-i18n="settings.about.version"]').parent().after(versionLabel);
 		}
 
-		private addGroup(group: FeatureGroup) {
+		private addGroup(group: FeatureGroup): void {
 			const featureGroup   = featureGroups[group];
 			const sectionTitle   = $('<h4></h4>').text(new Label(featureGroup).toString());
 			const section        = $('<div></div>').addClass('settings-section').append(sectionTitle);
@@ -5326,23 +5520,11 @@ type ApiProfileData = {
 			if (this.container) {
 				this.container.append(section);
 			} else {
-				throw `Attempt to render section of group '${group}' to non existing container. Please render this.render() before adding groups`;
+				throw new Error(`Attempt to render section of group '${group}' to non existing container. Please render this.render() before adding groups`);
 			}
 		}
 
-		addFeature(feature: FeatureBase<any, any>) {
-			const checkbox = this.renderFeatureCheckbox(feature);
-			const setting  = this.renderSetting(feature.isSimple(), checkbox, feature.label);
-			this.sections[feature.group].find('h4').before(setting);
-			this.checkboxes[feature.key] = checkbox;
-		}
-
-		check(feature: FeatureBase<any, any>, value: boolean) {
-			settings.setFeature(feature.key, value);
-			this.checkboxes[feature.key]?.prop('checked', value);
-		}
-
-		private renderSetting(isSimple: boolean, ...children: Array<Label | JQuery<HTMLElement>>) {
+		private renderSetting(isSimple: boolean, ...children: Array<JQuery | Label>): JQuery {
 			const settingLabel = $('<label></label>').addClass('settings-section__item').toggleClass('simple', isSimple);
 
 			for (const child of children) {
@@ -5353,14 +5535,14 @@ type ApiProfileData = {
 			return settingLabel;
 		}
 
-		private renderFeatureCheckbox(feature: FeatureBase<any, any>) {
-			return ($('<input type="checkbox" />') as JQuery<HTMLInputElement>)
+		private renderFeatureCheckbox(feature: FeatureBase<never>): JQuery {
+			return $('<input type="checkbox" />')
 				.prop('checked', feature.isEnabled())
 				.on('change', (ev) => {
-					feature.setEnabled(ev.target.checked);
+					feature.setEnabled((ev.target as HTMLInputElement).checked);
 				});
 		}
 	}
 
-	main();
+	void main();
 })();
