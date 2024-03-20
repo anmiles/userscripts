@@ -1868,7 +1868,7 @@ type ApiProfileData = Record<string, number> & {
 			const newData = oldData
 				?.replace(
 					new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`),
-					(_data: string, open: string, _, block: string, close: string) => open + Script.replaceData(block, searchValue, replacer) + close,
+					(_data: string, open: string, _, block: string, close: string) => open + Script.replaceData(block, searchValue, replacer)! + close,
 				)
 			;
 
