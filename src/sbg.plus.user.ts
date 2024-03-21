@@ -1542,6 +1542,10 @@ type ApiProfileData = Record<string, number> & {
 		{ ru : 'Переместить оповещения об атаке наверх', en : 'Move destroy notifications to top' },
 		{ public : true, group, trigger : 'mapReady', unchecked : () => !features.get(loadEUI)?.isEnabled() });
 
+	new Feature(enableConsoleDebuggingOfDatabase,
+		{ ru : 'Включить отладку базы данных в консоли', en : 'Enable console debugging of database' },
+		{ public : true, group, trigger : 'cuiTransform', unchecked : true });
+
 	group = 'eui';
 
 	new Feature(centerIconsInGraphicalButtons,
@@ -2494,6 +2498,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			transformer : transformCUIScript,
 		});
 
+		console.log('embedCUI: wait dbReady');
+		window.addEventListener('dbReady', () => {
+			console.log('embedCUI: emit olReady');
+			window.dispatchEvent(new Event('olReady'));
+		});
+
 		cuiScript.embed();
 
 		console.log('embedCUI: wait window.cuiEmbedded');
@@ -2514,12 +2524,6 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 					console.log(`SBG Custom UI, version ${versionWatchers.cui.get()}`);
 					resolve();
 				})();
-			});
-
-			console.log('embedCUI: wait dbReady');
-			window.addEventListener('dbReady', () => {
-				console.log('embedCUI: emit olReady');
-				window.dispatchEvent(new Event('olReady'));
 			});
 		});
 	}
@@ -2962,6 +2966,131 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 					navigator.clipboard.writeText(lastOpenedPoint.coords);
 					createToast('${labels.toasts.noGeoApp.toString()}', 'top left', 3000).showToast();
 				}`,
+			)
+		;
+	}
+
+	function enableConsoleDebuggingOfDatabase(script: Script): void {
+		script
+			.replace(
+				/const openRequest = .*/,
+				(line) => [
+					'console.log(`IDB: before open',
+					'`);',
+					line,
+					'console.log(`IDB: after open',
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/openRequest\.addEventListener\('(.*?)', event => \{/,
+				(line, eventName) => [
+					line,
+					'console.log(`IDB: openRequest',
+					`event=${eventName}`,
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/database\.addEventListener\('(.*?)', event => \{/,
+				(line, eventName) => [
+					line,
+					'console.log(`IDB: database',
+					`event=${eventName}`,
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/function initializeDB.*/,
+				(line) => [
+					line,
+					'console.log(`IDB: initializeDB',
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/function updateDB.*/,
+				(line) => [
+					line,
+					'console.log(`IDB: updateDB',
+					'oldVersion=` + oldVersion + `',
+					'newVersion=` + newVersion + `',
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/\{ (updateToVersion.*?) \}/,
+				(_line, code) => [
+					'{',
+					'console.log(`IDB: updateToVersion started',
+					'v=` + v + `',
+					'`);',
+					code,
+					'console.log(`IDB: updateToVersion finished',
+					'v=` + v + `',
+					'`);',
+					'}',
+				].join(' '),
+			)
+			.replace(
+				/database = event.target.result;/,
+				(line) => [
+					'console.log(`IDB: upgradeneeded',
+					'oldVersion=` + oldVersion + `',
+					'newVersion=` + newVersion + `',
+					'`);',
+					line,
+				].join(' '),
+			)
+			.replace(
+				'transaction.addEventListener(\'complete\', () => { window.dispatchEvent(new Event(\'dbReady\')); });',
+				'transaction.addEventListener(\'complete\', () => { console.log(`IDB: transaction completed`); window.dispatchEvent(new Event(\'dbReady\')); });',
+			)
+			.replace(
+				/const transaction = database\.transaction\((.*?)\);/,
+				(line, code) => [
+					'console.log(`IDB: transaction',
+					`args=${JSON.stringify(code)}`,
+					'`);',
+					line,
+					...[ 'complete', 'error', 'success', 'abort' ].map((eventName) => [
+						`transaction.addEventListener('${eventName}', (...args) => {`,
+						'console.log(`IDB: transaction',
+						`event=${eventName}`,
+						'args=` + JSON.stringify(args) + `',
+						'`);',
+						'});',
+					]).flat(),
+				].join(' '),
+			)
+			.replace(
+				/function getData\(event\) \{/,
+				(line) => [
+					line,
+					'console.log(`IDB: getData',
+					'storeName=` + event.target.source.name + `',
+					'result=` + JSON.stringify(event.target.result) + `',
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/if \(cursor != undefined\) \{/,
+				(line) => [
+					line,
+					'console.log(`IDB: objectToPopulate',
+					'cursor=` + JSON.stringify(cursor) + `',
+					'hasKey=` + (\'key\' in cursor) + `',
+					'`);',
+				].join(' '),
+			)
+			.replace(
+				/window.dispatchEvent\(new Event\('(.*?)'\)\)/,
+				(line, eventName) => [
+					'console.log(`IDB: dispatch',
+					`event=${eventName}`,
+					'`);',
+					line,
+				].join(' '),
 			)
 		;
 	}
