@@ -42,7 +42,7 @@ interface Window {
 	__sbg_language                  : Lang;
 	__sbg_plus_version              : string;
 	__sbg_plus_localStorage_watcher : unknown;
-	__sbg_plus_modifyFeatures       : (...args: unknown[]) => void;
+	__sbg_plus_modifyFeatures       : ((...args: unknown[]) => void) | undefined;
 	__sbg_plus_animation_duration   : number;
 	__sbg_onerror_handlers          : Array<NonNullable<typeof window.onerror>>;
 	__sbg_debug_object              : (message: string, obj: Record<string, unknown>) => void;
@@ -79,7 +79,7 @@ interface Window {
 	__sbg_cui_function_main           : () => Promise<void>;
 	__sbg_cui_function_olInjection    : () => void;
 	__sbg_cui_function_loadMainScript : () => void;
-	__sbg_cui_function_createToast    : (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => void;
+	__sbg_cui_function_createToast    : (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => Toast;
 	__sbg_cui_function_getNotifs      : <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
 }
 
@@ -349,6 +349,17 @@ interface Toastify {
 interface I18Next {
 	t          : (key: string, data?: unknown) => string;
 	translator : unknown;
+}
+
+interface Toast {
+	options: {
+		id           : number;
+		selector     : HTMLElement;
+		toastElement : HTMLElement;
+		close        : boolean;
+		callback     : () => void;
+		onClick      : () => void;
+	};
 }
 
 const urlTypes = [ 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
@@ -1188,12 +1199,12 @@ type ApiProfileData = Record<string, number> & {
 
 		constructor(
 			kind: 'feature' | 'transformer',
-			func: ((data: TData) => void),
+			key: string,
 			labelValues: LabelValues,
 			options : FeatureOptions,
 		) {
 			this.kind  = kind;
-			this.key   = func.name;
+			this.key   = key;
 			this.label = new Label(labelValues);
 
 			this.group   = options.group;
@@ -1259,15 +1270,16 @@ type ApiProfileData = Record<string, number> & {
 
 		exec(data: TData): void {
 			if (!this.isEnabled()) {
-				console.log(`skipped ${this.func.name}`);
+				console.log(`skipped ${this.key}`);
+				return;
 			}
 
 			try {
 				this.func(data);
 				this.toggle(true);
-				console.log(`executed ${this.func.name}`);
+				console.log(`executed ${this.key}`);
 			} catch (ex) {
-				console.error(`failed ${this.func.name}`, ex);
+				console.error(`failed ${this.key}`, ex);
 			}
 		}
 
@@ -1303,7 +1315,7 @@ type ApiProfileData = Record<string, number> & {
 				}
 			};
 
-			super('feature', wrapper, labelValues, options);
+			super('feature', func.name, labelValues, options);
 			this.func     = wrapper;
 			this.requires = options.requires;
 		}
@@ -1319,7 +1331,7 @@ type ApiProfileData = Record<string, number> & {
 				return required;
 			}
 
-			return undefined;
+			return {} as TRequiredElement;
 		}
 	}
 
@@ -1333,7 +1345,7 @@ type ApiProfileData = Record<string, number> & {
 			labelValues: LabelValues,
 			options : FeatureOptions,
 		) {
-			super('transformer', func, labelValues, options);
+			super('transformer', func.name, labelValues, options);
 			this.func = func;
 		}
 	}
@@ -1863,20 +1875,17 @@ type ApiProfileData = Record<string, number> & {
 		}
 
 		replaceCUIBlock<TSearchValue extends RegExp | string>(block: string, searchValue: TSearchValue, replacer: ScriptReplacer<TSearchValue>): this {
-			const oldData = this.data;
+			const blockSearchValue = new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`);
 
-			const newData = oldData
-				?.replace(
+			if (this.data?.match(blockSearchValue)) {
+				this.data = this.data.replace(
 					new RegExp(`(\\/\\*\\s*${Script.regexEscape(block)}\\s*\\*\\/\n(\\s+)\\{\\s*\n\\s+)([\\s\\S]*?)(\n\\2\\})`),
 					(_data: string, open: string, _, block: string, close: string) => open + Script.replaceData(block, searchValue, replacer)! + close,
-				)
-			;
-
-			if (oldData !== newData) {
+				);
+			} else {
 				console.error(`replace CUI block '${block}': not found`);
 			}
 
-			this.data = newData;
 			return this;
 		}
 
@@ -2094,7 +2103,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		await waitHTMLLoaded();
 		initCSS();
 		initSettings();
-		window.__sbg_plus_modifyFeatures(features);
+		window.__sbg_plus_modifyFeatures?.(features);
 		execFeatures('pageLoad');
 
 		window.__sbg_plus_localStorage_watcher = new LocalStorageWatcher();
@@ -3752,7 +3761,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 					position = 'top left';
 				}
 
-				createToast(content, position, duration, className, oldestFirst);
+				return createToast(content, position, duration, className, oldestFirst);
 			};
 		})(window.__sbg_cui_function_createToast);
 

@@ -10,7 +10,7 @@ async function minify(filepath) {
 	const buffer = await fs.readFile(filepath);
 	const code   = buffer.toString();
 
-	const output = terser.minify({ ['script.js'] : code }, {
+	const output = await terser.minify({ ['script.js'] : code }, {
 		compress        : false,
 		mangle          : false,
 		keep_fnames     : true,
