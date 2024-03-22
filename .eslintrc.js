@@ -18,9 +18,20 @@ module.exports = {
 		EventListenerOrEventListenerObject : true,
 	},
 
+	overrides : [
+		{
+			files : [
+				'*.ts',
+			],
+
+			rules : {
+				'@typescript-eslint/no-unused-vars' : [ 'error', { args : 'none' } ],
+			},
+		},
+	],
+
 	rules : {
-		'@typescript-eslint/no-unused-vars' : [ 'error', { args : 'none' } ],
-		'camelcase'                         : [ 'error', { allow : [
+		'camelcase' : [ 'error', { allow : [
 			'keep_fnames',
 			'keep_classnames',
 		] } ],

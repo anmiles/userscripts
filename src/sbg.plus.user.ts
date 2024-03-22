@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.83
+// @version        0.9.84
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.83';
+window.__sbg_plus_version = '0.9.84';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -1125,9 +1125,12 @@ type ApiProfileData = Record<string, number> & {
 		}
 
 		save(): void {
-			const json       = {} as Record<string, unknown>;
-			json['features'] = this.features;
-			const str        = JSON.stringify(json);
+			const json = {} as Record<string, unknown> & {
+				features : Record<string, boolean>;
+			};
+
+			json.features = Object.fromEntries(this.features);
+			const str     = JSON.stringify(json);
 			localStorage.setItem(this.storageKey, str);
 		}
 	}
