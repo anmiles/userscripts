@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.84
+// @version        0.9.85
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.84';
+window.__sbg_plus_version = '0.9.85';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -1289,7 +1289,7 @@ type ApiProfileData = Record<string, number> & {
 		private isIncluded(presetName: unknown): boolean {
 			const preset = isPreset(presetName)
 				? presets[presetName]
-				: presets.base;
+				: presets.browser;
 
 			return preset.length === 0 || preset.includes(this);
 		}
@@ -1713,7 +1713,7 @@ type ApiProfileData = Record<string, number> & {
 
 	settings.cleanupFeatures();
 
-	const presetTypes = [ 'allscripts', 'base', 'egorscript', 'full', 'nicoscript' ] as const;
+	const presetTypes = [ 'allscripts', 'browser', 'egorscript', 'full', 'nicoscript' ] as const;
 	type Presets = typeof presetTypes[number];
 	const presets = {} as Record<Presets, FeatureBase<never>[]>;
 
@@ -1721,22 +1721,14 @@ type ApiProfileData = Record<string, number> & {
 		return presetTypes.includes(preset as Presets);
 	}
 
-	presets.base = [
-		...features.groups.base,
-	];
-
-	if (window.innerWidth >= 800) {
-		presets.base.push(features.get(showBuilderPanel)!);
-	}
-
 	presets.nicoscript = [
-		...presets.base,
+		...features.groups.base,
 		...features.groups.cui,
 		features.get(loadCUI)!,
 	];
 
 	presets.egorscript = [
-		...presets.base,
+		...features.groups.base,
 		...features.groups.eui,
 		features.get(loadEUI)!,
 	];
@@ -1746,6 +1738,15 @@ type ApiProfileData = Record<string, number> & {
 		...presets.egorscript,
 		features.get(restoreCUISort)!,
 	];
+
+	presets.browser = window.innerWidth < 800
+		? [
+			...presets.nicoscript,
+			...presets.egorscript,
+		] : [
+			...presets.egorscript,
+			features.get(showBuilderPanel)!
+		];
 
 	presets.full = [];
 
