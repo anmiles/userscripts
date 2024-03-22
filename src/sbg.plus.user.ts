@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.86
+// @version        0.9.87
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.86';
+window.__sbg_plus_version = '0.9.87';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -1117,7 +1117,7 @@ type ApiProfileData = Record<string, number> & {
 		cleanupFeatures(): void {
 			const featureKeys = Object.keys(features.keys);
 
-			Object.keys(this.features)
+			Array.from(this.features.keys())
 				.filter((key) => !featureKeys.includes(key))
 				.forEach((key) => {
 					this.features.delete(key);
@@ -5217,7 +5217,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				});
 			}
 
-			return { points : Object.fromEntries(pointsMap.getData()), lines };
+			return { points : pointsMap.getData(), lines };
 		}
 
 		private static unpack(pack: BuilderDataPack): LineData[] {
@@ -5508,8 +5508,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		) {
 		}
 
-		getData(): Map<string, V> {
-			return this.data;
+		getData(): Record<string, V> {
+			return Object.fromEntries(this.data);
 		}
 
 		get(key: K | string): V | undefined {
@@ -5529,7 +5529,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}
 
 		has(key: K | string): boolean {
-			return this.stringifyKey(key) in this.data;
+			return this.data.has(this.stringifyKey(key));
 		}
 
 		forEach(func: (value: V, key: string) => void): void {
@@ -5558,7 +5558,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}
 
 		clearMine(): void {
-			Object.keys(this.data).forEach((key) => {
+			Array.from(this.data.keys()).forEach((key) => {
 				this.deleteMine(key);
 			});
 		}
