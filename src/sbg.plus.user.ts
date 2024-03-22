@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.85
+// @version        0.9.86
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.85';
+window.__sbg_plus_version = '0.9.86';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -1743,9 +1743,10 @@ type ApiProfileData = Record<string, number> & {
 		? [
 			...presets.nicoscript,
 			...presets.egorscript,
-		] : [
+		]
+		: [
 			...presets.egorscript,
-			features.get(showBuilderPanel)!
+			features.get(showBuilderPanel)!,
 		];
 
 	presets.full = [];
@@ -2649,6 +2650,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function exposeAttackSliderData(script: Script): void {
+		if (!isMobile()) {
+			return;
+		}
+
 		script
 			.replace(
 				/\$\('#catalysers-list'\)\.append\(el\)/g,
@@ -5212,12 +5217,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				});
 			}
 
-			return { points : pointsMap.getData(), lines };
+			return { points : Object.fromEntries(pointsMap.getData()), lines };
 		}
 
 		private static unpack(pack: BuilderDataPack): LineData[] {
 			const data: LineData[] = [];
-			const pointsMap        = new CoordsMap<OlCoords, PointData>(pack.points);
+			const pointsMap        = new CoordsMap<OlCoords, PointData>(new Map(Object.entries(pack.points)));
 
 			for (const lineCoords of pack.lines) {
 				const points   = [ pointsMap.get(lineCoords[0]), pointsMap.get(lineCoords[1]) ] as [PointData, PointData];
@@ -5394,7 +5399,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	interface BuilderDataPack {
-		points : Map<string, PointData>;
+		points : Record<string, PointData>;
 		lines  : OlLineCoords[];
 	}
 
