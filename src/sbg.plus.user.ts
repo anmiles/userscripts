@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.87
+// @version        0.9.88
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.87';
+window.__sbg_plus_version = '0.9.88';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -2011,18 +2011,19 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				this.emit('init', { currentVersion }, {});
 
 				const previousVersion = localStorage.getItem(this.storageKey) ?? '';
-				localStorage.setItem(this.storageKey, currentVersion);
 
 				if (previousVersion !== currentVersion) {
 					this.emit('update', { previousVersion, currentVersion }, {});
 				}
+
+				localStorage.setItem(this.storageKey, currentVersion);
 			}, 50);
 		}
 	}
 
 	const versionWatchers: Record<'cui' | 'native', VersionWatcher> = {
-		native : new VersionWatcher('__sbg_current_version', () => window.__sbg_variable_VERSION),
-		cui    : new VersionWatcher('__sbg_cui_current_version', () => window.__sbg_cui_variable_USERSCRIPT_VERSION),
+		native : new VersionWatcher('__sbg_version_native', () => window.__sbg_variable_VERSION),
+		cui    : new VersionWatcher('__sbg_version_cui', () => window.__sbg_cui_variable_USERSCRIPT_VERSION),
 	};
 
 	console.log('created version watchers');
@@ -3300,7 +3301,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	function updateLangCacheAutomatically(): void {
 		versionWatchers.native.on('update', ({ currentVersion }) => {
-			console.log(`update lang cache to ${currentVersion} version`);
+			console.log(`update lang cache to match ${currentVersion} version`);
 			$('#lang-cache').trigger('click');
 		}, { previous : true });
 	}
