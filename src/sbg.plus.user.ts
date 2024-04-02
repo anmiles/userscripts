@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.90
+// @version        0.9.91
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.90';
+window.__sbg_plus_version = '0.9.91';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -36,16 +36,17 @@ interface Window {
 		new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
 	};
 
-	__sbg_local                     : boolean;
-	__sbg_preset                    : unknown;
-	__sbg_urls                      : Urls;
-	__sbg_language                  : Lang;
-	__sbg_plus_version              : string;
-	__sbg_plus_localStorage_watcher : unknown;
-	__sbg_plus_modifyFeatures       : ((...args: unknown[]) => void) | undefined;
-	__sbg_plus_animation_duration   : number;
-	__sbg_onerror_handlers          : Array<NonNullable<typeof window.onerror>>;
-	__sbg_debug_object              : (message: string, obj: Record<string, unknown>) => void;
+	__sbg_local                      : boolean;
+	__sbg_preset                     : unknown;
+	__sbg_urls                       : Urls;
+	__sbg_language                   : Lang;
+	__sbg_plus_version               : string;
+	__sbg_plus_localStorage_watcher  : unknown;
+	__sbg_plus_modifyFeatures        : ((...args: unknown[]) => void) | undefined;
+	__sbg_plus_animation_duration    : number;
+	__sbg_plus_logs_gesture_disabled : boolean;
+	__sbg_onerror_handlers           : Array<NonNullable<typeof window.onerror>>;
+	__sbg_debug_object               : (message: string, obj: Record<string, unknown>) => void;
 
 	__sbg_share: {
 		open     : (url: string) => boolean;
@@ -1548,6 +1549,10 @@ type ApiProfileData = Record<string, number> & {
 		{ ru : 'Не показывать лимит инвентаря', en : 'Hide inventory limit' },
 		{ public : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('#self-info__inv') });
 
+	new Feature(disableCopyingLogsWithThreeFingers,
+		{ ru : 'Отключить копирование логов тремя пальцами', en : 'Disable copying logs with three fingers' },
+		{ public : true, group, trigger : 'mapReady', unchecked : true });
+
 	group = 'cui';
 
 	new Transformer(disableClusters,
@@ -2457,7 +2462,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}, {
 			repeats : feedbackTouchRepeats,
 			timeout : feedbackClickTimeout,
-			filter  : (ev: TouchEvent) => ev.touches.length === feedbackTouches,
+			filter  : (ev: TouchEvent) => ev.touches.length === feedbackTouches && !window.__sbg_plus_logs_gesture_disabled,
 		});
 	}
 
@@ -3551,6 +3556,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				display: none;
 			}
 		`);
+	}
+
+	function disableCopyingLogsWithThreeFingers(): void {
+		window.__sbg_plus_logs_gesture_disabled = true;
 	}
 
 	/* eui */
