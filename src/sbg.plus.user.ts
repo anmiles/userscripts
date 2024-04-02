@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.88
+// @version        0.9.89
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.88';
+window.__sbg_plus_version = '0.9.89';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -622,12 +622,12 @@ type ApiProfileData = Record<string, number> & {
 	const consoleWatcherEventTypes = [ 'log', 'warn', 'error', 'info', 'debug', 'trace' ] as const;
 
 	interface ConsoleWatcherEventDataTypes {
-		log   : { message : string };
-		warn  : { message : string };
-		error : { message : string };
-		info  : { message : string };
-		debug : { message : string };
-		trace : { message : string };
+		log   : { message : string; originalMethod : (...data: unknown[]) => void };
+		warn  : { message : string; originalMethod : (...data: unknown[]) => void };
+		error : { message : string; originalMethod : (...data: unknown[]) => void };
+		info  : { message : string; originalMethod : (...data: unknown[]) => void };
+		debug : { message : string; originalMethod : (...data: unknown[]) => void };
+		trace : { message : string; originalMethod : (...data: unknown[]) => void };
 	}
 
 	class ConsoleWatcher extends EventWatcher<
@@ -644,7 +644,8 @@ type ApiProfileData = Record<string, number> & {
 				((originalMethod, originalError) => {
 					console[eventType] = (...args: unknown[]) => {
 						const isError = eventType === 'error' || args.filter((arg) => arg instanceof Error).length > 0;
-						const lines   = args.map((arg) => arg instanceof Error
+
+						const lines = args.map((arg) => arg instanceof Error
 							? [ arg.message, arg.stack ].join('\n')
 							: !arg
 								? ((arg) => {
@@ -652,52 +653,76 @@ type ApiProfileData = Record<string, number> & {
 									return 'null';
 								})(arg)
 								: stringify(arg, 'string'));
-						(isError ? originalError : originalMethod).call(console, ...args);
-						this.emit(isError ? 'error' : eventType, { message : lines.map((line) => line.trim()).join('\n') }, {});
+
+						this.emit(isError ? 'error' : eventType, {
+							message        : lines.map((line) => line.trim()).join('\n'),
+							originalMethod : (...data: unknown[]) => {
+								(isError ? originalError : originalMethod).call(console, ...data);
+							},
+						}, {});
 					};
 				})(console[eventType], console.error);
 			});
 		}
 	}
 
+	const logs : string[] = [];
+	const logParts        = [ 'time', 'eventType', 'message' ] as const;
+	const loggers         = [ 'console', 'logs' ] as const;
+
+	const loggerOptions: Record<typeof loggers[number], Array<typeof logParts[number]>> = {
+		console : [ 'time', 'message' ],
+		logs    : [ 'message' ],
+	};
+
+	class LogEntry {
+		constructor(
+			private readonly eventType: typeof consoleWatcherEventTypes[number],
+			private readonly message: string,
+		) {}
+
+		public format(logger: typeof loggers[number]): string {
+			return logParts
+				.filter((logPart) => loggerOptions[logger].includes(logPart))
+				.map((logPart) => this.formatPart(logPart, this.eventType, this.message))
+				.join(' ');
+		}
+
+		private formatPart(logPart: typeof logParts[number], eventType: typeof consoleWatcherEventTypes[number], message: string): string {
+			switch (logPart) {
+				case 'time':
+					return this.getTimeString();
+
+				case 'eventType':
+					return eventType === 'error' ? 'ERROR' : eventType;
+
+				case 'message':
+					return message;
+			}
+		}
+
+		private getTimeString(): string {
+			const date = new Date();
+			const time = [ date.getHours(), date.getMinutes(), date.getSeconds() ].map((value) => value.toString().padStart(2, '0')).join('.');
+			const ms   = date.getMilliseconds().toString().padStart(3, '0');
+			return `${time}:${ms}`;
+		}
+	}
+
 	const consoleWatcher = new ConsoleWatcher();
-	const logs           = [] as string[];
-	const logParts       = [ 'time', 'eventType', 'message' ] as const;
-
-	interface LogBuilderPart {
-		enabled : boolean;
-		format  : (eventType: typeof consoleWatcherEventTypes[number], message: string) => string;
-	}
-
-	const logBuilder: Record<typeof logParts[number], LogBuilderPart> = {
-		time : {
-			enabled : false,
-			format  : () => getLogDate(),
-		},
-		eventType : {
-			enabled : false,
-			format  : (eventType, _message) => eventType === 'error' ? 'ERROR' : eventType,
-		},
-		message : {
-			enabled : true,
-			format  : (_eventType, message) => message,
-		},
-	} as const;
-
-	function getLogDate(): string {
-		const date = new Date();
-		const time = [ date.getHours(), date.getMinutes(), date.getSeconds() ].map((value) => value.toString().padStart(2, '0')).join('.');
-		return `${time}:${date.getMilliseconds()}`;
-	}
 
 	consoleWatcherEventTypes.map((eventType) => {
-		consoleWatcher.on(eventType, ({ message }) => {
-			const parts = logParts.filter((logPart) => logBuilder[logPart].enabled).map((logPart) => logBuilder[logPart].format(eventType, message));
-			const line  = parts.join(' ');
-			logs.push(line);
+		consoleWatcher.on(eventType, ({ message, originalMethod }) => {
+			const logEntry = new LogEntry(eventType, message);
+
+			const logsLine = logEntry.format('logs');
+			logs.push(logsLine);
+
+			const consoleLine = logEntry.format('console');
+			originalMethod(consoleLine);
 
 			if (eventType === 'error' && window.__sbg_preset === 'full') {
-				alert(line);
+				alert(consoleLine);
 			}
 		}, {});
 	});
@@ -2903,6 +2928,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			.replace(
 				/$/,
 				'window.cuiEmbedded = true',
+			)
+			.replace(
+				/\} catch.*\n.*SBG CUI: Ошибка в main/,
+				(match: string) => `window.cuiStatus = 'loaded';${match}`,
 			)
 			.replace(
 				/window\.onerror = (.*);/,
