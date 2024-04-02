@@ -1677,6 +1677,10 @@ type ApiProfileData = Record<string, number> & {
 		{ ru : 'Удалять все имеющиеся рефы от точки при нажатии кнопки удаления', en : 'Recycle all existing refs of the point by clicking recycle button' },
 		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
 
+	new Feature(shrinkRefsListUntilMinimumNeededLength,
+		{ ru : 'Уменьшать ширину списка рефов до минимально необходимого', en : 'Shrink refs list until minimum needed width' },
+		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => $('.inventory__content') });
+
 	group = 'leaderboard';
 
 	new Feature(alwaysShowSelfStatistics,
@@ -1781,6 +1785,7 @@ type ApiProfileData = Record<string, number> & {
 		: [
 			...presets.egorscript,
 			features.get(showBuilderPanel)!,
+			features.get(shrinkRefsListUntilMinimumNeededLength)!,
 		];
 
 	presets.full = [];
@@ -4040,6 +4045,13 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			void window.__sbg_function_deleteInventoryItem(el);
 		});
 	}
+	function shrinkRefsListUntilMinimumNeededLength(): void {
+		setCSS(`
+			.inventory__content[data-tab="3"] {
+				align-self: flex-start;
+			}
+		`);
+	}
 
 	/* info popup */
 
@@ -5154,7 +5166,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 					}
 				}
 
-				return false;
+				return true;
 			});
 		}
 	}
