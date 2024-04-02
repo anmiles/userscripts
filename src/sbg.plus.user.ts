@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.89
+// @version        0.9.90
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.89';
+window.__sbg_plus_version = '0.9.90';
 
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
@@ -1543,6 +1543,10 @@ type ApiProfileData = Record<string, number> & {
 	new Feature(showLevelUpCongratulations,
 		{ ru : 'Показывать поздравления с новым уровнем', en : 'Show level-up congratulations' },
 		{ public : true, group, trigger : 'mapReady', requires : () => window.__sbg_variable_self_data });
+
+	new Feature(hideInventoryLimit,
+		{ ru : 'Не показывать лимит инвентаря', en : 'Hide inventory limit' },
+		{ public : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('#self-info__inv') });
 
 	group = 'cui';
 
@@ -3537,6 +3541,14 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 			#self-info__explv {
 				pointer-events: auto;
+			}
+		`);
+	}
+
+	function hideInventoryLimit(): void {
+		setCSS(`
+			#self-info__inv:after {
+				display: none;
 			}
 		`);
 	}
