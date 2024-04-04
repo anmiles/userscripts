@@ -19,8 +19,8 @@
 	"scripts": {
 		"build": "rimraf dist && tsc -p ./tsconfig.build.json",
 		"postbuild": "npm-run-all postbuild:*",
-		"postbuild:legacy": "copyfiles -u 2 src/legacy/* dist/",
 		"postbuild:minify": "node scripts/minify.js",
+		"postbuild:legacy": "copyfiles -u 2 src/legacy/* dist/",
 		"postbuild:userscripts": "node ./scripts/userscripts.js",
 		"lint": "eslint .",
 		"lint:fix": "npm run lint -- --fix"
