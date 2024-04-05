@@ -61,7 +61,7 @@ fs.readFileSync(template)
 				const filename    = script.filename;
 				const version     = script.version;
 				const description = script[sectionLanguage === 'en' ? 'description' : `description:${sectionLanguage}`];
-				const link        = `<a class="userscript-link" href="${filename}?version=${version}" title="${description}">${filename}</a>`;
+				const link        = `<a class="break-word" href="${filename}?version=${version}" title="${description}">${filename}</a>`;
 				const listItem    = `<li>${link} - ${description} (version ${version})</li>`;
 				output.push(listItem);
 			});
