@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.1
+// @version        1.0.2
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.1';
+window.__sbg_plus_version = '1.0.2';
 
 // TODO: uncomment when deprecate old package
 // window.__sbg_package_supported = '3.0.0';
@@ -2417,7 +2417,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 				const firstNode = nodes[0];
 
-				if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getGameURL()) {
+				if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getNativeScriptSrc()) {
 					return;
 				}
 

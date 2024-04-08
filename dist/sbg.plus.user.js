@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.1
+// @version        1.0.2
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.1';
+window.__sbg_plus_version = '1.0.2';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
         return allKeys.includes(String(key));
@@ -1273,7 +1273,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                     return;
                 }
                 const firstNode = nodes[0];
-                if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getGameURL()) {
+                if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getNativeScriptSrc()) {
                     return;
                 }
                 append.apply(this, nodes);
