@@ -17,7 +17,9 @@ window.__sbg_plus_version = '1.0.0';
 
 // TODO: uncomment when deprecate old package
 // window.__sbg_package_supported = '3.0.0';
-window.__sbg_package_latest = '3.0.0';
+
+// TODO: uncomment after publishing release
+// window.__sbg_package_latest = '3.0.0';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface Window {

@@ -14,9 +14,6 @@
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
 window.__sbg_plus_version = '1.0.0';
-// TODO: uncomment when deprecate old package
-// window.__sbg_package_supported = '3.0.0';
-window.__sbg_package_latest = '3.0.0';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
         return allKeys.includes(String(key));
