@@ -1,20 +1,25 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        0.9.92
+// @version        1.0.0
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
 // @description:ru Расширенная функциональность для SBG
 // @author         Anatoliy Oblaukhov
-// @match          https://sbg-game.ru/app/*
+// @match          https://sbg-game.ru/*
 // @run-at         document-start
 // @grant          none
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '0.9.92';
+window.__sbg_plus_version = '1.0.0';
 
+// TODO: uncomment when deprecate old package
+// window.__sbg_package_supported = '3.0.0';
+window.__sbg_package_latest = '3.0.0';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface Window {
 	[key: `__sbg_${string}_original`] : string;
 	[key: `__sbg_${string}_modified`] : string;
@@ -36,22 +41,33 @@ interface Window {
 		new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
 	};
 
-	__sbg_local                      : boolean;
-	__sbg_preset                     : unknown;
-	__sbg_urls                       : Urls;
+	__sbg_game : {
+		enableBackButton : () => void;
+	} | undefined;
+
+	__sbg_share : {
+		open     : (url: string) => boolean;
+		navigate : (coords: OlCoordsString) => boolean;
+	} | undefined;
+
+	__sbg_urls            : Urls | undefined;
+	__sbg_local           : boolean | undefined;
+	__sbg_preset          : string | undefined;
+	__sbg_package         : string | undefined;
+	__sbg_package_version : Version | undefined;
+
+	__sbg_plus_version      : Version;
+	__sbg_package_supported : Version | undefined;
+	__sbg_package_latest    : Version;
+
 	__sbg_language                   : Lang;
-	__sbg_plus_version               : string;
+	__sbg_location                   : typeof window.location;
+	__sbg_onerror_handlers           : Array<NonNullable<typeof window.onerror>>;
+	__sbg_debug_object               : (message: string, obj: Record<string, unknown>) => void;
 	__sbg_plus_localStorage_watcher  : unknown;
 	__sbg_plus_modifyFeatures        : ((...args: unknown[]) => void) | undefined;
 	__sbg_plus_animation_duration    : number;
 	__sbg_plus_logs_gesture_disabled : boolean;
-	__sbg_onerror_handlers           : Array<NonNullable<typeof window.onerror>>;
-	__sbg_debug_object               : (message: string, obj: Record<string, unknown>) => void;
-
-	__sbg_share: {
-		open     : (url: string) => boolean;
-		navigate : (coords: OlCoordsString) => boolean;
-	};
 
 	__sbg_variable_draw_slider       : ReadableVariable<Splide>;
 	__sbg_variable_FeatureStyles     : ReadableVariable<OlFeatureStyles>;
@@ -363,7 +379,7 @@ interface Toast {
 	};
 }
 
-const urlTypes = [ 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
+const urlTypes = [ 'homepage', 'game', 'login', 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
 
 type UrlType = typeof urlTypes[number];
 
@@ -375,6 +391,8 @@ type Urls = Record<UrlType, {
 const langs = [ 'ru', 'en' ] as const;
 
 type Lang = typeof langs[number];
+
+type Version = `${number}.${number}.${number}`;
 
 type Level = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
@@ -669,10 +687,11 @@ type ApiProfileData = Record<string, number> & {
 
 	const logs : string[] = [];
 	const logParts        = [ 'time', 'eventType', 'message' ] as const;
-	const loggers         = [ 'console', 'logs' ] as const;
+	const loggers         = [ 'console', 'alert', 'logs' ] as const;
 
 	const loggerOptions: Record<typeof loggers[number], Array<typeof logParts[number]>> = {
 		console : [ 'time', 'message' ],
+		alert   : [ 'message' ],
 		logs    : [ 'message' ],
 	};
 
@@ -716,14 +735,11 @@ type ApiProfileData = Record<string, number> & {
 		consoleWatcher.on(eventType, ({ message, originalMethod }) => {
 			const logEntry = new LogEntry(eventType, message);
 
-			const logsLine = logEntry.format('logs');
-			logs.push(logsLine);
-
-			const consoleLine = logEntry.format('console');
-			originalMethod(consoleLine);
+			logs.push(logEntry.format('logs'));
+			originalMethod(logEntry.format('console'));
 
 			if (eventType === 'error' && window.__sbg_preset === 'full') {
-				alert(consoleLine);
+				alert(logEntry.format('alert'));
 			}
 		}, {});
 	});
@@ -769,14 +785,43 @@ type ApiProfileData = Record<string, number> & {
 		return true;
 	};
 
+	window.__sbg_location = new Proxy(window.location, {
+		set : <K extends keyof typeof window.location>(target: typeof window.location, property: K, newValue: typeof window.location[K]) => {
+			target[property] = newValue;
+
+			if (property === 'href' && typeof newValue === 'string') {
+				const homepage = getHomepageURL();
+				const gameUrl  = getGameURL();
+				const url      = new URL(newValue, homepage);
+
+				if (url.href.startsWith(homepage)) {
+					if (url.href !== gameUrl) {
+						const storageKey = 'sbg-plus-homepage-replaced';
+						localStorage.removeItem(storageKey);
+					}
+
+					location.href = url.href;
+				}
+			}
+
+			return true;
+		},
+	});
+
 	console.log(`SBG plus, version ${window.__sbg_plus_version}`);
 	console.log(`started at ${new Date().toISOString()}`);
 	console.log(`userAgent: ${navigator.userAgent}`);
 
 	interface Labels {
-		save     : Label;
-		close    : Label;
-		ymaps    : Label;
+		save    : Label;
+		close   : Label;
+		ymaps   : Label;
+		upgrade : {
+			package: {
+				supported : Label;
+				latest    : Label;
+			};
+		};
 		settings: {
 			title    : Label;
 			button   : Label;
@@ -881,6 +926,18 @@ type ApiProfileData = Record<string, number> & {
 			ru : 'Яндекс Карты',
 			en : 'Yandex Maps',
 		}),
+		upgrade : {
+			package : {
+				supported : new Label({
+					ru : 'Приложение больше не поддерживается. Пожалуйста, скачайте и установите новую версию',
+					en : 'App is no more supported. Please, download and install new version',
+				}),
+				latest : new Label({
+					ru : 'Хотите скачать и установить новую версию приложения сейчас?',
+					en : 'Do you want to download and install new version of the app now?',
+				}),
+			},
+		},
 		settings : {
 			title : new Label({
 				ru : 'Настройки скриптов',
@@ -1112,6 +1169,8 @@ type ApiProfileData = Record<string, number> & {
 	};
 
 	console.log('created labels');
+
+	const urls = initUrls();
 
 	class Settings {
 		private readonly storageKey = 'sbg-plus-settings';
@@ -1543,7 +1602,7 @@ type ApiProfileData = Record<string, number> & {
 
 	new Feature(showLevelUpCongratulations,
 		{ ru : 'Показывать поздравления с новым уровнем', en : 'Show level-up congratulations' },
-		{ public : true, group, trigger : 'mapReady', requires : () => window.__sbg_variable_self_data });
+		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => window.__sbg_variable_self_data });
 
 	new Feature(hideInventoryLimit,
 		{ ru : 'Не показывать лимит инвентаря', en : 'Hide inventory limit' },
@@ -1894,7 +1953,7 @@ type ApiProfileData = Record<string, number> & {
 				} else {
 					data = data.replace(searchValue, replacer);
 				}
-			} else {
+			} else if (!(searchValue instanceof RegExp && searchValue.global)) {
 				console.error(`replace '${searchValue.toString()}': not found`);
 			}
 
@@ -2133,25 +2192,39 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	console.log('created storage watcher');
 
 	async function main(): Promise<void> {
-		if (location.pathname.startsWith('/login')) {
+		if (isUrl('login')) {
 			return;
 		}
 
-		console.log('started main');
+		if (isUrl('game')) {
+			// TODO: remove when deprecate old package
+			if (!isPackageLatest()) {
+				preventLoadingScript();
+			} else {
+				replacePage(getHomepageURL());
+			}
+		} else {
+			await waitHTMLLoaded();
+			await waitEntry();
+			await loadGame();
+		}
 
-		preventLoadingScript();
 		enhanceEventListeners();
-
 		window.__sbg_language = getLanguage();
 		detectLocal();
 		checkEssentialFeatures(features.get(loadCUI)!, features.get(loadEUI)!);
 		initFeedback();
-		initUrls();
 		fixPermissionsCompatibility();
 
 		await waitHTMLLoaded();
 		initCSS();
 		initSettings();
+
+		if (!checkVersions()) {
+			return;
+		}
+
+		showPage();
 		window.__sbg_plus_modifyFeatures?.(features);
 		execFeatures('pageLoad');
 
@@ -2171,6 +2244,82 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		saveUsername();
 
 		console.log(`finished at ${new Date().toISOString()}`);
+	}
+
+	function initUrls(): Urls {
+		// which urls should be always loaded from values values below
+		// TODO: clear when deprecate old package
+		const forcedUrls: UrlType[] = !isPackageSupported() ? [ 'eui' ] : [];
+
+		const urls: Urls = {
+			homepage : {
+				local  : '',
+				remote : 'https://sbg-game.ru/',
+			},
+			game : {
+				local  : '',
+				remote : 'https://sbg-game.ru/app',
+			},
+			login : {
+				local  : '',
+				remote : 'https://sbg-game.ru/login',
+			},
+			desktop : {
+				local  : 'sbg.plus.user.js',
+				remote : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
+			},
+			mobile : {
+				local  : 'sbg.plus.user.min.js',
+				remote : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
+			},
+			intel : {
+				local  : 'intel.js',
+				remote : 'https://sbg-game.ru/app/intel.js',
+			},
+			script : {
+				local  : 'script.js',
+				remote : 'https://sbg-game.ru/app/script.js',
+			},
+			cui : {
+				local  : 'nicko.js',
+				remote : 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+			},
+			eui : {
+				local  : 'egor.js',
+				remote : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
+			},
+		};
+
+		if (window.__sbg_urls) {
+			for (const urlType of urlTypes) {
+				if (urlType in window.__sbg_urls && !forcedUrls.includes(urlType)) {
+					urls[urlType] = window.__sbg_urls[urlType];
+				}
+			}
+		}
+
+		console.log('initialized urls');
+		return urls;
+	}
+
+	function isUrl(kind: UrlType, url = location.href): boolean {
+		return urls[kind].remote.replace(/\/$/, '') === url.replace(/\/$/, '');
+	}
+
+	function hidePage(): void {
+		setCSS(`
+			body:not(.sbg-plus-loaded) > * {
+				display: none;
+			}
+
+			body > .toastify {
+				display: inline-block;
+			}
+		`);
+	}
+
+	function showPage(): void {
+		$('.body').toggleClass('sbg-plus-loaded', true);
 	}
 
 	async function copyLogs(): Promise<void> {
@@ -2258,15 +2407,80 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 				const firstNode = nodes[0];
 
-				if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getNativeScriptSrc()) {
+				if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getGameURL()) {
 					return;
 				}
+
 				append.apply(this, nodes);
 			};
-		// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
+			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 		})(Element.prototype.append);
 
 		console.log('prevented loading script');
+	}
+
+	function replacePage(url: string): void {
+		hidePage();
+		console.log(`redirecting to ${url}`);
+		window.stop();
+		location.href = url;
+	}
+
+	async function waitEntry(): Promise<void> {
+		return new Promise((resolve) => {
+			const storageKey = 'sbg-plus-homepage-replaced';
+
+			hidePage();
+
+			if (localStorage.getItem(storageKey)) {
+				console.log('loading game immediately');
+				resolve();
+			} else {
+				[ ...document.querySelectorAll('a') ]
+					.filter((a) => isUrl('game', a.href))
+					.map((a) => {
+						a.href = 'javascript:;';
+
+						a.addEventListener('click', () => {
+							localStorage.setItem(storageKey, '1');
+							console.log('loading game on click');
+							resolve();
+						});
+					});
+
+				showPage();
+			}
+		});
+	}
+
+	async function loadGame(): Promise<void> {
+		const gameUrl = getGameURL();
+
+		const gameHTML = await Script.create({
+			src         : gameUrl,
+			prefix      : '__sbg_html',
+			transformer : transformGameHTML,
+		});
+
+		document.write(gameHTML.valueOf()!);
+		document.close();
+	}
+
+	function transformGameHTML(script: Script): void {
+		script
+			.replace(
+				/<script class="mobile-check">.+?<\/script>/,
+				'',
+			)
+			.replace(
+				'<head>',
+				'<head><script>if (!localStorage.getItem(\'auth\')) window.__sbg_goto(\'/login/\');</script>',
+			)
+			.replace(
+				'href="style.css"',
+				'href="/app/style.css"',
+			)
+		;
 	}
 
 	function detectLocal(): void {
@@ -2290,16 +2504,24 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}
 	}
 
+	function getHomepageURL(): string {
+		return urls.homepage.remote;
+	}
+
+	function getGameURL(): string {
+		return urls.game.remote;
+	}
+
 	function getNativeScriptSrc(): string {
-		return window.__sbg_urls[isMobile() ? 'script' : 'intel'].remote;
+		return urls[isMobile() ? 'script' : 'intel'].remote;
 	}
 
 	function getCUIScriptSrc(): string {
-		return window.__sbg_urls.cui.remote;
+		return urls.cui.remote;
 	}
 
 	function getEUIScriptSrc(): string {
-		return window.__sbg_urls.eui.remote;
+		return urls.eui.remote;
 	}
 
 	function enhanceEventListeners(): void {
@@ -2471,46 +2693,52 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		});
 	}
 
-	function initUrls(): void {
-		// which urls should be always loaded by forced values below
-		// TODO: remove "eui" in the new version of the APK
-		const alwaysForced: UrlType[] = [ 'eui' ];
+	function isPackageSupported(): boolean {
+		return compareVersions(window.__sbg_package_version, window.__sbg_package_supported) >= 0;
+	}
 
-		const forcedUrls: typeof window.__sbg_urls = {
-			desktop : {
-				local  : 'sbg.plus.user.js',
-				remote : 'https://anmiles.net/userscripts/sbg.plus.user.js',
-			},
-			mobile : {
-				local  : 'sbg.plus.user.min.js',
-				remote : 'https://anmiles.net/userscripts/sbg.plus.user.min.js',
-			},
-			intel : {
-				local  : 'intel.js',
-				remote : 'https://sbg-game.ru/app/intel.js',
-			},
-			script : {
-				local  : 'script.js',
-				remote : 'https://sbg-game.ru/app/script.js',
-			},
-			cui : {
-				local  : 'nicko.js',
-				remote : 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
-			},
-			eui : {
-				local  : 'egor.js',
-				remote : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
-			},
-		};
+	function isPackageLatest(): boolean {
+		return compareVersions(window.__sbg_package_version, window.__sbg_package_latest) >= 0;
+	}
 
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- __sbg_urls might not be initialized if didn't come from APK
-		window.__sbg_urls = window.__sbg_urls ?? {} as typeof window.__sbg_urls;
+	function compareVersions(version: Version | undefined, targetVersion: Version | undefined): -1 | 0 | 1 {
+		if (typeof version === 'undefined' && typeof targetVersion === 'undefined') {
+			return 0;
+		}
 
-		for (const urlType of urlTypes) {
-			if (alwaysForced.includes(urlType) || !(urlType in window.__sbg_urls)) {
-				window.__sbg_urls[urlType] = forcedUrls[urlType];
+		if (typeof targetVersion === 'undefined') {
+			return 1;
+		}
+
+		if (typeof version === 'undefined') {
+			return -1;
+		}
+
+		const parts1: number[] = version.split('.').map((part) => parseInt(part));
+		const parts2: number[] = targetVersion.split('.').map((part) => parseInt(part));
+
+		for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+			const part1 = parts1[i];
+			const part2 = parts2[i];
+
+			if (typeof part1 === 'undefined') {
+				return -1;
+			}
+
+			if (typeof part2 === 'undefined') {
+				return 1;
+			}
+
+			if (part1 < part2) {
+				return -1;
+			}
+
+			if (part1 > part2) {
+				return 1;
 			}
 		}
+
+		return 0;
 	}
 
 	function fixPermissionsCompatibility(): void {
@@ -2544,6 +2772,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		});
 
 		console.log('embedCUI: wait dbReady');
+
 		window.addEventListener('dbReady', () => {
 			console.log('embedCUI: emit olReady');
 			window.dispatchEvent(new Event('olReady'));
@@ -2580,6 +2809,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		script.transform(fixCUIDefaults);
 		script.transform(fixCUIWarnings);
 		script.transform(fixPointNavigation);
+		script.transform(fixExternalLinks);
 
 		features.triggers.cuiTransform.filter(isTransformer).map((transformer) => {
 			transformer.exec(script);
@@ -2654,9 +2884,13 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		script.transform(exposeNativeScript);
 		script.transform(includeYMaps);
 		script.transform(exposeAttackSliderData);
+		script.transform(preserveStorage);
+		script.transform(fixExternalLinks);
 	}
 
 	function exposeNativeScript(script: Script): void {
+		const disabledLocationFunctions = !isMobile() && localStorage.getItem('homeCoords') ? [ 'movePlayer' ] : [];
+
 		script.expose('__sbg', {
 			variables : {
 				readable : [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
@@ -2665,7 +2899,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			functions : {
 				readable : [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
 				writable : [ 'drawLeaderboard', 'manageDrawing', 'movePlayer', 'showInfo', 'timeToString' ],
-				disabled : !isMobile() && localStorage.getItem('homeCoords') ? [ 'movePlayer' ] : undefined,
+				disabled : [ ...disabledLocationFunctions ],
 			},
 		});
 	}
@@ -2703,7 +2937,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function setCSS(css: string): void {
-		$('<style></style>').html(css).appendTo(document.body);
+		const style = document.createElement('style');
+		style.setAttribute('type', 'text/css');
+		style.innerHTML = css;
+		document.body.appendChild(style);
 	}
 
 	window.setCSS = setCSS;
@@ -2847,6 +3084,25 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		return popup;
 	}
 
+	function checkVersions(): boolean {
+		const updateUrl = 'https://github.com/anmiles/sbg/releases/latest';
+
+		if (!isPackageSupported()) {
+			alert(labels.upgrade.package.supported.toString());
+			replacePage(updateUrl);
+			return false;
+		}
+
+		if (!isPackageLatest()) {
+			if (confirm(labels.upgrade.package.latest.toString())) {
+				replacePage(updateUrl);
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	function initHome(): void {
 		if (isMobile()) {
 			return;
@@ -2902,6 +3158,23 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	function saveUsername(): void {
 		localStorage.setItem('sbg-plus-last-username', window.__sbg_variable_self_data.get().n);
+	}
+
+	function fixExternalLinks(script: Script): void {
+		script
+			.replace(
+				/location.href = /g,
+				'window.__sbg_location.href = ',
+			)
+		;
+	}
+	function preserveStorage(script: Script): void {
+		script
+			.replace(
+				'function clearStorage() {',
+				'function clearStorage() { localStorage.removeItem(\'auth\'); return;',
+			)
+		;
 	}
 
 	function exposeCUIScript(script: Script): void {
@@ -3004,18 +3277,14 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function fixPointNavigation(script: Script): void {
-		const obj: keyof Window              = '__sbg_share';
-		const func: keyof Window[typeof obj] = 'open';
-
-		if (!(obj in window) || !(func in window[obj])) {
+		if (!('__sbg_share' in window)) {
 			return;
 		}
-
 		script
 			.replaceCUIBlock(
 				'Навигация и переход к точке',
 				'window.location.href = url',
-				`if (window['${obj}']['${func}'](url) === false) {
+				`if (window.__sbg_share.open(url) === false) {
 					navigator.clipboard.writeText(lastOpenedPoint.coords);
 					createToast('${labels.toasts.noGeoApp.toString()}', 'top left', 3000).showToast();
 				}`,
@@ -3267,6 +3536,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return isClosed;
 		}
 
+		window.__sbg_game?.enableBackButton();
+
 		document.addRepeatingEventListener('backbutton', () => {
 			location.replace('/window.close');
 		}, {
@@ -3442,7 +3713,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		const congratulation = $(`
 			<h3>New access</h3>
-			<p>Level <span class="value"></span></p>
+			<p>Level&nbsp;<span class="value"></span></p>
 			<p>🎉</p>
 		`);
 
@@ -3526,6 +3797,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 			.levelup {
 				width: calc(100% - 120px);
+				max-width: 320px;
 				border: 2px solid #fdba3e !important;
 				background-color: hsl(41deg 54% 7%);
 				padding: 20px 0 !important;
@@ -3544,7 +3816,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			}
 
 			.levelup p {
-				font-size: 14vw;
+				font-size: 3em;
 				color: #feebb4;
 				margin: 0;
 			}
