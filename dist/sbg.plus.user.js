@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.0
+// @version        1.0.1
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.0';
+window.__sbg_plus_version = '1.0.1';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
         return allKeys.includes(String(key));
@@ -1089,11 +1089,15 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             return;
         }
         if (isUrl('game')) {
+            // TODO: remove after publishing release
+            const isPackagePublished = typeof window.__sbg_package_latest !== 'undefined';
             // TODO: remove when deprecate old package
-            if (!isPackageLatest()) {
+            if (!isPackageLatest() || !isPackagePublished) {
                 preventLoadingScript();
             }
             else {
+                await waitHTMLLoaded();
+                setHideCSS();
                 replacePage(getHomepageURL());
             }
         }
@@ -1109,12 +1113,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         initFeedback();
         fixPermissionsCompatibility();
         await waitHTMLLoaded();
+        setHideCSS();
         initCSS();
         initSettings();
         if (!checkVersions()) {
             return;
         }
-        showPage();
+        unsetHideCSS();
         (_a = window.__sbg_plus_modifyFeatures) === null || _a === void 0 ? void 0 : _a.call(window, features);
         execFeatures('pageLoad');
         window.__sbg_plus_localStorage_watcher = new LocalStorageWatcher();
@@ -1185,19 +1190,20 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function isUrl(kind, url = location.href) {
         return urls[kind].remote.replace(/\/$/, '') === url.replace(/\/$/, '');
     }
-    function hidePage() {
+    function setHideCSS() {
+        document.body.classList.toggle('hidden', true);
         setCSS(`
-			body:not(.sbg-plus-loaded) > * {
+			body.hidden > * {
 				display: none;
 			}
 
-			body > .toastify {
+			body.hidden > .toastify {
 				display: inline-block;
 			}
 		`);
     }
-    function showPage() {
-        $('.body').toggleClass('sbg-plus-loaded', true);
+    function unsetHideCSS() {
+        document.body.classList.remove('hidden');
     }
     async function copyLogs() {
         await navigator.clipboard.writeText(logs.join('\n'));
@@ -1277,7 +1283,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         console.log('prevented loading script');
     }
     function replacePage(url) {
-        hidePage();
         console.log(`redirecting to ${url}`);
         window.stop();
         location.href = url;
@@ -1285,7 +1290,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     async function waitEntry() {
         return new Promise((resolve) => {
             const storageKey = 'sbg-plus-homepage-replaced';
-            hidePage();
+            setHideCSS();
             if (localStorage.getItem(storageKey)) {
                 console.log('loading game immediately');
                 resolve();
@@ -1301,7 +1306,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                         resolve();
                     });
                 });
-                showPage();
+                unsetHideCSS();
             }
         });
     }
