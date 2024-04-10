@@ -5,9 +5,9 @@ const EOL          = '\n';
 const headerRegex  = /^\s*\/\/\s*@(\S+)\s+(.*?)\s*$/;
 const sectionRegex = /<userscript:section lang="(\w+)" namespace="(.*?)" title="(.*?)" \/>/g;
 
-const root      = './dist';
+const root      = './public';
 const template  = './src/index.template.html';
-const indexFile = './dist/index.html';
+const indexFile = './public/index.html';
 const ext       = '.user.js';
 
 const sections = {};
