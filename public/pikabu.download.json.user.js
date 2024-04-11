@@ -20,7 +20,7 @@ String.prototype.regexEscape = function() {
     const fetchInterval = 500;
 
     async function save() {
-        const saved = $('<div></div>').html('<style>* { font-family: Arial} li { padding: 0.5em 0; }</style><h1>Пикабу</h1>');
+        const saved = $('<div></div>').html('<style>* { font-family: "Segoe UI", "Roboto", "Helvetica", sans-serif; } li { padding: 0.5em 0; }</style><h1>Пикабу</h1>');
         const nickname = $('.avatar img').attr('alt');
         const html = await get('https://pikabu.ru/saved-stories');
         const regex = new RegExp(`pikabu\\.ru\\/@${nickname.regexEscape()}\\/saved\\/(\\d+)`, 'g');

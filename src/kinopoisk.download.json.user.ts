@@ -1144,7 +1144,7 @@ String.prototype.toFilename = function() {
 				z-index: 65535;
 				pointer-events: none;
 				gap: 1em;
-				font-family: 'Graphik Kinopoisk LC Web', Arial, sans-serif;
+				font-family: "Graphik Kinopoisk LC Web", "Arial", sans-serif;
 				font-size: 15px;
 				background: rgba(0, 0, 0, 0.5);
 			}

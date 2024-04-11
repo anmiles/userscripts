@@ -1566,7 +1566,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
 				overflow: auto;
 				padding: 0.5em;
 				box-sizing: border-box;
-				font-family: sans-serif;
+				font-family: "Segoe UI", "Roboto", "Helvetica", sans-serif;
 			}
 
 			.sbg-plus-popup li {
