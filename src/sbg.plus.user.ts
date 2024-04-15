@@ -2767,6 +2767,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	async function embedCUI(nativeScript: Script): Promise<void> {
 		if (!features.get(loadCUI)!.isEnabled()) {
 			console.log('skipped embedCUI; loading native script');
+			window.cuiStatus = 'loaded';
 			nativeScript.embed();
 			return;
 		}
@@ -2884,7 +2885,6 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function loadEUI(): void {
-		window.cuiStatus = 'loaded';
 		Script.appendScript(getEUIScriptSrc());
 	}
 
