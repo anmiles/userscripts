@@ -52,7 +52,7 @@ interface Window {
 		navigate : (coords: OlCoordsString) => boolean;
 	} | undefined;
 
-	__sbg_urls            : Urls | undefined;
+	__sbg_urls            : Record<UrlType, { remote : string }> | undefined;
 	__sbg_local           : boolean | undefined;
 	__sbg_preset          : string | undefined;
 	__sbg_package         : string | undefined;
@@ -384,11 +384,7 @@ interface Toast {
 const urlTypes = [ 'homepage', 'game', 'login', 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
 
 type UrlType = typeof urlTypes[number];
-
-type Urls = Record<UrlType, {
-	local  : string;
-	remote : string;
-}>;
+type Urls = Record<UrlType, string>;
 
 const langs = [ 'ru', 'en' ] as const;
 
@@ -792,12 +788,10 @@ type ApiProfileData = Record<string, number> & {
 			target[property] = newValue;
 
 			if (property === 'href' && typeof newValue === 'string') {
-				const homepage = getHomepageURL();
-				const gameUrl  = getGameURL();
-				const url      = new URL(newValue, homepage);
+				const url = new URL(newValue, urls.homepage);
 
-				if (url.href.startsWith(homepage)) {
-					if (url.href !== gameUrl) {
+				if (url.href.startsWith(urls.homepage)) {
+					if (url.href !== urls.game) {
 						const storageKey = 'sbg-plus-homepage-replaced';
 						localStorage.removeItem(storageKey);
 					}
@@ -2208,7 +2202,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			} else {
 				await waitHTMLLoaded();
 				setHideCSS();
-				replacePage(getHomepageURL());
+				replacePage(urls.homepage);
 			}
 		} else {
 			await waitHTMLLoaded();
@@ -2260,48 +2254,21 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		const forcedUrls: UrlType[] = !isPackageSupported() ? [ 'eui' ] : [];
 
 		const urls: Urls = {
-			homepage : {
-				local  : '',
-				remote : 'https://sbg-game.ru/',
-			},
-			game : {
-				local  : '',
-				remote : 'https://sbg-game.ru/app',
-			},
-			login : {
-				local  : '',
-				remote : 'https://sbg-game.ru/login',
-			},
-			desktop : {
-				local  : 'sbg.plus.user.js',
-				remote : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-			},
-			mobile : {
-				local  : 'sbg.plus.user.min.js',
-				remote : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-			},
-			intel : {
-				local  : 'intel.js',
-				remote : 'https://sbg-game.ru/app/intel.js',
-			},
-			script : {
-				local  : 'script.js',
-				remote : 'https://sbg-game.ru/app/script.js',
-			},
-			cui : {
-				local  : 'nicko.js',
-				remote : 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
-			},
-			eui : {
-				local  : 'egor.js',
-				remote : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
-			},
+			homepage : 'https://sbg-game.ru/',
+			game     : 'https://sbg-game.ru/app',
+			login    : 'https://sbg-game.ru/login',
+			desktop  : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
+			mobile   : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
+			intel    : 'https://sbg-game.ru/app/intel.js',
+			script   : 'https://sbg-game.ru/app/script.js',
+			cui      : 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+			eui      : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
 		};
 
 		if (window.__sbg_urls) {
 			for (const urlType of urlTypes) {
 				if (urlType in window.__sbg_urls && !forcedUrls.includes(urlType)) {
-					urls[urlType] = window.__sbg_urls[urlType];
+					urls[urlType] = window.__sbg_urls[urlType].remote;
 				}
 			}
 		}
@@ -2311,7 +2278,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function isUrl(kind: UrlType, url = location.href): boolean {
-		return urls[kind].remote.replace(/\/$/, '') === url.replace(/\/$/, '');
+		return urls[kind].replace(/\/$/, '') === url.replace(/\/$/, '');
 	}
 
 	function setHideCSS(): void {
@@ -2462,10 +2429,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	async function loadGame(): Promise<void> {
-		const gameUrl = getGameURL();
-
 		const gameHTML = await Script.create({
-			src         : gameUrl,
+			src         : urls.game,
 			prefix      : '__sbg_html',
 			transformer : transformGameHTML,
 		});
@@ -2512,24 +2477,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}
 	}
 
-	function getHomepageURL(): string {
-		return urls.homepage.remote;
-	}
-
-	function getGameURL(): string {
-		return urls.game.remote;
-	}
-
 	function getNativeScriptSrc(): string {
-		return urls[isMobile() ? 'script' : 'intel'].remote;
-	}
-
-	function getCUIScriptSrc(): string {
-		return urls.cui.remote;
-	}
-
-	function getEUIScriptSrc(): string {
-		return urls.eui.remote;
+		return urls[isMobile() ? 'script' : 'intel'];
 	}
 
 	function enhanceEventListeners(): void {
@@ -2775,7 +2724,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('embedCUI: started');
 
 		const cuiScript = await Script.create({
-			src         : getCUIScriptSrc(),
+			src         : urls.cui,
 			prefix      : '__sbg_cui_script',
 			transformer : transformCUIScript,
 		});
@@ -2885,7 +2834,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function loadEUI(): void {
-		Script.appendScript(getEUIScriptSrc());
+		Script.appendScript(urls.eui);
 	}
 
 	function transformNativeScript(script: Script): void {
