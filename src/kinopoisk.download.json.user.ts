@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        6.0.0
+// @version        6.0.1
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -322,12 +322,6 @@ String.prototype.toFilename = function() {
 					error('Не удалось найти объект __NEXT_DATA__ на странице фильма');
 				}
 
-				const relatedFilm = Related.map[id];
-
-				if (!relatedFilm) {
-					error('Не удалось найти связанные фильмы');
-				}
-
 				function isRecord(obj: unknown): obj is Record<string, unknown> {
 					return typeof obj === 'object' && obj !== null;
 				}
@@ -354,10 +348,15 @@ String.prototype.toFilename = function() {
 				const jsonData = jsonSelect<JSONData>(htmlMatch[1]!, [ 'props', 'apolloState', 'data' ]);
 
 				const related = Film.getRelated(jsonData);
-				const key     = relatedFilm.key;
+
+				const relatedFilm = Related.map[id];
+				if (!relatedFilm) {
+					error('Не удалось найти связанные фильмы');
+				}
+
+				const key = relatedFilm.key;
 
 				const jsonFilmData = jsonData[key];
-
 				if (!jsonFilmData) {
 					throw new Error(`Cannot find jsonFilmData by key ${key}`);
 				}
@@ -429,7 +428,8 @@ String.prototype.toFilename = function() {
 		}
 
 		private static getLists(jsonFilmData: JSONFilmData<FilmTypeName>): string[] {
-			return jsonFilmData.userData.folders.map((folder) => folder.name).sort();
+			const key = Object.keys(jsonFilmData.userData).find((key) => key.startsWith('userFolders')) as `userFolders({"limit":${number},"offset":${number}})`;
+			return jsonFilmData.userData[key]!.items.map((folder) => folder.name).sort();
 		}
 
 		private static getPoster(jsonFilmData: JSONFilmData<FilmTypeName>): string | null {
@@ -507,15 +507,18 @@ String.prototype.toFilename = function() {
 		genres         : Array<{ __ref : `Genre:${number}` }>;
 		userData: {
 			__typename : 'MovieUserData';
-			folders: Array<{
-				__typename : 'Folder';
-				id         : number;
-				name       : string;
-			}>;
 			note: {
 				__typename : 'UserMovieNote';
 				value      : string;
 			} | null;
+		} & {
+			[key in `userFolders({"limit":${number},"offset":${number}})`]: {
+				items: Array<{
+					__typename : 'Folder';
+					id         : number;
+					name       : string;
+				}>;
+			};
 		};
 		poster: {
 			__typename  : 'Image';
@@ -651,7 +654,8 @@ String.prototype.toFilename = function() {
 			if (this.values.length === 0) {
 				return;
 			}
-			this.values[this.values.length - 1]++;
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+			this.values[this.values.length - 1]!++;
 			console.debug('increment', itemTitle, itemLink, this);
 			this.print(`${this.title} [${this.values[this.values.length - 1]} из ${this.counts[this.counts.length - 1]}]`);
 			this.link(itemTitle, itemLink);

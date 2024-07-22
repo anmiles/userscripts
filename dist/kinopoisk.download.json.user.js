@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        6.0.0
+// @version        6.0.1
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -216,10 +216,6 @@ String.prototype.toFilename = function () {
                 if (!htmlMatch) {
                     error('Не удалось найти объект __NEXT_DATA__ на странице фильма');
                 }
-                const relatedFilm = Related.map[id];
-                if (!relatedFilm) {
-                    error('Не удалось найти связанные фильмы');
-                }
                 function isRecord(obj) {
                     return typeof obj === 'object' && obj !== null;
                 }
@@ -239,6 +235,10 @@ String.prototype.toFilename = function () {
                 }
                 const jsonData = jsonSelect(htmlMatch[1], ['props', 'apolloState', 'data']);
                 const related = Film.getRelated(jsonData);
+                const relatedFilm = Related.map[id];
+                if (!relatedFilm) {
+                    error('Не удалось найти связанные фильмы');
+                }
                 const key = relatedFilm.key;
                 const jsonFilmData = jsonData[key];
                 if (!jsonFilmData) {
@@ -297,7 +297,8 @@ String.prototype.toFilename = function () {
             return genres.sort();
         }
         static getLists(jsonFilmData) {
-            return jsonFilmData.userData.folders.map((folder) => folder.name).sort();
+            const key = Object.keys(jsonFilmData.userData).find((key) => key.startsWith('userFolders'));
+            return jsonFilmData.userData[key].items.map((folder) => folder.name).sort();
         }
         static getPoster(jsonFilmData) {
             var _a;
@@ -403,6 +404,7 @@ String.prototype.toFilename = function () {
             if (this.values.length === 0) {
                 return;
             }
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             this.values[this.values.length - 1]++;
             console.debug('increment', itemTitle, itemLink, this);
             this.print(`${this.title} [${this.values[this.values.length - 1]} из ${this.counts[this.counts.length - 1]}]`);
