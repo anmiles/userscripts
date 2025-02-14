@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.2
+// @version        1.0.3
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.2';
+window.__sbg_plus_version = '1.0.3';
 
 // TODO: uncomment when deprecate old package
 // window.__sbg_package_supported = '3.0.0';
@@ -1638,6 +1638,10 @@ type ApiProfileData = Record<string, number> & {
 		{ ru : 'Включить отладку базы данных в консоли', en : 'Enable console debugging of database' },
 		{ public : true, group, trigger : 'cuiTransform', unchecked : true });
 
+	new Feature(restoreOPSButtonHeightInIngressTheme,
+		{ ru : 'Восстановить высоту кнопки ОПРЦ в теме Ingress', en : 'Restore OPS button height in Ingress theme' },
+		{ public : true, group, trigger : 'mapReady' });
+
 	group = 'eui';
 
 	new Feature(centerIconsInGraphicalButtons,
@@ -2440,15 +2444,31 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function transformGameHTML(script: Script): void {
+		script.transform(removeNativeScript);
+		script.transform(redirectToLogin);
+		script.transform(fixCSSHref);
+	}
+
+	function removeNativeScript(script: Script): void {
 		script
 			.replace(
 				/<script class="mobile-check">.+?<\/script>/,
 				'',
 			)
+		;
+	}
+
+	function redirectToLogin(script: Script): void {
+		script
 			.replace(
 				'<head>',
 				'<head><script>if (!localStorage.getItem(\'auth\')) window.__sbg_goto(\'/login/\');</script>',
 			)
+		;
+	}
+
+	function fixCSSHref(script: Script): void {
+		script
 			.replace(
 				'href="style.css"',
 				'href="/app/style.css"',
@@ -2763,10 +2783,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function transformCUIScript(script: Script): void {
 		script.transform(exposeCUIScript);
 		script.transform(fixCompatibility);
-		script.transform(fixGotoReference);
 		script.transform(fixCUIDefaults);
 		script.transform(fixCUIWarnings);
-		script.transform(fixPointNavigation);
 		script.transform(fixExternalLinks);
 
 		features.triggers.cuiTransform.filter(isTransformer).map((transformer) => {
@@ -2843,6 +2861,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		script.transform(exposeAttackSliderData);
 		script.transform(preserveStorage);
 		script.transform(fixExternalLinks);
+		script.transform(fixLangURL);
 	}
 
 	function exposeNativeScript(script: Script): void {
@@ -3125,6 +3144,16 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			)
 		;
 	}
+
+	function fixLangURL(script: Script): void {
+		script
+			.replace(
+				'./i18n/{{lng}}.json',
+				'./app/i18n/{{lng}}.json',
+			)
+		;
+	}
+
 	function preserveStorage(script: Script): void {
 		script
 			.replace(
@@ -3200,22 +3229,6 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}
 	}
 
-	function fixGotoReference(script: Script): void {
-		$(document).on('click', 'a[href*="point="]', (ev) => {
-			const guid = (ev.currentTarget as HTMLLinkElement).href.split('point=').pop()?.split('&').shift();
-			window.__sbg_function_showInfo(guid);
-			ev.stopPropagation();
-			return false;
-		});
-
-		script
-			.replace(
-				'window.location.href = `/app/?point=${guid}`',
-				'window.__sbg_function_showInfo(guid)',
-			)
-		;
-	}
-
 	function fixCUIDefaults(script: Script): void {
 		script
 			.replace(
@@ -3229,22 +3242,6 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			.replace(
 				'!viewportMeta.content.match(yaRegexp)',
 				'!viewportMeta.content.match(yaRegexp) && navigator.userAgent.toLowerCase().includes("yabrowser")',
-			)
-		;
-	}
-
-	function fixPointNavigation(script: Script): void {
-		if (!('__sbg_share' in window)) {
-			return;
-		}
-		script
-			.replaceCUIBlock(
-				'Навигация и переход к точке',
-				'window.location.href = url',
-				`if (window.__sbg_share.open(url) === false) {
-					navigator.clipboard.writeText(lastOpenedPoint.coords);
-					createToast('${labels.toasts.noGeoApp.toString()}', 'top left', 3000).showToast();
-				}`,
 			)
 		;
 	}
@@ -3372,6 +3369,14 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				].join(' '),
 			)
 		;
+	}
+
+	function restoreOPSButtonHeightInIngressTheme(): void {
+		setCSS(`
+			#ops {
+				min-height: 0;
+			}
+		`);
 	}
 
 	function disableClusters(script: Script): void {
@@ -4707,6 +4712,13 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				}
 			};
 		})(window.__sbg_function_showInfo);
+
+		$(document).on('click', 'a[href*="point="]', (ev) => {
+			const guid = (ev.currentTarget as HTMLLinkElement).href.split('point=').pop()?.split('&').shift();
+			window.__sbg_function_showInfo(guid);
+			ev.stopPropagation();
+			return false;
+		});
 	}
 
 	function highlightSelectedTargetPoint(): void {

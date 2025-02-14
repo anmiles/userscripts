@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.2
+// @version        1.0.3
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.2';
+window.__sbg_plus_version = '1.0.3';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
         return allKeys.includes(String(key));
@@ -192,11 +192,9 @@ const langs = ['ru', 'en'];
         set: (target, property, newValue) => {
             target[property] = newValue;
             if (property === 'href' && typeof newValue === 'string') {
-                const homepage = getHomepageURL();
-                const gameUrl = getGameURL();
-                const url = new URL(newValue, homepage);
-                if (url.href.startsWith(homepage)) {
-                    if (url.href !== gameUrl) {
+                const url = new URL(newValue, urls.homepage);
+                if (url.href.startsWith(urls.homepage)) {
+                    if (url.href !== urls.game) {
                         const storageKey = 'sbg-plus-homepage-replaced';
                         localStorage.removeItem(storageKey);
                     }
@@ -765,6 +763,7 @@ const langs = ['ru', 'en'];
     new Feature(reportCUIUpdates, { ru: 'Сообщать об обновлениях скрипта', en: 'Report script updates' }, { public: true, group, trigger: 'mapReady', unchecked: true });
     new Feature(moveDestroyNotificationsToTop, { ru: 'Переместить оповещения об атаке наверх', en: 'Move destroy notifications to top' }, { public: true, group, trigger: 'mapReady', unchecked: () => { var _a; return !((_a = features.get(loadEUI)) === null || _a === void 0 ? void 0 : _a.isEnabled()); } });
     new Feature(enableConsoleDebuggingOfDatabase, { ru: 'Включить отладку базы данных в консоли', en: 'Enable console debugging of database' }, { public: true, group, trigger: 'cuiTransform', unchecked: true });
+    new Feature(restoreOPSButtonHeightInIngressTheme, { ru: 'Восстановить высоту кнопки ОПРЦ в теме Ingress', en: 'Restore OPS button height in Ingress theme' }, { public: true, group, trigger: 'mapReady' });
     group = 'eui';
     new Feature(centerIconsInGraphicalButtons, { ru: 'Центрировать значки графических кнопок', en: 'Center icons in graphical buttons' }, { public: true, group, trigger: 'mapReady' });
     new Feature(showReloadButtonInCompactMode, { ru: 'Показать кнопку перезагрузки в компактном режиме', en: 'Show reload button in compact mode' }, { public: true, group, trigger: 'mapReady' });
@@ -1098,7 +1097,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             else {
                 await waitHTMLLoaded();
                 setHideCSS();
-                replacePage(getHomepageURL());
+                replacePage(urls.homepage);
             }
         }
         else {
@@ -1140,47 +1139,20 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         // TODO: clear when deprecate old package
         const forcedUrls = !isPackageSupported() ? ['eui'] : [];
         const urls = {
-            homepage: {
-                local: '',
-                remote: 'https://sbg-game.ru/',
-            },
-            game: {
-                local: '',
-                remote: 'https://sbg-game.ru/app',
-            },
-            login: {
-                local: '',
-                remote: 'https://sbg-game.ru/login',
-            },
-            desktop: {
-                local: 'sbg.plus.user.js',
-                remote: 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-            },
-            mobile: {
-                local: 'sbg.plus.user.min.js',
-                remote: 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-            },
-            intel: {
-                local: 'intel.js',
-                remote: 'https://sbg-game.ru/app/intel.js',
-            },
-            script: {
-                local: 'script.js',
-                remote: 'https://sbg-game.ru/app/script.js',
-            },
-            cui: {
-                local: 'nicko.js',
-                remote: 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
-            },
-            eui: {
-                local: 'egor.js',
-                remote: 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
-            },
+            homepage: 'https://sbg-game.ru/',
+            game: 'https://sbg-game.ru/app',
+            login: 'https://sbg-game.ru/login',
+            desktop: 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
+            mobile: 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
+            intel: 'https://sbg-game.ru/app/intel.js',
+            script: 'https://sbg-game.ru/app/script.js',
+            cui: 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+            eui: 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
         };
         if (window.__sbg_urls) {
             for (const urlType of urlTypes) {
                 if (urlType in window.__sbg_urls && !forcedUrls.includes(urlType)) {
-                    urls[urlType] = window.__sbg_urls[urlType];
+                    urls[urlType] = window.__sbg_urls[urlType].remote;
                 }
             }
         }
@@ -1188,7 +1160,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         return urls;
     }
     function isUrl(kind, url = location.href) {
-        return urls[kind].remote.replace(/\/$/, '') === url.replace(/\/$/, '');
+        return urls[kind].replace(/\/$/, '') === url.replace(/\/$/, '');
     }
     function setHideCSS() {
         document.body.classList.toggle('hidden', true);
@@ -1311,9 +1283,8 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         });
     }
     async function loadGame() {
-        const gameUrl = getGameURL();
         const gameHTML = await Script.create({
-            src: gameUrl,
+            src: urls.game,
             prefix: '__sbg_html',
             transformer: transformGameHTML,
         });
@@ -1321,9 +1292,20 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         document.close();
     }
     function transformGameHTML(script) {
+        script.transform(removeNativeScript);
+        script.transform(redirectToLogin);
+        script.transform(fixCSSHref);
+    }
+    function removeNativeScript(script) {
         script
-            .replace(/<script class="mobile-check">.+?<\/script>/, '')
-            .replace('<head>', '<head><script>if (!localStorage.getItem(\'auth\')) window.__sbg_goto(\'/login/\');</script>')
+            .replace(/<script class="mobile-check">.+?<\/script>/, '');
+    }
+    function redirectToLogin(script) {
+        script
+            .replace('<head>', '<head><script>if (!localStorage.getItem(\'auth\')) window.__sbg_goto(\'/login/\');</script>');
+    }
+    function fixCSSHref(script) {
+        script
             .replace('href="style.css"', 'href="/app/style.css"');
     }
     function detectLocal() {
@@ -1345,20 +1327,8 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             }
         }
     }
-    function getHomepageURL() {
-        return urls.homepage.remote;
-    }
-    function getGameURL() {
-        return urls.game.remote;
-    }
     function getNativeScriptSrc() {
-        return urls[isMobile() ? 'script' : 'intel'].remote;
-    }
-    function getCUIScriptSrc() {
-        return urls.cui.remote;
-    }
-    function getEUIScriptSrc() {
-        return urls.eui.remote;
+        return urls[isMobile() ? 'script' : 'intel'];
     }
     function enhanceEventListeners() {
         ((addEventListener, removeEventListener) => {
@@ -1523,12 +1493,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     async function embedCUI(nativeScript) {
         if (!features.get(loadCUI).isEnabled()) {
             console.log('skipped embedCUI; loading native script');
+            window.cuiStatus = 'loaded';
             nativeScript.embed();
             return;
         }
         console.log('embedCUI: started');
         const cuiScript = await Script.create({
-            src: getCUIScriptSrc(),
+            src: urls.cui,
             prefix: '__sbg_cui_script',
             transformer: transformCUIScript,
         });
@@ -1559,10 +1530,8 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function transformCUIScript(script) {
         script.transform(exposeCUIScript);
         script.transform(fixCompatibility);
-        script.transform(fixGotoReference);
         script.transform(fixCUIDefaults);
         script.transform(fixCUIWarnings);
-        script.transform(fixPointNavigation);
         script.transform(fixExternalLinks);
         features.triggers.cuiTransform.filter(isTransformer).map((transformer) => {
             transformer.exec(script);
@@ -1617,8 +1586,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         return;
     }
     function loadEUI() {
-        window.cuiStatus = 'loaded';
-        Script.appendScript(getEUIScriptSrc());
+        Script.appendScript(urls.eui);
     }
     function transformNativeScript(script) {
         script.transform(exposeNativeScript);
@@ -1626,6 +1594,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         script.transform(exposeAttackSliderData);
         script.transform(preserveStorage);
         script.transform(fixExternalLinks);
+        script.transform(fixLangURL);
     }
     function exposeNativeScript(script) {
         const disabledLocationFunctions = !isMobile() && localStorage.getItem('homeCoords') ? ['movePlayer'] : [];
@@ -1859,6 +1828,10 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         script
             .replace(/location.href = /g, 'window.__sbg_location.href = ');
     }
+    function fixLangURL(script) {
+        script
+            .replace('./i18n/{{lng}}.json', './app/i18n/{{lng}}.json');
+    }
     function preserveStorage(script) {
         script
             .replace('function clearStorage() {', 'function clearStorage() { localStorage.removeItem(\'auth\'); return;');
@@ -1901,17 +1874,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             })(window.ol.View.prototype.animate);
         }
     }
-    function fixGotoReference(script) {
-        $(document).on('click', 'a[href*="point="]', (ev) => {
-            var _a;
-            const guid = (_a = ev.currentTarget.href.split('point=').pop()) === null || _a === void 0 ? void 0 : _a.split('&').shift();
-            window.__sbg_function_showInfo(guid);
-            ev.stopPropagation();
-            return false;
-        });
-        script
-            .replace('window.location.href = `/app/?point=${guid}`', 'window.__sbg_function_showInfo(guid)');
-    }
     function fixCUIDefaults(script) {
         script
             .replace('sepia: 1', 'sepia: 0');
@@ -1919,16 +1881,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function fixCUIWarnings(script) {
         script
             .replace('!viewportMeta.content.match(yaRegexp)', '!viewportMeta.content.match(yaRegexp) && navigator.userAgent.toLowerCase().includes("yabrowser")');
-    }
-    function fixPointNavigation(script) {
-        if (!('__sbg_share' in window)) {
-            return;
-        }
-        script
-            .replaceCUIBlock('Навигация и переход к точке', 'window.location.href = url', `if (window.__sbg_share.open(url) === false) {
-					navigator.clipboard.writeText(lastOpenedPoint.coords);
-					createToast('${labels.toasts.noGeoApp.toString()}', 'top left', 3000).showToast();
-				}`);
     }
     function enableConsoleDebuggingOfDatabase(script) {
         script
@@ -2016,6 +1968,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             '`);',
             line,
         ].join(' '));
+    }
+    function restoreOPSButtonHeightInIngressTheme() {
+        setCSS(`
+			#ops {
+				min-height: 0;
+			}
+		`);
     }
     function disableClusters(script) {
         script
@@ -3194,6 +3153,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                 }
             };
         })(window.__sbg_function_showInfo);
+        $(document).on('click', 'a[href*="point="]', (ev) => {
+            var _a;
+            const guid = (_a = ev.currentTarget.href.split('point=').pop()) === null || _a === void 0 ? void 0 : _a.split('&').shift();
+            window.__sbg_function_showInfo(guid);
+            ev.stopPropagation();
+            return false;
+        });
     }
     function highlightSelectedTargetPoint() {
         const highlightsLayer = addLayer('highlights', 'points');
