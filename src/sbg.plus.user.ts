@@ -13,13 +13,8 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.4';
-
-// TODO: uncomment when deprecate old package
-// window.__sbg_package_supported = '3.0.0';
-
-// TODO: uncomment after publishing release
-// window.__sbg_package_latest = '3.0.0';
+window.__sbg_plus_version            = '1.0.4';
+window.__sbg_plus_compatible_version = '1.0.4';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface Window {
@@ -58,9 +53,8 @@ interface Window {
 	__sbg_package         : string | undefined;
 	__sbg_package_version : Version | undefined;
 
-	__sbg_plus_version      : Version;
-	__sbg_package_supported : Version | undefined;
-	__sbg_package_latest    : Version;
+	__sbg_plus_version            : Version;
+	__sbg_plus_compatible_version : Version;
 
 	__sbg_language                   : Lang;
 	__sbg_location                   : typeof window.location;
@@ -814,8 +808,8 @@ type ApiProfileData = Record<string, number> & {
 		ymaps   : Label;
 		upgrade : {
 			package: {
-				supported : Label;
-				latest    : Label;
+				compatible : Label;
+				latest     : Label;
 			};
 		};
 		settings: {
@@ -924,7 +918,7 @@ type ApiProfileData = Record<string, number> & {
 		}),
 		upgrade : {
 			package : {
-				supported : new Label({
+				compatible : new Label({
 					ru : 'Приложение больше не поддерживается. Пожалуйста, скачайте и установите новую версию',
 					en : 'App is no more supported. Please, download and install new version',
 				}),
@@ -2196,20 +2190,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return;
 		}
 
-		if (isUrl('game')) {
-			// TODO: remove after publishing release
-			const isPackagePublished = typeof window.__sbg_package_latest !== 'undefined';
+		await waitHTMLLoaded();
 
-			// TODO: remove when deprecate old package
-			if (!isPackageLatest() || !isPackagePublished) {
-				preventLoadingScript();
-			} else {
-				await waitHTMLLoaded();
-				setHideCSS();
-				replacePage(urls.homepage);
-			}
+		if (isUrl('game')) {
+			setHideCSS();
+			replacePage(urls.homepage);
 		} else {
-			await waitHTMLLoaded();
 			await waitEntry();
 			await loadGame();
 		}
@@ -2255,7 +2241,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function initUrls(): Urls {
 		// which urls should be always loaded from values values below
 		// TODO: clear when deprecate old package
-		const forcedUrls: UrlType[] = !isPackageSupported() ? [ 'eui' ] : [];
+		const forcedUrls: UrlType[] = !isPackageCompatible() ? [ 'eui' ] : [];
 
 		const urls: Urls = {
 			homepage : 'https://sbg-game.ru/',
@@ -2377,27 +2363,6 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		layer.setProperties({ zIndex : layers.get(layerLikeName).getProperties().zIndex }, true);
 		window.__sbg_variable_map.get().addLayer(layer);
 		return layer;
-	}
-
-	function preventLoadingScript(): void {
-		((append) => {
-			Element.prototype.append = function(...nodes: (Node | string)[]) {
-				if (nodes.length === 0) {
-					return;
-				}
-
-				const firstNode = nodes[0];
-
-				if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getNativeScriptSrc()) {
-					return;
-				}
-
-				append.apply(this, nodes);
-			};
-			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
-		})(Element.prototype.append);
-
-		console.log('prevented loading script');
 	}
 
 	function replacePage(url: string): void {
@@ -2670,25 +2635,17 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		});
 	}
 
-	function isPackageSupported(): boolean {
-		return compareVersions(window.__sbg_package_version, window.__sbg_package_supported) >= 0;
+	function isPackageCompatible(): boolean {
+		return compareVersions(window.__sbg_package_version, window.__sbg_plus_compatible_version) >= 0;
 	}
 
 	function isPackageLatest(): boolean {
-		return compareVersions(window.__sbg_package_version, window.__sbg_package_latest) >= 0;
+		return compareVersions(window.__sbg_package_version, window.__sbg_plus_version) >= 0;
 	}
 
 	function compareVersions(version: Version | undefined, targetVersion: Version | undefined): -1 | 0 | 1 {
-		if (typeof version === 'undefined' && typeof targetVersion === 'undefined') {
+		if (typeof version === 'undefined' || typeof targetVersion === 'undefined') {
 			return 0;
-		}
-
-		if (typeof targetVersion === 'undefined') {
-			return 1;
-		}
-
-		if (typeof version === 'undefined') {
-			return -1;
 		}
 
 		const parts1: number[] = version.split('.').map((part) => parseInt(part));
@@ -3063,8 +3020,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function checkVersions(): boolean {
 		const updateUrl = 'https://github.com/anmiles/sbg/releases/latest';
 
-		if (!isPackageSupported()) {
-			alert(labels.upgrade.package.supported.toString());
+		if (!isPackageCompatible()) {
+			alert(labels.upgrade.package.compatible.toString());
 			replacePage(updateUrl);
 			return false;
 		}

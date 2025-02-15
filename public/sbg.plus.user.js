@@ -14,6 +14,7 @@
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
 window.__sbg_plus_version = '1.0.4';
+window.__sbg_plus_compatible_version = '1.0.4';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
         return allKeys.includes(String(key));
@@ -247,7 +248,7 @@ const langs = ['ru', 'en'];
         }),
         upgrade: {
             package: {
-                supported: new Label({
+                compatible: new Label({
                     ru: 'Приложение больше не поддерживается. Пожалуйста, скачайте и установите новую версию',
                     en: 'App is no more supported. Please, download and install new version',
                 }),
@@ -1087,21 +1088,12 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         if (isUrl('login')) {
             return;
         }
+        await waitHTMLLoaded();
         if (isUrl('game')) {
-            // TODO: remove after publishing release
-            const isPackagePublished = typeof window.__sbg_package_latest !== 'undefined';
-            // TODO: remove when deprecate old package
-            if (!isPackageLatest() || !isPackagePublished) {
-                preventLoadingScript();
-            }
-            else {
-                await waitHTMLLoaded();
-                setHideCSS();
-                replacePage(urls.homepage);
-            }
+            setHideCSS();
+            replacePage(urls.homepage);
         }
         else {
-            await waitHTMLLoaded();
             await waitEntry();
             await loadGame();
         }
@@ -1137,7 +1129,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function initUrls() {
         // which urls should be always loaded from values values below
         // TODO: clear when deprecate old package
-        const forcedUrls = !isPackageSupported() ? ['eui'] : [];
+        const forcedUrls = !isPackageCompatible() ? ['eui'] : [];
         const urls = {
             homepage: 'https://sbg-game.ru/',
             game: 'https://sbg-game.ru/app',
@@ -1237,22 +1229,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         layer.setProperties({ zIndex: layers.get(layerLikeName).getProperties().zIndex }, true);
         window.__sbg_variable_map.get().addLayer(layer);
         return layer;
-    }
-    function preventLoadingScript() {
-        ((append) => {
-            Element.prototype.append = function (...nodes) {
-                if (nodes.length === 0) {
-                    return;
-                }
-                const firstNode = nodes[0];
-                if (typeof firstNode === 'object' && 'src' in firstNode && firstNode.src === getNativeScriptSrc()) {
-                    return;
-                }
-                append.apply(this, nodes);
-            };
-            // eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
-        })(Element.prototype.append);
-        console.log('prevented loading script');
     }
     function replacePage(url) {
         console.log(`redirecting to ${url}`);
@@ -1441,21 +1417,15 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             filter: (ev) => ev.touches.length === feedbackTouches && !window.__sbg_plus_logs_gesture_disabled,
         });
     }
-    function isPackageSupported() {
-        return compareVersions(window.__sbg_package_version, window.__sbg_package_supported) >= 0;
+    function isPackageCompatible() {
+        return compareVersions(window.__sbg_package_version, window.__sbg_plus_compatible_version) >= 0;
     }
     function isPackageLatest() {
-        return compareVersions(window.__sbg_package_version, window.__sbg_package_latest) >= 0;
+        return compareVersions(window.__sbg_package_version, window.__sbg_plus_version) >= 0;
     }
     function compareVersions(version, targetVersion) {
-        if (typeof version === 'undefined' && typeof targetVersion === 'undefined') {
+        if (typeof version === 'undefined' || typeof targetVersion === 'undefined') {
             return 0;
-        }
-        if (typeof targetVersion === 'undefined') {
-            return 1;
-        }
-        if (typeof version === 'undefined') {
-            return -1;
         }
         const parts1 = version.split('.').map((part) => parseInt(part));
         const parts2 = targetVersion.split('.').map((part) => parseInt(part));
@@ -1767,8 +1737,8 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function checkVersions() {
         const updateUrl = 'https://github.com/anmiles/sbg/releases/latest';
-        if (!isPackageSupported()) {
-            alert(labels.upgrade.package.supported.toString());
+        if (!isPackageCompatible()) {
+            alert(labels.upgrade.package.compatible.toString());
             replacePage(updateUrl);
             return false;
         }
