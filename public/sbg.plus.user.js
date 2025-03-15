@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.7
+// @version        1.0.8
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.7';
+window.__sbg_plus_version = '1.0.8';
 window.__sbg_plus_compatible_version = '1.0.7';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
@@ -1282,7 +1282,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function fixCSSHref(script) {
         script
-            .replace('href="style.css"', 'href="/app/style.css"');
+            .replace(/href="(style[^"]+.css)"/, 'href="/app/$1"');
     }
     function detectLocal() {
         if (window.__sbg_local && window.__sbg_preset !== 'full' && !localStorage.getItem('sbg-plus-disable-local-warning')) {
