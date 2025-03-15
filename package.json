@@ -20,9 +20,8 @@
 		"build": "rimraf dist && tsc -p ./tsconfig.build.json",
 		"postbuild": "npm-run-all postbuild:*",
 		"postbuild:minify": "node scripts/minify.js",
-		"public": "npm-run-all public:*",
-		"public:copy": "copyfiles -u 1 dist/* public/",
-		"public:userscripts": "node ./scripts/userscripts.js",
+		"postbuild:copy": "copyfiles -u 1 dist/* public/",
+		"postbuild:userscripts": "node ./scripts/userscripts.js",
 		"lint": "eslint .",
 		"lint:fix": "npm run lint -- --fix"
 	},
