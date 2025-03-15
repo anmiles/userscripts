@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.8
+// @version        1.0.9
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.8';
+window.__sbg_plus_version = '1.0.9';
 window.__sbg_plus_compatible_version = '1.0.7';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
@@ -255,6 +255,10 @@ const langs = ['ru', 'en'];
                 latest: new Label({
                     ru: 'Хотите скачать и установить новую версию приложения сейчас?',
                     en: 'Do you want to download and install new version of the app now?',
+                }),
+                awaiting: new Label({
+                    ru: 'Новое приложение (${version}) ещё не опубликовано. Спросите на форуме',
+                    en: 'New app (${version}) is not published yet. Ask on the forum',
                 }),
             },
         },
@@ -1107,7 +1111,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         setHideCSS();
         initCSS();
         initSettings();
-        if (!checkVersions()) {
+        if (!await checkVersions()) {
             return;
         }
         unsetHideCSS();
@@ -1416,6 +1420,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function isPackageLatest() {
         return compareVersions(window.__sbg_package_version, window.__sbg_plus_version) >= 0;
+    }
+    async function isReleaseAvailable() {
+        const checkUrl = 'https://api.github.com/repos/anmiles/sbg/releases';
+        const resp = await fetch(checkUrl);
+        const json = await resp.json();
+        const release = json.find((r) => r['tag_name'] === `v${window.__sbg_plus_version}`);
+        return !!release;
     }
     function compareVersions(version, targetVersion) {
         if (typeof version === 'undefined' || typeof targetVersion === 'undefined') {
@@ -1729,15 +1740,20 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         });
         return popup;
     }
-    function checkVersions() {
-        const updateUrl = 'https://github.com/anmiles/sbg/releases/latest';
+    async function checkVersions() {
+        const updateUrl = `https://github.com/anmiles/sbg/releases/tag/v${window.__sbg_plus_version}`;
         if (!isPackageCompatible()) {
-            alert(labels.upgrade.package.compatible.toString());
-            replacePage(updateUrl);
+            if (await isReleaseAvailable()) {
+                alert(labels.upgrade.package.compatible.toString());
+                replacePage(updateUrl);
+            }
+            else {
+                alert(labels.upgrade.package.awaiting.format({ version: window.__sbg_plus_version }).toString());
+            }
             return false;
         }
         if (!isPackageLatest()) {
-            if (confirm(labels.upgrade.package.latest.toString())) {
+            if (await isReleaseAvailable() && confirm(labels.upgrade.package.latest.toString())) {
                 replacePage(updateUrl);
                 return false;
             }
