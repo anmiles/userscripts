@@ -193,9 +193,9 @@ const langs = ['ru', 'en'];
         set: (target, property, newValue) => {
             target[property] = newValue;
             if (property === 'href' && typeof newValue === 'string') {
-                const url = new URL(newValue, urls.homepage);
-                if (url.href.startsWith(urls.homepage)) {
-                    if (url.href !== urls.game) {
+                const url = new URL(newValue, urls.homepage());
+                if (url.href.startsWith(urls.homepage())) {
+                    if (url.href !== urls.game()) {
                         const storageKey = 'sbg-plus-homepage-replaced';
                         localStorage.removeItem(storageKey);
                     }
@@ -1091,7 +1091,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         await waitHTMLLoaded();
         if (isUrl('game')) {
             setHideCSS();
-            replacePage(urls.homepage);
+            replacePage(urls.homepage());
         }
         else {
             await waitEntry();
@@ -1127,32 +1127,22 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         console.log(`finished at ${new Date().toISOString()}`);
     }
     function initUrls() {
-        // which urls should be always loaded from values values below
-        // TODO: clear when deprecate old package
-        const forcedUrls = !isPackageCompatible() ? ['eui'] : [];
         const urls = {
-            homepage: 'https://sbg-game.ru/',
-            game: 'https://sbg-game.ru/app',
-            login: 'https://sbg-game.ru/login',
-            desktop: 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-            mobile: 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-            intel: 'https://sbg-game.ru/app/intel.js',
-            script: 'https://sbg-game.ru/app/script.js',
-            cui: 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
-            eui: 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
+            homepage: () => 'https://sbg-game.ru/',
+            game: () => 'https://sbg-game.ru/app',
+            login: () => 'https://sbg-game.ru/login',
+            desktop: () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
+            mobile: () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
+            intel: () => `https://sbg-game.ru/app/intel@${window.__sbg_native_intel_version}.js`,
+            script: () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.js`,
+            cui: () => 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+            eui: () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
         };
-        if (window.__sbg_urls) {
-            for (const urlType of urlTypes) {
-                if (urlType in window.__sbg_urls && !forcedUrls.includes(urlType)) {
-                    urls[urlType] = window.__sbg_urls[urlType].remote;
-                }
-            }
-        }
         console.log('initialized urls');
         return urls;
     }
     function isUrl(kind, url = location.href) {
-        return urls[kind].replace(/\/$/, '') === url.replace(/\/$/, '');
+        return urls[kind]().replace(/\/$/, '') === url.replace(/\/$/, '');
     }
     function setHideCSS() {
         document.body.classList.toggle('hidden', true);
@@ -1260,7 +1250,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     async function loadGame() {
         const gameHTML = await Script.create({
-            src: urls.game,
+            src: urls.game(),
             prefix: '__sbg_html',
             transformer: transformGameHTML,
         });
@@ -1274,7 +1264,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function removeNativeScript(script) {
         script
-            .replace(/<script class="mobile-check">.+?<\/script>/, '');
+            .replace(/<script class="mobile-check">.+?sv='(.*?)',iv='(.*?)'.+?<\/script>/, (_, $1, $2) => {
+            window.__sbg_native_script_version = $1;
+            window.__sbg_native_intel_version = $2;
+            return '';
+        });
     }
     function redirectToLogin(script) {
         script
@@ -1304,7 +1298,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         }
     }
     function getNativeScriptSrc() {
-        return urls[isMobile() ? 'script' : 'intel'];
+        return urls[isMobile() ? 'script' : 'intel']();
     }
     function enhanceEventListeners() {
         ((addEventListener, removeEventListener) => {
@@ -1469,7 +1463,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         }
         console.log('embedCUI: started');
         const cuiScript = await Script.create({
-            src: urls.cui,
+            src: urls.cui(),
             prefix: '__sbg_cui_script',
             transformer: transformCUIScript,
         });
@@ -1556,7 +1550,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         return;
     }
     function loadEUI() {
-        Script.appendScript(urls.eui);
+        Script.appendScript(urls.eui());
     }
     function transformNativeScript(script) {
         script.transform(exposeNativeScript);
@@ -1820,7 +1814,8 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function fixCompatibility(script) {
         script
-            .replace('fetch(\'/app/script.js\')', '(async () => ({ text: async () => window.__sbg_script_modified }))()')
+            .replace('fetch(`/app/${vanillaScriptSrc}`)', '(async () => ({ text: async () => window.__sbg_script_modified }))()')
+            .replace(/const vanillaScriptSrc = .*/, `const vanillaScriptSrc = '${window.__sbg_native_script_version}';`)
             .replace('window.stop', 'false && window.stop')
             .replace('window.navigator.geolocation.clearWatch', 'false && window.navigator.geolocation.clearWatch')
             .replace('document.open', 'false && document.open')

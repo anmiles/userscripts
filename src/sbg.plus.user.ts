@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.8
+// @version        1.0.9
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version            = '1.0.8';
+window.__sbg_plus_version            = '1.0.9';
 window.__sbg_plus_compatible_version = '1.0.7';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
@@ -85,6 +85,9 @@ interface Window {
 	__sbg_function_showInfo            : (data: OlGuid   | undefined) => void;
 	__sbg_function_takeUnits           : (value: number) => [string, string];
 	__sbg_function_timeToString        : (seconds: number) => string;
+
+	__sbg_native_intel_version  : string;
+	__sbg_native_script_version : string;
 
 	__sbg_cui_variable_USERSCRIPT_VERSION : ReadableVariable<string>;
 	__sbg_cui_variable_config             : ReadableVariable<CUIConfig>;
@@ -378,7 +381,7 @@ interface Toast {
 const urlTypes = [ 'homepage', 'game', 'login', 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
 
 type UrlType = typeof urlTypes[number];
-type Urls = Record<UrlType, string>;
+type Urls = Record<UrlType, () => string>;
 
 const langs = [ 'ru', 'en' ] as const;
 
@@ -782,10 +785,10 @@ type ApiProfileData = Record<string, number> & {
 			target[property] = newValue;
 
 			if (property === 'href' && typeof newValue === 'string') {
-				const url = new URL(newValue, urls.homepage);
+				const url = new URL(newValue, urls.homepage());
 
-				if (url.href.startsWith(urls.homepage)) {
-					if (url.href !== urls.game) {
+				if (url.href.startsWith(urls.homepage())) {
+					if (url.href !== urls.game()) {
 						const storageKey = 'sbg-plus-homepage-replaced';
 						localStorage.removeItem(storageKey);
 					}
@@ -810,6 +813,7 @@ type ApiProfileData = Record<string, number> & {
 			package: {
 				compatible : Label;
 				latest     : Label;
+				awaiting   : Label;
 			};
 		};
 		settings: {
@@ -925,6 +929,10 @@ type ApiProfileData = Record<string, number> & {
 				latest : new Label({
 					ru : 'Хотите скачать и установить новую версию приложения сейчас?',
 					en : 'Do you want to download and install new version of the app now?',
+				}),
+				awaiting : new Label({
+					ru : 'Новое приложение (${version}) ещё не опубликовано. Спросите на форуме',
+					en : 'New app (${version}) is not published yet. Ask on the forum',
 				}),
 			},
 		},
@@ -2194,7 +2202,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		if (isUrl('game')) {
 			setHideCSS();
-			replacePage(urls.homepage);
+			replacePage(urls.homepage());
 		} else {
 			await waitEntry();
 			await loadGame();
@@ -2212,7 +2220,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		initCSS();
 		initSettings();
 
-		if (!checkVersions()) {
+		if (!await checkVersions()) {
 			return;
 		}
 
@@ -2239,36 +2247,24 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function initUrls(): Urls {
-		// which urls should be always loaded from values values below
-		// TODO: clear when deprecate old package
-		const forcedUrls: UrlType[] = !isPackageCompatible() ? [ 'eui' ] : [];
-
 		const urls: Urls = {
-			homepage : 'https://sbg-game.ru/',
-			game     : 'https://sbg-game.ru/app',
-			login    : 'https://sbg-game.ru/login',
-			desktop  : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-			mobile   : 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-			intel    : 'https://sbg-game.ru/app/intel.js',
-			script   : 'https://sbg-game.ru/app/script.js',
-			cui      : 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
-			eui      : 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
+			homepage : () => 'https://sbg-game.ru/',
+			game     : () => 'https://sbg-game.ru/app',
+			login    : () => 'https://sbg-game.ru/login',
+			desktop  : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
+			mobile   : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
+			intel    : () => `https://sbg-game.ru/app/intel@${window.__sbg_native_intel_version}.js`,
+			script   : () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.js`,
+			cui      : () => 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+			eui      : () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
 		};
-
-		if (window.__sbg_urls) {
-			for (const urlType of urlTypes) {
-				if (urlType in window.__sbg_urls && !forcedUrls.includes(urlType)) {
-					urls[urlType] = window.__sbg_urls[urlType].remote;
-				}
-			}
-		}
 
 		console.log('initialized urls');
 		return urls;
 	}
 
 	function isUrl(kind: UrlType, url = location.href): boolean {
-		return urls[kind].replace(/\/$/, '') === url.replace(/\/$/, '');
+		return urls[kind]().replace(/\/$/, '') === url.replace(/\/$/, '');
 	}
 
 	function setHideCSS(): void {
@@ -2399,7 +2395,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	async function loadGame(): Promise<void> {
 		const gameHTML = await Script.create({
-			src         : urls.game,
+			src         : urls.game(),
 			prefix      : '__sbg_html',
 			transformer : transformGameHTML,
 		});
@@ -2417,8 +2413,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function removeNativeScript(script: Script): void {
 		script
 			.replace(
-				/<script class="mobile-check">.+?<\/script>/,
-				'',
+				/<script class="mobile-check">.+?sv='(.*?)',iv='(.*?)'.+?<\/script>/,
+				(_, $1, $2) => {
+					window.__sbg_native_script_version = $1;
+					window.__sbg_native_intel_version  = $2;
+					return '';
+				},
 			)
 		;
 	}
@@ -2463,7 +2463,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function getNativeScriptSrc(): string {
-		return urls[isMobile() ? 'script' : 'intel'];
+		return urls[isMobile() ? 'script' : 'intel']();
 	}
 
 	function enhanceEventListeners(): void {
@@ -2643,6 +2643,14 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		return compareVersions(window.__sbg_package_version, window.__sbg_plus_version) >= 0;
 	}
 
+	async function isReleaseAvailable(): Promise<boolean> {
+		const checkUrl = 'https://api.github.com/repos/anmiles/sbg/releases';
+		const resp     = await fetch(checkUrl);
+		const json     = await resp.json() as Array<Record<string, unknown>>;
+		const release  = json.find((r) => r['tag_name'] === `v${window.__sbg_plus_version}`);
+		return !!release;
+	}
+
 	function compareVersions(version: Version | undefined, targetVersion: Version | undefined): -1 | 0 | 1 {
 		if (typeof version === 'undefined' || typeof targetVersion === 'undefined') {
 			return 0;
@@ -2701,7 +2709,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('embedCUI: started');
 
 		const cuiScript = await Script.create({
-			src         : urls.cui,
+			src         : urls.cui(),
 			prefix      : '__sbg_cui_script',
 			transformer : transformCUIScript,
 		});
@@ -2809,7 +2817,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function loadEUI(): void {
-		Script.appendScript(urls.eui);
+		Script.appendScript(urls.eui());
 	}
 
 	function transformNativeScript(script: Script): void {
@@ -3017,17 +3025,21 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		return popup;
 	}
 
-	function checkVersions(): boolean {
-		const updateUrl = 'https://github.com/anmiles/sbg/releases/latest';
+	async function checkVersions(): Promise<boolean> {
+		const updateUrl = `https://github.com/anmiles/sbg/releases/tag/v${window.__sbg_plus_version}`;
 
 		if (!isPackageCompatible()) {
-			alert(labels.upgrade.package.compatible.toString());
-			replacePage(updateUrl);
+			if (await isReleaseAvailable()) {
+				alert(labels.upgrade.package.compatible.toString());
+				replacePage(updateUrl);
+			} else {
+				alert(labels.upgrade.package.awaiting.format({ version : window.__sbg_plus_version }).toString());
+			}
 			return false;
 		}
 
 		if (!isPackageLatest()) {
-			if (confirm(labels.upgrade.package.latest.toString())) {
+			if (await isReleaseAvailable() && confirm(labels.upgrade.package.latest.toString())) {
 				replacePage(updateUrl);
 				return false;
 			}
@@ -3136,8 +3148,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function fixCompatibility(script: Script): void {
 		script
 			.replace(
-				'fetch(\'/app/script.js\')',
+				'fetch(`/app/${vanillaScriptSrc}`)',
 				'(async () => ({ text: async () => window.__sbg_script_modified }))()',
+			)
+			.replace(
+				/const vanillaScriptSrc = .*/,
+				`const vanillaScriptSrc = '${window.__sbg_native_script_version}';`,
 			)
 			.replace(
 				'window.stop',
