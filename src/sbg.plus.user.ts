@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.10
+// @version        1.0.11
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,8 +13,8 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version            = '1.0.10';
-window.__sbg_plus_compatible_version = '1.0.7';
+window.__sbg_plus_version            = '1.0.11';
+window.__sbg_plus_compatible_version = '1.0.11';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
 interface Window {
