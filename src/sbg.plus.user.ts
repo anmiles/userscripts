@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.9
+// @version        1.0.10
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // ==/UserScript==
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version            = '1.0.9';
+window.__sbg_plus_version            = '1.0.10';
 window.__sbg_plus_compatible_version = '1.0.7';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
@@ -47,7 +47,6 @@ interface Window {
 		navigate : (coords: OlCoordsString) => boolean;
 	} | undefined;
 
-	__sbg_urls            : Record<UrlType, { remote : string }> | undefined;
 	__sbg_local           : boolean | undefined;
 	__sbg_preset          : string | undefined;
 	__sbg_package         : string | undefined;
@@ -813,7 +812,6 @@ type ApiProfileData = Record<string, number> & {
 			package: {
 				compatible : Label;
 				latest     : Label;
-				awaiting   : Label;
 			};
 		};
 		settings: {
@@ -929,10 +927,6 @@ type ApiProfileData = Record<string, number> & {
 				latest : new Label({
 					ru : 'Хотите скачать и установить новую версию приложения сейчас?',
 					en : 'Do you want to download and install new version of the app now?',
-				}),
-				awaiting : new Label({
-					ru : 'Новое приложение (${version}) ещё не опубликовано. Спросите на форуме',
-					en : 'New app (${version}) is not published yet. Ask on the forum',
 				}),
 			},
 		},
@@ -2219,10 +2213,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		setHideCSS();
 		initCSS();
 		initSettings();
-
-		if (!await checkVersions()) {
-			return;
-		}
+		await checkVersions();
+		setInterval(checkVersions, 300000);
 
 		unsetHideCSS();
 		window.__sbg_plus_modifyFeatures?.(features);
@@ -3025,27 +3017,23 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		return popup;
 	}
 
-	async function checkVersions(): Promise<boolean> {
+	async function checkVersions(): Promise<void> {
 		const updateUrl = `https://github.com/anmiles/sbg/releases/tag/v${window.__sbg_plus_version}`;
 
 		if (!isPackageCompatible()) {
 			if (await isReleaseAvailable()) {
 				alert(labels.upgrade.package.compatible.toString());
-				replacePage(updateUrl);
-			} else {
-				alert(labels.upgrade.package.awaiting.format({ version : window.__sbg_plus_version }).toString());
+				window.__sbg_share?.open(updateUrl) ?? replacePage(updateUrl);
 			}
-			return false;
+			return;
 		}
 
 		if (!isPackageLatest()) {
 			if (await isReleaseAvailable() && confirm(labels.upgrade.package.latest.toString())) {
-				replacePage(updateUrl);
-				return false;
+				window.__sbg_share?.open(updateUrl) ?? replacePage(updateUrl);
 			}
+			return;
 		}
-
-		return true;
 	}
 
 	function initHome(): void {

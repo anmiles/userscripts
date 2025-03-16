@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.9
+// @version        1.0.10
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.9';
+window.__sbg_plus_version = '1.0.10';
 window.__sbg_plus_compatible_version = '1.0.7';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
@@ -255,10 +255,6 @@ const langs = ['ru', 'en'];
                 latest: new Label({
                     ru: 'Хотите скачать и установить новую версию приложения сейчас?',
                     en: 'Do you want to download and install new version of the app now?',
-                }),
-                awaiting: new Label({
-                    ru: 'Новое приложение (${version}) ещё не опубликовано. Спросите на форуме',
-                    en: 'New app (${version}) is not published yet. Ask on the forum',
                 }),
             },
         },
@@ -1111,9 +1107,8 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         setHideCSS();
         initCSS();
         initSettings();
-        if (!await checkVersions()) {
-            return;
-        }
+        await checkVersions();
+        setInterval(checkVersions, 300000);
         unsetHideCSS();
         (_a = window.__sbg_plus_modifyFeatures) === null || _a === void 0 ? void 0 : _a.call(window, features);
         execFeatures('pageLoad');
@@ -1741,24 +1736,21 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         return popup;
     }
     async function checkVersions() {
+        var _a, _b, _c, _d;
         const updateUrl = `https://github.com/anmiles/sbg/releases/tag/v${window.__sbg_plus_version}`;
         if (!isPackageCompatible()) {
             if (await isReleaseAvailable()) {
                 alert(labels.upgrade.package.compatible.toString());
-                replacePage(updateUrl);
+                (_b = (_a = window.__sbg_share) === null || _a === void 0 ? void 0 : _a.open(updateUrl)) !== null && _b !== void 0 ? _b : replacePage(updateUrl);
             }
-            else {
-                alert(labels.upgrade.package.awaiting.format({ version: window.__sbg_plus_version }).toString());
-            }
-            return false;
+            return;
         }
         if (!isPackageLatest()) {
             if (await isReleaseAvailable() && confirm(labels.upgrade.package.latest.toString())) {
-                replacePage(updateUrl);
-                return false;
+                (_d = (_c = window.__sbg_share) === null || _c === void 0 ? void 0 : _c.open(updateUrl)) !== null && _d !== void 0 ? _d : replacePage(updateUrl);
             }
+            return;
         }
-        return true;
     }
     function initHome() {
         if (isMobile()) {
