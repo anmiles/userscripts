@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.11
+// @version        1.0.12
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -16,7 +16,7 @@
 import type JQuery from 'jquery';
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version            = '1.0.11';
+window.__sbg_plus_version            = '1.0.12';
 window.__sbg_plus_compatible_version = '1.0.11';
 
 declare global {
