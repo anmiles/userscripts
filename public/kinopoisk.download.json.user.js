@@ -1,4 +1,3 @@
-"use strict";
 /* eslint-disable no-console */
 // ==UserScript==
 // @name           Kinopoisk - download json
@@ -14,7 +13,6 @@
 // @grant          none
 // ==/UserScript==
 var _a;
-Object.defineProperty(exports, "__esModule", { value: true });
 const debug = {
     enabled: false,
     listNames: ['Детские'],
@@ -923,3 +921,4 @@ String.prototype.toFilename = function () {
         renderDownload();
     }
 })($.noConflict());
+

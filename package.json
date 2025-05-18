@@ -21,6 +21,7 @@
 		"prebuild": "rimraf dist",
 		"build": "tsc -p ./tsconfig.build.json",
 		"postbuild": "npm-run-all postbuild:*",
+		"postbuild:prepare": "node scripts/prepare.js",
 		"postbuild:minify": "node scripts/minify.js",
 		"postbuild:copy": "copyfiles -u 1 dist/* public/",
 		"postbuild:userscripts": "node ./scripts/userscripts.js",

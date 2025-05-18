@@ -1,4 +1,3 @@
-"use strict";
 /* eslint-disable no-console */
 // ==UserScript==
 // @name           SBG plus
@@ -13,7 +12,6 @@
 // @run-at         document-start
 // @grant          none
 // ==/UserScript==
-Object.defineProperty(exports, "__esModule", { value: true });
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
 window.__sbg_plus_version = '1.0.11';
 window.__sbg_plus_compatible_version = '1.0.11';
@@ -4204,3 +4202,4 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     void main();
 })();
+
