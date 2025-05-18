@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
@@ -12,10 +13,12 @@
 // @grant          none
 // ==/UserScript==
 
+import type JQuery from 'jquery';
+
 const debug = {
-	enabled   : false,
-	listNames : [ 'Детские' ],
-	filmIds   : [ 22400, 299, 30070, 258382, 1047843, 46483 ],
+	enabled  : false,
+	listNames: [ 'Детские' ],
+	filmIds  : [ 22400, 299, 30070, 258382, 1047843, 46483 ],
 };
 
 const defaultListID = 6; // favorites
@@ -25,15 +28,15 @@ const pageInterval  = parseInt(localStorage.getItem('pageInterval') ?? '0') || 1
 const boxWidth = 1000;
 const boxItem  = 24;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
-interface Number {
-	case(zero: string, one: string, two: string): string;
-}
+declare global {
+	interface Number {
+		case(zero: string, one: string, two: string): string;
+	}
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
-interface String {
-	beautify(): string;
-	toFilename(): string;
+	interface String {
+		beautify(): string;
+		toFilename(): string;
+	}
 }
 
 Number.prototype.case = function(this: number, zero: string, one: string, two: string): string {
@@ -112,40 +115,40 @@ String.prototype.toFilename = function() {
 	type FilmTypeName = typeof filmTypeNames[number];
 
 	interface Data {
-		id           : number;
-		name         : string;
-		originalName : string;
-		fullName     : string;
-		year         : string;
-		time         : number;
+		id: number;
+		name: string;
+		originalName: string;
+		fullName: string;
+		year: string;
+		time: number;
 	}
 
 	interface ExtendedData {
-		related     : number[];
-		genres      : string[];
-		lists       : string[];
-		poster      : string | null;
-		description : string;
-		note        : string | null;
-		directors   : string[];
+		related: number[];
+		genres: string[];
+		lists: string[];
+		poster: string | null;
+		description: string;
+		note: string | null;
+		directors: string[];
 	}
 
 	interface ListItemData {
-		kind : 'listItem';
-		data : Data;
+		kind: 'listItem';
+		data: Data;
 	}
 
 	interface RelatedData {
-		kind : 'related';
-		key  : `${FilmTypeName}:${number}`;
-		data : Data;
+		kind: 'related';
+		key: `${FilmTypeName}:${number}`;
+		data: Data;
 	}
 
 	interface FilmData {
-		kind         : 'film';
-		key          : `${FilmTypeName}:${number}`;
-		data         : Data;
-		extendedData : ExtendedData;
+		kind: 'film';
+		key: `${FilmTypeName}:${number}`;
+		data: Data;
+		extendedData: ExtendedData;
 	}
 
 	abstract class FilmBase {
@@ -163,8 +166,9 @@ String.prototype.toFilename = function() {
 			return { id, year, time, ...FilmBase.getNames({ name, originalName, year }) };
 		}
 
-		protected static getNames({ name, originalName, year } : { name : string; originalName : string; year : string })
-			: { name : string; originalName : string; fullName : string } {
+		protected static getNames({ name, originalName, year }: { name: string; originalName: string; year: string }):
+		{ name: string; originalName: string; fullName: string } {
+
 			if (!name && originalName) {
 				name         = originalName;
 				originalName = '';
@@ -212,7 +216,7 @@ String.prototype.toFilename = function() {
 	}
 
 	class ListItem extends FilmBase implements ListItemData {
-		static map : Record<number, ListItem> = {};
+		static map: Record<number, ListItem> = {};
 
 		private constructor(
 			public kind: 'listItem',
@@ -235,7 +239,7 @@ String.prototype.toFilename = function() {
 				const year         = desc.length >= 2 ? desc[1]!.trim().replace(/^-$/, '') : '';
 				const time         = desc.length >= 3 && /^\d+$/.test(desc[2]!) ? parseInt(desc[2]!) : 0;
 
-				return { kind : 'listItem', data : { id, year, time, ...FilmBase.getNames({ name, originalName, year }) } };
+				return { kind: 'listItem', data: { id, year, time, ...FilmBase.getNames({ name, originalName, year }) } };
 			});
 		}
 
@@ -243,7 +247,7 @@ String.prototype.toFilename = function() {
 			return ListItem.create(id, () => film);
 		}
 
-		private static create(id: number, getData: () => ListItemData): ListItem {
+		private static create(id: number, getData: ()=> ListItemData): ListItem {
 			const listItem = ListItem.map[id];
 
 			if (listItem) {
@@ -256,7 +260,7 @@ String.prototype.toFilename = function() {
 	}
 
 	class Related extends FilmBase implements RelatedData {
-		static map : Record<number, Related> = {};
+		static map: Record<number, Related> = {};
 
 		private constructor(
 			public kind: 'related',
@@ -272,13 +276,13 @@ String.prototype.toFilename = function() {
 
 		static fromJSON(key: `${FilmTypeName}:${number}`, jsonFilmData: JSONFilmData<FilmTypeName>): Related {
 			return Related.create(jsonFilmData.id, () => ({
-				kind : 'related',
+				kind: 'related',
 				key,
-				data : FilmBase.parseJSON(jsonFilmData),
+				data: FilmBase.parseJSON(jsonFilmData),
 			}));
 		}
 
-		private static create(id: number, getData: () => RelatedData): Related {
+		private static create(id: number, getData: ()=> RelatedData): Related {
 			const related = Related.map[id];
 
 			if (related) {
@@ -291,7 +295,7 @@ String.prototype.toFilename = function() {
 	}
 
 	class Film extends FilmBase implements FilmData {
-		static map : Record<number, Film> = {};
+		static map: Record<number, Film> = {};
 
 		private constructor(
 			public kind: 'film',
@@ -342,6 +346,7 @@ String.prototype.toFilename = function() {
 						value = value[key];
 					}
 
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 					return value as T;
 				}
 
@@ -369,15 +374,15 @@ String.prototype.toFilename = function() {
 				const directors   = Film.getMembers(jsonFilmData, jsonData, '"DIRECTOR"');
 
 				return {
-					kind         : 'film',
+					kind        : 'film',
 					key,
-					data         : FilmBase.parseJSON(jsonFilmData),
-					extendedData : { related, genres, lists, poster, description, note, directors },
+					data        : FilmBase.parseJSON(jsonFilmData),
+					extendedData: { related, genres, lists, poster, description, note, directors },
 				};
 			});
 		}
 
-		private static create(id: number, getData: () => FilmData): FilmData {
+		private static create(id: number, getData: ()=> FilmData): FilmData {
 			const film = Film.map[id];
 			if (film) {
 				return film;
@@ -404,6 +409,7 @@ String.prototype.toFilename = function() {
 		}
 
 		private static isFilmTypeName(typeName: string): typeName is FilmTypeName {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			return filmTypeNames.includes(typeName as FilmTypeName);
 		}
 
@@ -428,7 +434,9 @@ String.prototype.toFilename = function() {
 		}
 
 		private static getLists(jsonFilmData: JSONFilmData<FilmTypeName>): string[] {
-			const key = Object.keys(jsonFilmData.userData).find((key) => key.startsWith('userFolders')) as `userFolders({"limit":${number},"offset":${number}})`;
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+			const key = Object.keys(jsonFilmData.userData)
+				.find((key) => key.startsWith('userFolders')) as `userFolders({"limit":${number},"offset":${number}})`;
 			return jsonFilmData.userData[key]!.items.map((folder) => folder.name).sort();
 		}
 
@@ -460,6 +468,7 @@ String.prototype.toFilename = function() {
 			jsonData: JSONData,
 			jsonRole: JSONRole,
 		): string[]  {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			const key   = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole)) as `members({"limit":${number},"role":${JSONRole}})`;
 			const refs  = jsonFilmData[key]!.items.map((item) => item.person.__ref);
 			const names = [];
@@ -479,60 +488,60 @@ String.prototype.toFilename = function() {
 	}
 
 	interface List {
-		id            : number;
-		title         : string;
-		firstPageHTML : string | null;
-		totalPages    : number;
+		id: number;
+		title: string;
+		firstPageHTML: string | null;
+		totalPages: number;
 	}
 
 	type JSONRoles = '"DIRECTOR"';
 
 	type JSONFilmData<TFilmTypeName extends FilmTypeName> = {
-		__typename : TFilmTypeName;
-		id         : number;
+		__typename: TFilmTypeName;
+		id: number;
 		title: {
-			__typename : 'Title';
-			original   : string | null;
-			russian    : string | null;
+			__typename: 'Title';
+			original: string | null;
+			russian: string | null;
 		};
-		productionYear : number | null;
+		productionYear: number | null;
 		releaseYears?: Array<{
-			__typename : 'YearsRange';
-			start      : number | null;
-			end        : number | null;
+			__typename: 'YearsRange';
+			start: number | null;
+			end: number | null;
 		}>;
-		duration       : number | null;
-		totalDuration  : number | null;
-		seriesDuration : number | null;
-		genres         : Array<{ __ref : `Genre:${number}` }>;
+		duration: number | null;
+		totalDuration: number | null;
+		seriesDuration: number | null;
+		genres: Array<{ __ref: `Genre:${number}` }>;
 		userData: {
-			__typename : 'MovieUserData';
+			__typename: 'MovieUserData';
 			note: {
-				__typename : 'UserMovieNote';
-				value      : string;
+				__typename: 'UserMovieNote';
+				value: string;
 			} | null;
 		} & {
 			[key in `userFolders({"limit":${number},"offset":${number}})`]: {
 				items: Array<{
-					__typename : 'Folder';
-					id         : number;
-					name       : string;
+					__typename: 'Folder';
+					id: number;
+					name: string;
 				}>;
 			};
 		};
 		poster: {
-			__typename  : 'Image';
-			avatarsUrl  : string | null;
-			fallbackUrl : string | null;
+			__typename: 'Image';
+			avatarsUrl: string | null;
+			fallbackUrl: string | null;
 		} | null;
-		synopsis         : string | null;
-		shortDescription : string | null;
+		synopsis: string | null;
+		shortDescription: string | null;
 	} & {
 		[key in `members({"limit":${number},"role":${JSONRoles}})`]: {
 			items: Array<{
-				__typename : 'FilmCrewMember';
+				__typename: 'FilmCrewMember';
 				person: {
-					__ref : `Person:${number}`;
+					__ref: `Person:${number}`;
 				};
 			}>;
 		};
@@ -542,39 +551,39 @@ String.prototype.toFilename = function() {
 		[key in `Film:${number}`]: JSONFilmData<'Film'>;
 	} & {
 		[key in `Genre:${number}`]: {
-			__typename : 'Genre';
-			id         : number;
-			name       : string;
-			slug       : string;
+			__typename: 'Genre';
+			id: number;
+			name: string;
+			slug: string;
 		};
 	} & {
 		[key in `Person:${number}`]: {
-			__typename   : 'Person';
-			id           : number;
-			name         : string;
-			originalName : string;
+			__typename: 'Person';
+			id: number;
+			name: string;
+			originalName: string;
 		};
 	} & {
 		[key in `TvSeries:${number}`]: JSONFilmData<'TvSeries'>;
 	};
 
 	class Progress {
-		buttonPanel                   : JQuery;
-		startTime                     : Date;
-		counts                        : number[];
-		weights                       : number[];
-		values                        : number[];
-		bases                         : number[];
-		value                         : number;
-		private readonly container    : JQuery;
-		private readonly box          : JQuery;
-		private readonly progressBox  : JQuery;
-		private readonly progressBar  : JQuery;
-		private readonly percentLabel : JQuery;
-		private readonly remainLabel  : JQuery;
-		private readonly logPanel     : JQuery;
-		private readonly logText      : JQuery;
-		private readonly logLink      : JQuery;
+		buttonPanel: JQuery;
+		startTime: Date;
+		counts: number[];
+		weights: number[];
+		values: number[];
+		bases: number[];
+		value: number;
+		private readonly container: JQuery;
+		private readonly box: JQuery;
+		private readonly progressBox: JQuery;
+		private readonly progressBar: JQuery;
+		private readonly percentLabel: JQuery;
+		private readonly remainLabel: JQuery;
+		private readonly logPanel: JQuery;
+		private readonly logText: JQuery;
+		private readonly logLink: JQuery;
 
 		constructor(
 			public title: string,
@@ -654,7 +663,7 @@ String.prototype.toFilename = function() {
 			if (this.values.length === 0) {
 				return;
 			}
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+
 			this.values[this.values.length - 1]!++;
 			console.debug('increment', itemTitle, itemLink, this);
 			this.print(`${this.title} [${this.values[this.values.length - 1]} из ${this.counts[this.counts.length - 1]}]`);
@@ -664,7 +673,7 @@ String.prototype.toFilename = function() {
 
 		print(message: string, isError?: boolean): void {
 			(isError ? console.error : console.log)(message);
-			this.logPanel.css({ color : isError ? 'red' : 'black' });
+			this.logPanel.css({ color: isError ? 'red' : 'black' });
 			this.logText.text(message);
 			this.logLink.html('');
 		}
@@ -769,7 +778,9 @@ String.prototype.toFilename = function() {
 			await sleep(pageInterval);
 
 			try {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				response = await $.get(url) as string | null;
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			} catch (ex) {
 				console.warn(`Не удалось загрузить страницу '${url}', попытка #${attempt++} через секунду...`);
 
@@ -826,9 +837,10 @@ String.prototype.toFilename = function() {
 			.appendTo(listsProgress.buttonPanel);
 
 		const fileInput = createFileInput({
-			success : (contents: string) => {
+			success: (contents: string) => {
 				try {
-					const data = JSON.parse(contents) as { lists : Record<number, unknown> };
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+					const data = JSON.parse(contents) as { lists: Record<number, unknown> };
 
 					if (!('lists' in data)) {
 						error('Загруженный файл не является корректным файлом списков');
@@ -846,7 +858,7 @@ String.prototype.toFilename = function() {
 						ListItem.fromJSON(item.data.id, item);
 					}
 				} catch (ex) {
-					listsProgress.error(ex as string);
+					listsProgress.error(String(ex));
 					return;
 				}
 
@@ -858,7 +870,7 @@ String.prototype.toFilename = function() {
 
 				void downloadAllFilms();
 			},
-			fail : (message: string) => {
+			fail: (message: string) => {
 				listsProgress.error(message);
 			},
 		}).appendTo(listsProgress.buttonPanel);
@@ -875,10 +887,11 @@ String.prototype.toFilename = function() {
 		});
 	}
 
-	function createFileInput({ success, fail } : { success : (contents: string) => void; fail : (message: string) => void }): JQuery {
+	function createFileInput({ success, fail }: { success: (contents: string)=> void; fail: (message: string)=> void }): JQuery {
 		const fileInput = $('<input type="file" />');
 
 		fileInput.on('change', (ev) => {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			const files = (ev.target as HTMLInputElement).files;
 			if (!files) {
 				return;
@@ -888,6 +901,7 @@ String.prototype.toFilename = function() {
 			reader.readAsText(files[0]!);
 
 			reader.onload = function() {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				success(reader.result as string);
 			};
 
@@ -920,7 +934,7 @@ String.prototype.toFilename = function() {
 		listsProgress.pop();
 		listsProgress.finish();
 
-		createDownloadButton({ download : 'lists.json', json : { lists : ListItem.map }, title : 'Скачать списки' })
+		createDownloadButton({ download: 'lists.json', json: { lists: ListItem.map }, title: 'Скачать списки' })
 			.appendTo(listsProgress.buttonPanel)
 			.get(0)
 			?.click();
@@ -969,7 +983,7 @@ String.prototype.toFilename = function() {
 		}
 	}
 
-	function buildUrl(list = { id : defaultListID }, currentPage = 1): string {
+	function buildUrl(list = { id: defaultListID }, currentPage = 1): string {
 		return `/mykp/folders/${list.id}/?page=${currentPage}&limit=${perPage}`;
 	}
 
@@ -992,7 +1006,7 @@ String.prototype.toFilename = function() {
 		filmsProgress.pop();
 		filmsProgress.finish();
 
-		createDownloadButton({ download : 'films.json', json : { films : Film.map, related : Related.map }, title : 'Скачать фильмы' })
+		createDownloadButton({ download: 'films.json', json: { films: Film.map, related: Related.map }, title: 'Скачать фильмы' })
 			.appendTo(filmsProgress.buttonPanel)
 			.get(0)
 			?.click();
@@ -1013,13 +1027,13 @@ String.prototype.toFilename = function() {
 				? folders.map((_i, folder) => $(folder).text()).toArray()
 				: [];
 
-			createDownloadButton({ download : `${film.data.id}.json`, json : film, title : 'Скачать фильм' })
+			createDownloadButton({ download: `${film.data.id}.json`, json: film, title: 'Скачать фильм' })
 				.get(0)
 				?.click();
 		}, 1);
 	}
 
-	function createDownloadButton({ download, json, title }: { download : string; json : unknown; title : string }): JQuery {
+	function createDownloadButton({ download, json, title }: { download: string; json: unknown; title: string }): JQuery {
 		return $('<a></a>')
 			.addClass('button')
 			.text(title)
@@ -1046,24 +1060,24 @@ String.prototype.toFilename = function() {
 
 	function createTestFilm(id: number): FilmData {
 		return {
-			kind : 'film',
-			key  : `Film:${id}`,
-			data : {
+			kind: 'film',
+			key : `Film:${id}`,
+			data: {
 				id,
-				name         : `Test film ${id}`,
-				originalName : '',
-				fullName     : `Test film ${id} [200${id}]`,
-				year         : `200${id}`,
-				time         : 90 + id,
+				name        : `Test film ${id}`,
+				originalName: '',
+				fullName    : `Test film ${id} [200${id}]`,
+				year        : `200${id}`,
+				time        : 90 + id,
 			},
-			extendedData : {
-				related     : [ 100 + id ],
-				description : `Test film ${id} description\nNext line\n\nEnd`,
-				genres      : [ 'genre1', 'genre2', `genre${id}` ],
-				lists       : [ 'First list', 'Second list' ],
-				note        : `User note ${id}\nNext line\n\nEnd`,
-				poster      : `https://example.com/poster_${id}.jpg`,
-				directors   : [ 'Ivan Ivanov', 'John Smith' ],
+			extendedData: {
+				related    : [ 100 + id ],
+				description: `Test film ${id} description\nNext line\n\nEnd`,
+				genres     : [ 'genre1', 'genre2', `genre${id}` ],
+				lists      : [ 'First list', 'Second list' ],
+				note       : `User note ${id}\nNext line\n\nEnd`,
+				poster     : `https://example.com/poster_${id}.jpg`,
+				directors  : [ 'Ivan Ivanov', 'John Smith' ],
 			},
 		};
 	}
@@ -1101,14 +1115,14 @@ String.prototype.toFilename = function() {
 		filmsProgress.finish();
 
 		createDownloadButton({
-			download : 'films.test.json',
-			json     : {
-				films : {
-					['1'] : createTestFilm(1),
-					['2'] : createTestFilm(2),
+			download: 'films.test.json',
+			json    : {
+				films: {
+					['1']: createTestFilm(1),
+					['2']: createTestFilm(2),
 				},
 			},
-			title : 'Скачать фильмы',
+			title: 'Скачать фильмы',
 		})
 			.appendTo(filmsProgress.buttonPanel)
 			.get(0)
@@ -1116,18 +1130,18 @@ String.prototype.toFilename = function() {
 	}
 
 	interface ButtonOptions {
-		container : JQuery;
-		icon      : string;
-		title     : string;
-		func      : () => void;
-		top       : number;
-		fontSize  : number;
+		container: JQuery;
+		icon: string;
+		title: string;
+		func: ()=> void;
+		top: number;
+		fontSize: number;
 	}
 
 	function renderButton({ container, icon, title, func, top, fontSize }: ButtonOptions): JQuery {
 		return $('<a></a>')
 			.text(icon)
-			.css({ 'cursor' : 'pointer', 'color' : '#ffffff', 'font-size' : `${fontSize}px`, 'top' : `${top}px`, 'position' : 'relative', 'padding' : '4px' })
+			.css({ 'cursor': 'pointer', 'color': '#ffffff', 'font-size': `${fontSize}px`, 'top': `${top}px`, 'position': 'relative', 'padding': '4px' })
 			.appendTo(container)
 			.attr('title', title)
 			.on('click', func);
@@ -1252,15 +1266,15 @@ String.prototype.toFilename = function() {
 
 	function renderDownload(): void {
 		const container = $('<div></div>')
-			.css({ 'position' : 'fixed', 'top' : '6px', 'right' : 0, 'z-index' : 65535, 'padding' : '4px' })
+			.css({ 'position': 'fixed', 'top': '6px', 'right': 0, 'z-index': 65535, 'padding': '4px' })
 			.appendTo($('body'));
 
 		if (location.pathname.includes('/film/') || location.pathname.includes('/series/')) {
-			renderButton({ container, icon : '#', title : 'Copy title', func : copyTitle, top : 7, fontSize : 35 });
-			renderButton({ container, icon : '{}', title : 'Download film', func : debug.enabled ? test : downloadFilm, top : 0, fontSize : 24 });
+			renderButton({ container, icon: '#', title: 'Copy title', func: copyTitle, top: 7, fontSize: 35 });
+			renderButton({ container, icon: '{}', title: 'Download film', func: debug.enabled ? test : downloadFilm, top: 0, fontSize: 24 });
 		}
 
-		renderButton({ container, icon : '⇩', title : 'Download all', func : downloadAll, top : 3, fontSize : 32 });
+		renderButton({ container, icon: '⇩', title: 'Download all', func: downloadAll, top: 3, fontSize: 32 });
 
 		setCSS();
 	}

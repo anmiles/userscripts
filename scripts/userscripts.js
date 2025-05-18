@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const fs = require('fs');
 require('@anmiles/prototypes');
 
@@ -14,7 +15,7 @@ const sections = {};
 
 console.log('Get contents');
 
-fs.recurse(root, { file : (filepath, filename) => {
+fs.recurse(root, { file: (filepath, filename) => {
 	if (filepath.endsWith(ext)) {
 		// console.log(`    ${filename}`);
 
@@ -31,7 +32,7 @@ fs.recurse(root, { file : (filepath, filename) => {
 		sections[section.namespace] = sections[section.namespace] || [];
 		sections[section.namespace].push(section);
 	}
-} }, { depth : 1 });
+} }, { depth: 1 });
 
 console.log('Build index');
 const output = [];

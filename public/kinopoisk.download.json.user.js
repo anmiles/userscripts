@@ -1,4 +1,4 @@
-"use strict";
+/* eslint-disable no-console */
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
@@ -231,6 +231,7 @@ String.prototype.toFilename = function () {
                         }
                         value = value[key];
                     }
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                     return value;
                 }
                 const jsonData = jsonSelect(htmlMatch[1], ['props', 'apolloState', 'data']);
@@ -280,6 +281,7 @@ String.prototype.toFilename = function () {
             return Film.isFilmTypeName(typeName) && !isNaN(Number(idString));
         }
         static isFilmTypeName(typeName) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             return filmTypeNames.includes(typeName);
         }
         static getGenres(jsonFilmData, jsonData) {
@@ -297,7 +299,9 @@ String.prototype.toFilename = function () {
             return genres.sort();
         }
         static getLists(jsonFilmData) {
-            const key = Object.keys(jsonFilmData.userData).find((key) => key.startsWith('userFolders'));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            const key = Object.keys(jsonFilmData.userData)
+                .find((key) => key.startsWith('userFolders'));
             return jsonFilmData.userData[key].items.map((folder) => folder.name).sort();
         }
         static getPoster(jsonFilmData) {
@@ -322,6 +326,7 @@ String.prototype.toFilename = function () {
             return (_b = (_a = jsonFilmData.userData.note) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : null;
         }
         static getMembers(jsonFilmData, jsonData, jsonRole) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const key = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole));
             const refs = jsonFilmData[key].items.map((item) => item.person.__ref);
             const names = [];
@@ -404,7 +409,6 @@ String.prototype.toFilename = function () {
             if (this.values.length === 0) {
                 return;
             }
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
             this.values[this.values.length - 1]++;
             console.debug('increment', itemTitle, itemLink, this);
             this.print(`${this.title} [${this.values[this.values.length - 1]} из ${this.counts[this.counts.length - 1]}]`);
@@ -498,7 +502,9 @@ String.prototype.toFilename = function () {
         while (!response) {
             await sleep(pageInterval);
             try {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 response = await $.get(url);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             }
             catch (ex) {
                 console.warn(`Не удалось загрузить страницу '${url}', попытка #${attempt++} через секунду...`);
@@ -546,6 +552,7 @@ String.prototype.toFilename = function () {
         const fileInput = createFileInput({
             success: (contents) => {
                 try {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                     const data = JSON.parse(contents);
                     if (!('lists' in data)) {
                         error('Загруженный файл не является корректным файлом списков');
@@ -561,7 +568,7 @@ String.prototype.toFilename = function () {
                     }
                 }
                 catch (ex) {
-                    listsProgress.error(ex);
+                    listsProgress.error(String(ex));
                     return;
                 }
                 loadButton.hide();
@@ -586,6 +593,7 @@ String.prototype.toFilename = function () {
     function createFileInput({ success, fail }) {
         const fileInput = $('<input type="file" />');
         fileInput.on('change', (ev) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const files = ev.target.files;
             if (!files) {
                 return;
@@ -593,6 +601,7 @@ String.prototype.toFilename = function () {
             const reader = new FileReader();
             reader.readAsText(files[0]);
             reader.onload = function () {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 success(reader.result);
             };
             reader.onerror = function () {
@@ -912,3 +921,4 @@ String.prototype.toFilename = function () {
         renderDownload();
     }
 })($.noConflict());
+export {};

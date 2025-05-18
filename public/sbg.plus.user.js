@@ -1,4 +1,4 @@
-"use strict";
+/* eslint-disable no-console */
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
@@ -24,15 +24,17 @@ Object.typedKeys = (obj, allKeys) => {
 Object.typedEntries = (obj, allKeys) => Object
     .typedKeys(obj, allKeys)
     .map((key) => [key, obj[key]]);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const layerNames = ['base', 'highlights', 'lines_built', 'lines_temp', 'lines', 'points', 'regions_built', 'regions_shared', 'regions', 'temp_lines'];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const urlTypes = ['homepage', 'game', 'login', 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui'];
 const langs = ['ru', 'en'];
 (function () {
     class EventWatcher {
         constructor(eventTypes) {
             this.eventTypes = eventTypes;
-            this.listeners = {};
-            this.events = {};
+            this.listeners = {}; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+            this.events = {}; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
             this.eventTypes.map((eventType) => {
                 this.events[eventType] = [];
                 this.listeners[eventType] = [];
@@ -109,6 +111,7 @@ const langs = ['ru', 'en'];
     }
     const logs = [];
     const logParts = ['time', 'eventType', 'message'];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const loggers = ['console', 'alert', 'logs'];
     const loggerOptions = {
         console: ['time', 'message'],
@@ -424,7 +427,9 @@ const langs = ['ru', 'en'];
                 }),
                 list: [
                     new Label({
+                        // eslint-disable-next-line @stylistic/max-len
                         ru: 'Не всегда рисуется линия, потому что если при нажатии мышкой сдвинуть карту хоть на миллиметр - карта думает, что её двигают, а не кликают, и никак не реагирует',
+                        // eslint-disable-next-line @stylistic/max-len
                         en: 'Lines are not always being drawn, because clicking mouse button when moving map even one pixel ahead will make the map treat this click as a moving action and do not react as expected',
                     }),
                     new Label({
@@ -482,7 +487,7 @@ const langs = ['ru', 'en'];
                 }),
                 unknownError: new Label({
                     ru: 'Причина ошибки неизвестна: ошибка произошла до определения возможных причин',
-                    en: 'Error reason is unknown: the error ocurred before defining possible reasons',
+                    en: 'Error reason is unknown: the error occurred before defining possible reasons',
                 }),
             },
         },
@@ -519,15 +524,32 @@ const langs = ['ru', 'en'];
             });
         }
         save() {
-            const json = {};
-            json.features = Object.fromEntries(this.features);
+            const json = {
+                features: Object.fromEntries(this.features),
+            };
             const str = JSON.stringify(json);
             localStorage.setItem(this.storageKey, str);
         }
     }
     const settings = new Settings();
     console.log('created settings');
-    const featureGroupNames = ['scripts', 'base', 'cui', 'eui', 'animations', 'toolbar', 'fire', 'inventory', 'leaderboard', 'info', 'buttons', 'draw', 'other', 'custom', 'tests'];
+    const featureGroupNames = [
+        'scripts',
+        'base',
+        'cui',
+        'eui',
+        'animations',
+        'toolbar',
+        'fire',
+        'inventory',
+        'leaderboard',
+        'info',
+        'buttons',
+        'draw',
+        'other',
+        'custom',
+        'tests',
+    ];
     const featureGroups = {
         scripts: { ru: 'Скрипты', en: 'Scripts' },
         base: { ru: 'Основные настройки', en: 'Basic settings' },
@@ -644,7 +666,7 @@ const langs = ['ru', 'en'];
                 }
                 return required;
             }
-            return {};
+            return undefined;
         }
     }
     window.Feature = Feature;
@@ -669,13 +691,12 @@ const langs = ['ru', 'en'];
         constructor() {
             super(featuresEventTypes);
             this.keys = {};
-            this.groups = {};
-            this.triggers = {};
+            this.groups = {}; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+            this.triggers = {}; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
             this.parents = {};
             Object.typedKeys(featureGroups, featureGroupNames).map((key) => this.groups[key] = []);
             featureTriggers.map((key) => this.triggers[key] = []);
         }
-        // eslint-disable-next-line @typescript-eslint/ban-types -- allow any functions to be passed to get according features
         get(func) {
             return this.keys[func.name];
         }
@@ -741,7 +762,7 @@ const langs = ['ru', 'en'];
         }
     }
     const features = new Features();
-    let group = 'base';
+    let group;
     group = 'scripts';
     new Feature(loadCUI, { ru: 'Скрипт Николая', en: 'Nicko script' }, { public: true, simple: true, group, trigger: '' });
     new Feature(loadEUI, { ru: 'Скрипт Егора', en: 'Egor script' }, { public: true, simple: true, group, trigger: 'mapReady', desktop: true });
@@ -783,7 +804,9 @@ const langs = ['ru', 'en'];
     group = 'fire';
     new Feature(alwaysCenterAlignFireItemsCount, { ru: 'Всегда выравнивать количество предметов по центру', en: 'Always center align items count' }, { group, trigger: 'fireClick', requires: () => $('#attack-slider') });
     new Feature(replaceHighlevelWarningWithIcon, { ru: 'Заменить предупреждение про недостаточный уровень на значок поверх предмета', en: 'Replace highlevel warning with an icon on top of the item' }, { group, trigger: 'fireClick' });
-    new Feature(joinFireButtons, { ru: 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en: 'Join attack button and attack panel button, close panel by clicking outside' }, { group, trigger: 'fireClick', requires: () => $('#attack-menu') });
+    new Feature(joinFireButtons, 
+    // eslint-disable-next-line @stylistic/max-len
+    { ru: 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en: 'Join attack button and attack panel button, close panel by clicking outside' }, { group, trigger: 'fireClick', requires: () => $('#attack-menu') });
     group = 'inventory';
     new Feature(increaseItemsFont, { ru: 'Увеличить размер шрифта за счёт сокращения названий предметов', en: 'Increase font size by shortening item names' }, { group, trigger: 'mapReady', requires: () => $('.info.popup') });
     new Feature(showAutoDeleteSettingsButton, { ru: 'Показать кнопку перехода к настройкам авто-удаления', en: 'Show auto-delete settings button' }, { group, trigger: 'mapReady', requires: () => $('.inventory.popup') });
@@ -814,8 +837,10 @@ const langs = ['ru', 'en'];
     new Feature(testNotifications, { ru: 'Тестовые нотификации', en: 'Test notifications' }, { group, trigger: 'mapReady', unchecked: true });
     settings.cleanupFeatures();
     const presetTypes = ['allscripts', 'browser', 'egorscript', 'full', 'nicoscript'];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const presets = {};
     function isPreset(preset) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         return presetTypes.includes(preset);
     }
     presets.nicoscript = [
@@ -1209,6 +1234,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             }
             value = value[key];
         }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         return value;
     }
     function addLayer(layerName, layerLikeName) {
@@ -1303,7 +1329,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         ((addEventListener, removeEventListener) => {
             function initEventListeners(target, type) {
                 var _a, _b;
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- __events might not be initialized in native target
                 target.__events = (_a = target.__events) !== null && _a !== void 0 ? _a : {};
                 target.__events[type] = (_b = target.__events[type]) !== null && _b !== void 0 ? _b : { listeners: [], sealed: false };
                 return target;
@@ -1336,8 +1361,9 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             };
             EventTarget.prototype.getEventHandlers = function (type) {
                 return this.getEventListeners(type)
-                    // eslint-disable-next-line @typescript-eslint/unbound-method -- intentionally unbound listener method to use statically then
+                    // eslint-disable-next-line @typescript-eslint/unbound-method
                     .map((listener) => 'handleEvent' in listener ? listener.handleEvent : listener)
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                     .map((handler) => handler);
             };
             EventTarget.prototype.clearEventListeners = function (type, sealed) {
@@ -1362,20 +1388,22 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             EventTarget.prototype.addRepeatingEventListener = function (type, handler, { repeats: limit, timeout, tick = () => { }, filter = () => true, cancel = () => true, }) {
                 let repeats = 0;
                 this.addEventListener(type, (ev) => {
-                    if (!filter(ev)) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+                    const event = ev;
+                    if (!filter(event)) {
                         return;
                     }
-                    if (!cancel(ev)) {
+                    if (!cancel(event)) {
                         repeats = 0;
                         return;
                     }
                     repeats++;
                     if (repeats >= limit) {
                         repeats = 0;
-                        handler(ev);
+                        handler(event);
                         return;
                     }
-                    tick(ev, repeats);
+                    tick(event, repeats);
                     setTimeout(() => {
                         repeats = 0;
                     }, timeout);
@@ -1419,6 +1447,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     async function isReleaseAvailable() {
         const checkUrl = 'https://api.github.com/repos/anmiles/sbg/releases';
         const resp = await fetch(checkUrl);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         const json = await resp.json();
         const release = json.find((r) => r['tag_name'] === `v${window.__sbg_plus_version}`);
         return !!release;
@@ -1548,7 +1577,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             return true;
         }
         // @ts-expect-error 2339 -- navigator is narrowed to never because TS assumes navigator always has 'maxTouchPoints' property
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         return /\b(BlackBerry|webOS|iPhone|IEMobile|Android|Windows Phone|iPad|iPod)\b/i.test(navigator.userAgent);
     }
     function loadCUI() {
@@ -1760,6 +1788,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         if (!homeCoords) {
             return;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         const center = JSON.parse(homeCoords);
         window.__sbg_variable_map.get().getView().setCenter(center);
         console.log('initialized home location');
@@ -1772,6 +1801,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                 : layerName === 'lines' && layers.has('lines')
                     ? 'lines_temp'
                     : layerName;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             layers.set(key, layer);
         }
         console.log('initialized layers');
@@ -1964,9 +1994,12 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function unlockCompassWhenRotateMap(script) {
         script
-            .replaceCUIBlock('Вращение карты', 'if (latestTouchPoint == null) { return; }', 'if (latestTouchPoint == null) { if (isRotationLocked) { toggleRotationLock(event); touchStartHandler({...event, target: event.target, touches: [event.touches[0]], targetTouches: [event.targetTouches[0]] }); } return; }');
+            .replaceCUIBlock('Вращение карты', 'if (latestTouchPoint == null) { return; }', 
+        // eslint-disable-next-line @stylistic/max-len
+        'if (latestTouchPoint == null) { if (isRotationLocked) { toggleRotationLock(event); touchStartHandler({...event, target: event.target, touches: [event.touches[0]], targetTouches: [event.targetTouches[0]] }); } return; }');
     }
     function disableCarouselAnimation(splide) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         (splide.defaults || (splide.defaults = {})).speed = 0;
     }
     function disablePopupAnimation() {
@@ -2003,7 +2036,6 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                 _init.call(this, options);
                 return this;
             };
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- intentional assignment of prototype
             toastify.prototype.init.prototype = _init.prototype;
         })(toastify.prototype.init);
     }
@@ -2149,6 +2181,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         const handlers = [...window.getEventHandlers('deviceorientation')];
         function triggerHandlers(webkitCompassHeading) {
             handlers.map((handler) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 handler({ webkitCompassHeading });
             });
         }
@@ -2419,6 +2452,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
 			}
 		`);
         $(window).on('click', function (ev) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const target = ev.target;
             if (target.id !== 'attack-menu' && $('.attack-slider-wrp.hidden').length === 0 && $(target).parents('.attack-slider-wrp').length === 0) {
                 $('#attack-menu').trigger('click');
@@ -2694,6 +2728,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
 				display: none;
 			}
 		`);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
         const inventoryContentEl = inventoryContent.get(0);
         inventoryContentEl.getEventListeners('click').forEach((listener) => {
             inventoryContentEl.removeEventListener('click', listener);
@@ -2713,6 +2748,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                 return;
             }
             const el = $(ev.target).parents('.inventory__item');
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const inventory = (JSON.parse((_a = localStorage.getItem('inventory-cache')) !== null && _a !== void 0 ? _a : '[]') || []);
             const item = inventory.find((item) => item.g == el.attr('data-guid'));
             if (!item) {
@@ -3128,6 +3164,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         })(window.__sbg_function_showInfo);
         $(document).on('click', 'a[href*="point="]', (ev) => {
             var _a;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const guid = (_a = ev.currentTarget.href.split('point=').pop()) === null || _a === void 0 ? void 0 : _a.split('&').shift();
             window.__sbg_function_showInfo(guid);
             ev.stopPropagation();
@@ -3206,9 +3243,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function testNotifications() {
         window.__sbg_cui_function_getNotifs = function (latest) {
             if (typeof latest === 'number') {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 return 1;
             }
             if (typeof latest === 'undefined') {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 return [
                     {
                         id: 1,
@@ -3226,6 +3265,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     class Builder {
         constructor(buttonsSection) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             this.features = {};
             this.points = {};
             this.pointStyles = {};
@@ -3337,6 +3377,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         }
         getCoords(flatCoordinates) {
             const coordsList = window.ol.proj.toLonLat(flatCoordinates);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             return coordsList.map((coord) => parseFloat(coord.toFixed(6)));
         }
         getFlatCoordinates(coords) {
@@ -3531,6 +3572,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             if (style) {
                 const matches = style.match(/team-(\d+)/);
                 if (matches) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                     this.ownTeam = parseInt(matches[1]);
                 }
             }
@@ -3663,12 +3705,12 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         setPointDrawing(point, drawing) {
             if (drawing) {
                 this.pointStyles[point.getId()] = point.getStyle();
-                point.setStyle(window.__sbg_variable_FeatureStyles.get().POINT(point.getGeometry().flatCoordinates, this.drawTeam, 1, true));
+                point.setStyle([window.__sbg_variable_FeatureStyles.get().POINT(point.getGeometry().flatCoordinates, this.drawTeam, 1, true)]);
             }
             else {
                 const style = this.pointStyles[point.getId()];
                 if (style) {
-                    point.setStyle(style);
+                    point.setStyle([style]);
                 }
                 else {
                     throw new Error(`Attempt to get non-existing style for point id = '${point.getId()}'`);
@@ -3787,6 +3829,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             const data = [];
             const pointsMap = new CoordsMap(new Map(Object.entries(pack.points)));
             for (const lineCoords of pack.lines) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 const points = [pointsMap.get(lineCoords[0]), pointsMap.get(lineCoords[1])];
                 const lineData = new LineData(points, lineCoords);
                 data.push(lineData);
@@ -3878,6 +3921,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             let pack;
             try {
                 pack = JSON.parse(text);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             }
             catch (ex) {
                 return { error: labels.builder.validationErrors.json };
@@ -3893,11 +3937,10 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         constructor(linePoints, lineCoords) {
             this.linePoints = linePoints;
             this.lineCoords = lineCoords;
-            this.linePoints = linePoints;
-            this.lineCoords = lineCoords;
         }
         static async load(points, builder) {
             const promises = points.map(async (point) => PointData.resolve(point, builder));
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const linePoints = await Promise.all(promises);
             const lineCoords = builder.createLineCoords(linePoints[0].coords, linePoints[1].coords);
             return new LineData(linePoints, lineCoords);
@@ -3924,6 +3967,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             return points[guid] = response.data.t;
         }
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const validTypeOf = typeof {};
     class BuilderDataPackValidator {
         constructor(validationErrors) {
@@ -3954,6 +3998,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             }
             return true;
         }
+        // TODO: probably use zod instead of all these functions
         checkObject(pack) {
             if (typeof pack !== 'object') {
                 this.validationError = this.validationErrors.object;
@@ -4014,6 +4059,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             if (!this.has(key)) {
                 this.set(key, initialValue);
             }
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             return this.get(key);
         }
         has(key) {
@@ -4026,11 +4072,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         }
         deleteMine(key) {
             const stringKey = this.stringifyKey(key);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const item = this.data.get(stringKey);
             if (item instanceof window.ol.Feature && item.getProperties().mine) {
                 this.data.delete(stringKey);
             }
             if (Array.isArray(item)) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 const others = item.filter((subItem) => !subItem.mine);
                 if (others.length === 0) {
                     this.data.delete(stringKey);
@@ -4053,6 +4101,7 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     class SettingsPopup {
         constructor() {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             this.sections = {};
             this.checkboxes = {};
             this.render();
@@ -4146,9 +4195,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             return $('<input type="checkbox" />')
                 .prop('checked', feature.isEnabled())
                 .on('change', (ev) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                 feature.setEnabled(ev.target.checked);
             });
         }
     }
     void main();
 })();
+export {};

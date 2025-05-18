@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
@@ -12,124 +13,125 @@
 // @grant          none
 // ==/UserScript==
 
+import type JQuery from 'jquery';
+
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
 window.__sbg_plus_version            = '1.0.11';
 window.__sbg_plus_compatible_version = '1.0.11';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
-interface Window {
-	[key: `__sbg_${string}_original`] : string;
-	[key: `__sbg_${string}_modified`] : string;
+declare global {
+	interface Window {
+		[key: `__sbg_${string}_original`]: string;
+		[key: `__sbg_${string}_modified`]: string;
 
-	ol        : Ol;
-	turf      : Turf;
-	Splide?   : Splide;
-	Toastify? : Toastify;
-	i18next   : I18Next;
+		ol: Ol;
+		turf: Turf;
+		Splide?: Splide;
+		Toastify?: Toastify;
+		i18next: I18Next;
 
-	Feature     : unknown;
-	setCSS      : (css: string) => void;
-	cuiStatus   : 'loaded' | 'loading';
-	cuiEmbedded : boolean | undefined;
+		Feature: unknown;
+		setCSS: (css: string)=> void;
+		cuiStatus: 'loaded' | 'loading';
+		cuiEmbedded: boolean | undefined;
 
-	DeviceOrientationEvent: {
-		prototype         : DeviceOrientationEvent;
-		requestPermission : () => Promise<'denied' | 'granted'>;
-		new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
-	};
+		DeviceOrientationEvent: {
+			prototype: DeviceOrientationEvent;
+			requestPermission: ()=> Promise<'denied' | 'granted'>;
+			new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
+		};
 
-	__sbg_game : {
-		enableBackButton : () => void;
-	} | undefined;
+		__sbg_game: {
+			enableBackButton: ()=> void;
+		} | undefined;
 
-	__sbg_share : {
-		open     : (url: string) => boolean;
-		navigate : (coords: OlCoordsString) => boolean;
-	} | undefined;
+		__sbg_share: {
+			open: (url: string)=> boolean;
+			navigate: (coords: OlCoordsString)=> boolean;
+		} | undefined;
 
-	__sbg_local           : boolean | undefined;
-	__sbg_preset          : string | undefined;
-	__sbg_package         : string | undefined;
-	__sbg_package_version : Version | undefined;
+		__sbg_local: boolean | undefined;
+		__sbg_preset: string | undefined;
+		__sbg_package: string | undefined;
+		__sbg_package_version: Version | undefined;
 
-	__sbg_plus_version            : Version;
-	__sbg_plus_compatible_version : Version;
+		__sbg_plus_version: Version;
+		__sbg_plus_compatible_version: Version;
 
-	__sbg_language                   : Lang;
-	__sbg_location                   : typeof window.location;
-	__sbg_onerror_handlers           : Array<NonNullable<typeof window.onerror>>;
-	__sbg_debug_object               : (message: string, obj: Record<string, unknown>) => void;
-	__sbg_plus_localStorage_watcher  : unknown;
-	__sbg_plus_modifyFeatures        : ((...args: unknown[]) => void) | undefined;
-	__sbg_plus_animation_duration    : number;
-	__sbg_plus_logs_gesture_disabled : boolean;
+		__sbg_language: Lang;
+		__sbg_location: typeof window.location;
+		__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
+		__sbg_debug_object: (message: string, obj: Record<string, unknown>)=> void;
+		__sbg_plus_localStorage_watcher: unknown;
+		__sbg_plus_modifyFeatures: ((...args: unknown[])=> void) | undefined;
+		__sbg_plus_animation_duration: number;
+		__sbg_plus_logs_gesture_disabled: boolean;
 
-	__sbg_variable_draw_slider       : ReadableVariable<Splide>;
-	__sbg_variable_FeatureStyles     : ReadableVariable<OlFeatureStyles>;
-	__sbg_variable_is_dark           : ReadableVariable<boolean>;
-	__sbg_variable_ItemTypes         : ReadableVariable<string[]>;
-	__sbg_variable_map               : ReadableVariable<OlMap>;
-	__sbg_variable_self_data         : WritableVariable<SelfData>;
-	__sbg_variable_TeamColors        : ReadableVariable<OlTeamColors>;
-	__sbg_variable_temp_lines_source : ReadableVariable<OlSource>;
-	__sbg_variable_units             : ReadableVariable<Array<[RegExp, string]>>;
-	__sbg_variable_VERSION           : ReadableVariable<string>;
+		__sbg_variable_draw_slider: ReadableVariable<Splide>;
+		__sbg_variable_FeatureStyles: ReadableVariable<OlFeatureStyles>;
+		__sbg_variable_is_dark: ReadableVariable<boolean>;
+		__sbg_variable_ItemTypes: ReadableVariable<string[]>;
+		__sbg_variable_map: ReadableVariable<OlMap>;
+		__sbg_variable_self_data: WritableVariable<SelfData>;
+		__sbg_variable_TeamColors: ReadableVariable<OlTeamColors>;
+		__sbg_variable_temp_lines_source: ReadableVariable<OlSource>;
+		__sbg_variable_units: ReadableVariable<Array<[RegExp, string]>>;
+		__sbg_variable_VERSION: ReadableVariable<string>;
 
-	__sbg_function_apiQuery            : ApiQuery;
-	__sbg_function_drawLeaderboard     : () => Promise<void>;
-	__sbg_function_deleteInventoryItem : (parent: JQuery) => Promise<void>;
-	__sbg_function_jquerypassargs      : (container: JQuery, template: string, ...elements: Array<JQuery | string>) => JQuery;
-	__sbg_function_manageDrawing       : (event: SplideEvent) => void;
-	__sbg_function_openProfile         : (data: JQuery.Event | OlGuid) => Promise<void>;
-	__sbg_function_showInfo            : (data: OlGuid   | undefined) => void;
-	__sbg_function_takeUnits           : (value: number) => [string, string];
-	__sbg_function_timeToString        : (seconds: number) => string;
+		__sbg_function_apiQuery: ApiQuery;
+		__sbg_function_drawLeaderboard: ()=> Promise<void>;
+		__sbg_function_deleteInventoryItem: (parent: JQuery)=> Promise<void>;
+		__sbg_function_jquerypassargs: (container: JQuery, template: string, ...elements: Array<JQuery | string>)=> JQuery;
+		__sbg_function_manageDrawing: (event: SplideEvent)=> void;
+		__sbg_function_openProfile: (data: JQuery.Event | OlGuid)=> Promise<void>;
+		__sbg_function_showInfo: (data: OlGuid   | undefined)=> void;
+		__sbg_function_takeUnits: (value: number)=> [string, string];
+		__sbg_function_timeToString: (seconds: number)=> string;
 
-	__sbg_native_intel_version  : string;
-	__sbg_native_script_version : string;
+		__sbg_native_intel_version: string;
+		__sbg_native_script_version: string;
 
-	__sbg_cui_variable_USERSCRIPT_VERSION : ReadableVariable<string>;
-	__sbg_cui_variable_config             : ReadableVariable<CUIConfig>;
+		__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
+		__sbg_cui_variable_config: ReadableVariable<CUIConfig>;
 
-	__sbg_cui_function_main           : () => Promise<void>;
-	__sbg_cui_function_olInjection    : () => void;
-	__sbg_cui_function_loadMainScript : () => void;
-	__sbg_cui_function_createToast    : (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => Toast;
-	__sbg_cui_function_getNotifs      : <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
-}
+		__sbg_cui_function_main: ()=> Promise<void>;
+		__sbg_cui_function_olInjection: ()=> void;
+		__sbg_cui_function_loadMainScript: ()=> void;
+		__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean)=> Toast;
+		__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest)=> TResult;
+	}
 
-interface EventTarget {
-	__events                  : Record<string, EventListeners>;
-	getEventListeners         : (type: string) => EventListenerOrEventListenerObject[];
-	getEventHandlers          : <T = EventListener>(type: string) => T[];
-	clearEventListeners       : (type: string, sealed: boolean) => void;
-	addOnlyEventListener      : EventTarget['addEventListener'];
-	addRepeatingEventListener: <TEvent extends Event>(
-		type: string,
-		callback: (ev: TEvent) => void,
-		options: {
-			repeats : number;
-			timeout : number;
-			tick?   : (ev: TEvent, iteration: number) => void;
-			filter? : (ev: TEvent) => boolean;
-			cancel? : (ev: TEvent) => boolean;
-		},
-	) => void;
-}
+	interface EventTarget {
+		__events: Record<string, EventListeners>;
+		getEventListeners: (type: string)=> EventListenerOrEventListenerObject[];
+		getEventHandlers: <T = EventListener>(type: string)=> T[];
+		clearEventListeners: (type: string, sealed: boolean)=> void;
+		addOnlyEventListener: EventTarget['addEventListener'];
+		addRepeatingEventListener: <TEvent extends Event>(
+			type: string,
+			callback: (ev: TEvent)=> void,
+			options: {
+				repeats: number;
+				timeout: number;
+				tick?: (ev: TEvent, iteration: number)=> void;
+				filter?: (ev: TEvent)=> boolean;
+				cancel?: (ev: TEvent)=> boolean;
+			},
+		)=> void;
+	}
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
-interface WindowEventMap {
-	'deviceorientationabsolute' : DeviceOrientationEvent;
-}
+	interface WindowEventMap {
+		'deviceorientationabsolute': DeviceOrientationEvent;
+	}
 
-interface DeviceOrientationEvent {
-	webkitCompassHeading : number | null;
-}
+	interface DeviceOrientationEvent {
+		webkitCompassHeading: number | null;
+	}
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- declaration merging
-interface Object {
-	typedKeys    : <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]) => K[];
-	typedEntries : <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]) => [K, V][];
+	interface Object {
+		typedKeys: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[])=> K[];
+		typedEntries: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[])=> [K, V][];
+	}
 }
 
 Object.typedKeys = <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]): K[] => {
@@ -148,87 +150,88 @@ Object.typedEntries = <K extends string, V>(
 	.map((key) => [ key, obj[key] ]);
 
 type EventTargetWithEventType<TEventType extends string> = EventTarget & {
-	__events : Record<TEventType, EventListeners>;
+	__events: Record<TEventType, EventListeners>;
 };
 
 interface EventListeners {
-	listeners : EventListenerOrEventListenerObject[];
-	sealed    : boolean;
+	listeners: EventListenerOrEventListenerObject[];
+	sealed: boolean;
 }
 
-type CustomTouchEvent = (data: { touches : TouchEvent['touches'] }) => void;
+type CustomTouchEvent = (data: { touches: TouchEvent['touches'] })=> void;
 
 interface Ol {
-	Map    : OlMap;
-	View   : OlView;
-	proj   : OlProj;
+	Map: OlMap;
+	View: OlView;
+	proj: OlProj;
 	source: {
-		Vector : new () => OlSource;
+		Vector: new ()=> OlSource;
 	};
 	layer: {
-		Vector : new<TLayerName extends LayerName>({ source, className }: {
-			source    : OlSource;
-			className : `ol-layer__${TLayerName}`;
-		}) => OlLayer;
+		Vector: new<TLayerName extends LayerName>({ source, className }: {
+			source: OlSource;
+			className: `ol-layer__${TLayerName}`;
+		})=> OlLayer;
 	};
-	Feature : new ({ geometry }: { geometry : OlGeometry }) => OlFeature;
+	Feature: new ({ geometry }: { geometry: OlGeometry })=> OlFeature;
 	geom: {
-		LineString : new (flatCoordinates: OlFlatCoordinates[]) => OlGeometry;
-		Polygon    : new (flatCoordinates: OlFlatCoordinates[][]) => OlGeometry;
-		Circle     : new (flatCoordinates: OlFlatCoordinates[], radius: number) => OlGeometry;
+		LineString: new (flatCoordinates: OlFlatCoordinates[])=> OlGeometry;
+		Polygon: new (flatCoordinates: OlFlatCoordinates[][])=> OlGeometry;
+		Circle: new (flatCoordinates: OlFlatCoordinates[], radius: number)=> OlGeometry;
 	};
 	format: {
-		GeoJSON : new () => OlFormat;
+		GeoJSON: new ()=> OlFormat;
 	};
 	style: {
-		Style  : new (styles: OlStyles) => OlStyle;
-		Fill   : new (fillStyle: { color : string }) => OlFill;
-		Stroke : new (strokeStyle: { color : string; width : number }) => OlStroke;
+		Style: new (styles: OlStyles)=> OlStyle;
+		Fill: new (fillStyle: { color: string })=> OlFill;
+		Stroke: new (strokeStyle: { color: string; width: number })=> OlStroke;
 	};
 }
 
 interface OlMap {
-	addLayer              : (layer: OlLayer) => void;
-	getAllLayers          : () => OlLayer[];
-	getView               : () => OlView;
-	forEachFeatureAtPixel : (pixel: OlPixel, callback: (feature: OlFeature, layer: OlLayer) => void) => void;
-	getListeners          : <TEventType extends OlMapEventType>(eventName: TEventType) => Array<OlMapEventListener<TEventType>>;
-	on                    : <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
-	un                    : <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
+	addLayer: (layer: OlLayer)=> void;
+	getAllLayers: ()=> OlLayer[];
+	getView: ()=> OlView;
+	forEachFeatureAtPixel: (pixel: OlPixel, callback: (feature: OlFeature, layer: OlLayer)=> void)=> void;
+	getListeners: <TEventType extends OlMapEventType>(eventName: TEventType)=> Array<OlMapEventListener<TEventType>>;
+	on: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>)=> void;
+	un: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>)=> void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const layerNames = [ 'base', 'highlights', 'lines_built', 'lines_temp', 'lines', 'points', 'regions_built', 'regions_shared', 'regions', 'temp_lines' ] as const;
 type LayerName = typeof layerNames[number];
 
 type OlLayer = OlObject<true> & {
-	getSource  : () => OlSource;
-	setVisible : (visible: boolean) => void;
+	getSource: ()=> OlSource;
+	setVisible: (visible: boolean)=> void;
 };
 
 interface OlSource {
-	addFeature    : (feature: OlFeature) => void;
-	removeFeature : (feature: OlFeature) => void;
-	getFeatures   : () => OlFeature[];
-	clear         : (fast?: boolean) => void;
-	on            : <T extends OlSourceEventName>(eventName: T, handler: (...args: OlSourceEvents[T][]) => void) => void;
+	addFeature: (feature: OlFeature)=> void;
+	removeFeature: (feature: OlFeature)=> void;
+	getFeatures: ()=> OlFeature[];
+	clear: (fast?: boolean)=> void;
+	on: <T extends OlSourceEventName>(eventName: T, handler: (...args: OlSourceEvents[T][])=> void)=> void;
 }
 
 type OlFeature = OlObject<false> & {
-	getGeometry : () => OlGeometry;
-	getId       : () => OlGuid;
-	setId       : (id: OlGuid) => void;
-	getStyle    : () => OlStyle;
-	setStyle    : (style: OlStyle) => void;
+	getGeometry: ()=> OlGeometry;
+	getId: ()=> OlGuid;
+	setId: (id: OlGuid)=> void;
+	getStyle: ()=> OlStyle;
+	setStyle: (style: OlStyle)=> void;
 };
 
 interface OlFeatureStyles {
-	TEXT  : (text: string) => OlStyle;
-	POINT : (pos: OlFlatCoordinates, team: Team, energy: number, light: boolean | number) => OlStyle;
+	TEXT: (text: string)=> OlStyle;
+	POINT: (pos: OlFlatCoordinates, team: Team, energy: number, light: boolean | number)=> OlStyle;
 }
 
 type OlTeamColors = Array<{
-	fill   : `#${string}`;
-	stroke : `#${string}`;
+	fill: `#${string}`;
+	stroke: `#${string}`;
 }>;
 
 type TProperties<TLayer extends boolean> = TLayer extends true
@@ -236,23 +239,23 @@ type TProperties<TLayer extends boolean> = TLayer extends true
 	: OlFeatureProperties;
 
 interface OlObject<TLayer extends boolean> {
-	getProperties : () => TProperties< TLayer>;
-	setProperties : (properties: Partial<TProperties<TLayer>>, silent?: true) => void;
+	getProperties: ()=> TProperties<TLayer>;
+	setProperties: (properties: Partial<TProperties<TLayer>>, silent?: true)=> void;
 }
 
 interface OlLayerProperties {
-	name   : string | undefined;
-	zIndex : number;
+	name: string | undefined;
+	zIndex: number;
 }
 
 interface OlFeatureProperties {
-	team   : Team;
-	mine   : boolean;
-	shared : boolean;
+	team: Team;
+	mine: boolean;
+	shared: boolean;
 }
 
 interface OlGeometry {
-	flatCoordinates : OlFlatCoordinates;
+	flatCoordinates: OlFlatCoordinates;
 }
 
 type OlFlatCoordinates = number[];
@@ -264,123 +267,122 @@ type OlCoordsString = `${OlCoords[0]},${OlCoords[1]}`;
 type OlGuid = string;
 type Team = 0 | 1 | 2 | 3 | 4;
 
-/* eslint-disable @typescript-eslint/no-empty-interface -- interfaces for compatibility */
 interface OlFill {}
 interface OlStroke {}
 interface OlStyle {}
 interface OlPixel {}
-/* eslint-enable @typescript-eslint/no-empty-interface */
 
 interface OlStyles {
-	fill?   : OlFill;
-	stroke? : OlStroke;
+	fill?: OlFill;
+	stroke?: OlStroke;
 }
 
 type OlSourceEventName = 'addfeature';
 interface OlSourceEvents {
 	addfeature: {
-		feature : OlFeature;
+		feature: OlFeature;
 	};
 }
 
 type OlView = MapView<OlCoords> & {
-	prototype : OlView;
-	animate   : (...args: Array<Record<'duration', number>>) => void;
+	prototype: OlView;
+	animate: (...args: Array<Record<'duration', number>>)=> void;
 };
 
 type OlMapEventType = 'click' | 'moveend' | 'movestart' | 'pointerdrag';
-type OlMapEventListener<TMapEventType extends OlMapEventType> = (ev: OlMapEvents[TMapEventType]) => void;
+type OlMapEventListener<TMapEventType extends OlMapEventType> = (ev: OlMapEvents[TMapEventType])=> void;
 
 interface OlMapEvents {
-	click       : OlMapClickEvent;
-	movestart   : OlMapEvent;
-	moveend     : OlMapEvent;
-	pointerdrag : OlMapEvent;
+	click: OlMapClickEvent;
+	movestart: OlMapEvent;
+	moveend: OlMapEvent;
+	pointerdrag: OlMapEvent;
 }
 
 type OlMapClickEvent = OlMapEvent & {
-	pixel : OlPixel;
+	pixel: OlPixel;
 };
 
 interface OlMapEvent {
-	target : OlMap;
+	target: OlMap;
 }
 
 interface OlProj {
-	fromLonLat : (coords: OlCoords) => OlFlatCoordinates;
-	toLonLat   : (flatCoordinates: OlFlatCoordinates) => OlCoords;
+	fromLonLat: (coords: OlCoords)=> OlFlatCoordinates;
+	toLonLat: (flatCoordinates: OlFlatCoordinates)=> OlCoords;
 }
 
 interface OlFormat {
-	readFeature : (arc: Arc) => OlFeature;
+	readFeature: (arc: Arc)=> OlFeature;
 }
 
 interface Arc {
 	geometry: {
-		coordinates : OlLineCoords;
+		coordinates: OlLineCoords;
 	};
 }
 
 interface Turf {
-	greatCircle : (coord1: OlCoords, coord2: OlCoords, options: { npoints : number }) => Arc;
+	greatCircle: (coord1: OlCoords, coord2: OlCoords, options: { npoints: number })=> Arc;
 }
 
 interface MapView<TCoords extends [number, number]> {
-	getZoom   : () => number;
-	setZoom   : (zoom: number) => void;
-	getCenter : () => TCoords;
-	setCenter : (coords: TCoords) => void;
+	getZoom: ()=> number;
+	setZoom: (zoom: number)=> void;
+	getCenter: ()=> TCoords;
+	setCenter: (coords: TCoords)=> void;
 }
 
 interface Splide {
 	defaults?: {
-		speed : number;
+		speed: number;
 	};
-	go : (index: number) => void;
-	on : (type: string, handler: (event: SplideEvent) => void) => void;
+	go: (index: number)=> void;
+	on: (type: string, handler: (event: SplideEvent)=> void)=> void;
 }
 
 interface SplideEvent {
-	index : number; slide : HTMLElement;
+	index: number; slide: HTMLElement;
 }
 
 interface ToastifyOptions {
-	text          : string;
-	duration      : number;
-	forceDuration : boolean;
-	gravity       : 'bottom' | 'top';
-	position      : 'center' | 'left' | 'right';
-	className     : string;
+	text: string;
+	duration: number;
+	forceDuration: boolean;
+	gravity: 'bottom' | 'top';
+	position: 'center' | 'left' | 'right';
+	className: string;
 }
 
 interface Toastify {
 	(options: ToastifyOptions): Toastify;
-	showToast : () => void;
+	showToast: ()=> void;
 	prototype: {
-		init : (options: ToastifyOptions) => void;
+		init: (options: ToastifyOptions)=> void;
 	};
 }
 
 interface I18Next {
-	t          : (key: string, data?: unknown) => string;
-	translator : unknown;
+	t: (key: string, data?: unknown)=> string;
+	translator: unknown;
 }
 
 interface Toast {
 	options: {
-		id           : number;
-		selector     : HTMLElement;
-		toastElement : HTMLElement;
-		close        : boolean;
-		callback     : () => void;
-		onClick      : () => void;
+		id: number;
+		selector: HTMLElement;
+		toastElement: HTMLElement;
+		close: boolean;
+		callback: ()=> void;
+		onClick: ()=> void;
 	};
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const urlTypes = [ 'homepage', 'game', 'login', 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
 
 type UrlType = typeof urlTypes[number];
-type Urls = Record<UrlType, () => string>;
+type Urls = Record<UrlType, ()=> string>;
 
 const langs = [ 'ru', 'en' ] as const;
 
@@ -395,133 +397,133 @@ type CUIPointHighlighting =
 
 interface CUIConfig {
 	maxAmountInBag: {
-		cores      : Record<Level, number>;
-		catalysers : Record<Level, number>;
-		references : { allied : number; hostile : number };
+		cores: Record<Level, number>;
+		catalysers: Record<Level, number>;
+		references: { allied: number; hostile: number };
 	};
 	autoSelect: {
-		deploy  : 'max' | 'min' | 'off';
-		upgrade : 'max' | 'min' | 'off';
-		attack  : 'latest' | 'max';
+		deploy: 'max' | 'min' | 'off';
+		upgrade: 'max' | 'min' | 'off';
+		attack: 'latest' | 'max';
 	};
 	mapFilters: {
-		invert        : number;
-		hueRotate     : number;
-		brightness    : number;
-		grayscale     : number;
-		sepia         : number;
-		blur          : number;
-		branding      : 'custom' | 'default';
-		brandingColor : string;
+		invert: number;
+		hueRotate: number;
+		brightness: number;
+		grayscale: number;
+		sepia: number;
+		blur: number;
+		branding: 'custom' | 'default';
+		brandingColor: string;
 	};
 	tinting: {
-		map     : 0 | 1;
-		point   : 'level' | 'off' | 'team';
-		profile : 0 | 1;
+		map: 0 | 1;
+		point: 'level' | 'off' | 'team';
+		profile: 0 | 1;
 	};
 	vibration: {
-		buttons       : 0 | 1;
-		notifications : 0 | 1;
+		buttons: 0 | 1;
+		notifications: 0 | 1;
 	};
 	ui: {
-		doubleClickZoom       : 0 | 1;
-		pointBgImage          : 0 | 1;
-		pointBtnsRtl          : 0 | 1;
-		pointBgImageBlur      : 0 | 1;
-		pointDischargeTimeout : 0 | 1;
-		speedometer           : 0 | 1;
+		doubleClickZoom: 0 | 1;
+		pointBgImage: 0 | 1;
+		pointBtnsRtl: 0 | 1;
+		pointBgImageBlur: 0 | 1;
+		pointDischargeTimeout: 0 | 1;
+		speedometer: 0 | 1;
 	};
 	pointHighlighting: {
-		inner            : CUIPointHighlighting;
-		outer            : CUIPointHighlighting;
-		outerTop         : CUIPointHighlighting;
-		outerBottom      : CUIPointHighlighting;
-		text             : 'energy' | 'level' | 'lines' | 'off' | 'refsAmount';
-		innerColor       : string;
-		outerColor       : string;
-		outerTopColor    : string;
-		outerBottomColor : string;
+		inner: CUIPointHighlighting;
+		outer: CUIPointHighlighting;
+		outerTop: CUIPointHighlighting;
+		outerBottom: CUIPointHighlighting;
+		text: 'energy' | 'level' | 'lines' | 'off' | 'refsAmount';
+		innerColor: string;
+		outerColor: string;
+		outerTopColor: string;
+		outerBottomColor: string;
 	};
 	drawing: {
-		minDistance : number;
-		maxDistance : number;
+		minDistance: number;
+		maxDistance: number;
 	};
 	notifications: {
-		status   : 'all' | 'fav' | 'off';
-		onClick  : 'close' | 'jumpto';
-		interval : number;
-		duration : number;
+		status: 'all' | 'fav' | 'off';
+		onClick: 'close' | 'jumpto';
+		interval: number;
+		duration: number;
 	};
 }
 
 interface SelfData {
-	g  : string;
-	l  : number;
-	n  : string;
-	t  : number;
-	td : boolean;
-	x  : number;
+	g: string;
+	l: number;
+	n: string;
+	t: number;
+	td: boolean;
+	x: number;
 }
 
 interface Notif {
-	id : number;
-	g  : string;
-	na : string;
-	ta : number;
-	ti : string;
-	c  : OlCoords;
-	t  : string;
+	id: number;
+	g: string;
+	na: string;
+	ta: number;
+	ti: string;
+	c: OlCoords;
+	t: string;
 }
 
 interface InventoryItem {
-	g : string;
-	a : number;
-	t : number;
+	g: string;
+	a: number;
+	t: number;
 }
 
 interface ReadableVariable<T> {
-	get : () => T;
+	get: ()=> T;
 }
-type WritableVariable<T> = ReadableVariable<T> & { set : (value: T) => void };
+type WritableVariable<T> = ReadableVariable<T> & { set: (value: T)=> void };
 
 type ApiQueryType = 'point' | 'profile';
 
-type ApiQuery = <T extends ApiQueryType>(kind: T, data: { guid : OlGuid }) => Promise<ApiResponse<ApiData[T]>>;
+type ApiQuery = <T extends ApiQueryType>(kind: T, data: { guid: OlGuid })=> Promise<ApiResponse<ApiData[T]>>;
 
 interface ApiResponse<T> {
-	response : { data : T };
+	response: { data: T };
 }
 
 interface ApiData {
-	point   : ApiPointData;
-	profile : ApiProfileData;
+	point: ApiPointData;
+	profile: ApiProfileData;
 }
 
 interface ApiPointData {
-	t : string;
+	t: string;
 }
 
 type ApiProfileData = Record<string, number> & {
-	name  : string;
-	team  : Team;
-	level : number;
+	name: string;
+	team: Team;
+	level: number;
 };
 
 (function() {
 	interface EventWatcherListenerOptions {
-		once?     : boolean;
-		previous? : boolean;
+		once?: boolean;
+		previous?: boolean;
 	}
 
 	interface EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> {
-		handler         : (eventData: TEventData) => void;
-		enabled         : boolean;
-		listenerOptions : TListenerOptions;
+		handler: (eventData: TEventData)=> void;
+		enabled: boolean;
+		listenerOptions: TListenerOptions;
 	}
 
 	interface EventWatcherEvent<TEventData, TEventOptions = void> {
-		eventData    : TEventData;
-		eventOptions : TEventOptions;
+		eventData: TEventData;
+		eventOptions: TEventOptions;
 	}
 
 	abstract class EventWatcher<
@@ -530,7 +532,7 @@ type ApiProfileData = Record<string, number> & {
 		TEventOptions = void,
 		TListenerOptions extends EventWatcherListenerOptions & TEventOptions = EventWatcherListenerOptions & TEventOptions,
 	> {
-		protected eventTypes : readonly TEventTypes[];
+		protected eventTypes: readonly TEventTypes[];
 		protected listeners: {
 			[TEventType in TEventTypes]: Array<
 				EventWatcherListener<TEventDataTypes[TEventType], TListenerOptions>
@@ -544,8 +546,8 @@ type ApiProfileData = Record<string, number> & {
 
 		constructor(eventTypes: readonly TEventTypes[]) {
 			this.eventTypes = eventTypes;
-			this.listeners  = {} as typeof this.listeners;
-			this.events     = {} as typeof this.events;
+			this.listeners  = {} as typeof this.listeners; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+			this.events     = {} as typeof this.events; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 
 			this.eventTypes.map((eventType) => {
 				this.events[eventType]    = [];
@@ -567,10 +569,10 @@ type ApiProfileData = Record<string, number> & {
 
 		on<TEventType extends TEventTypes>(
 			eventType: TEventType,
-			handler: (eventData: TEventDataTypes[TEventType]) => void,
+			handler: (eventData: TEventDataTypes[TEventType])=> void,
 			listenerOptions: TListenerOptions,
 		): typeof this {
-			const listener = { handler, listenerOptions, enabled : true };
+			const listener = { handler, listenerOptions, enabled: true };
 			this.listeners[eventType].push(listener);
 
 			if (listenerOptions.previous) {
@@ -596,7 +598,7 @@ type ApiProfileData = Record<string, number> & {
 		protected filter<TEventType extends TEventTypes>(
 			listeners: typeof this.listeners[TEventType],
 			_filterData: {
-				eventOptions? : TEventOptions;
+				eventOptions?: TEventOptions;
 			},
 		): typeof this.listeners[TEventType] {
 			return listeners;
@@ -612,8 +614,8 @@ type ApiProfileData = Record<string, number> & {
 		private trigger<TEventType extends TEventTypes>(
 			listeners: typeof this.listeners[TEventType],
 			{ eventData, eventOptions }: {
-				eventData    : TEventDataTypes[TEventType];
-				eventOptions : TEventOptions;
+				eventData: TEventDataTypes[TEventType];
+				eventOptions: TEventOptions;
 			},
 		): void {
 			listeners.filter((listener) => this.isMatchEventOptions(listener, eventOptions)).map((listener) => {
@@ -635,12 +637,12 @@ type ApiProfileData = Record<string, number> & {
 	const consoleWatcherEventTypes = [ 'log', 'warn', 'error', 'info', 'debug', 'trace' ] as const;
 
 	interface ConsoleWatcherEventDataTypes {
-		log   : { message : string; originalMethod : (...data: unknown[]) => void };
-		warn  : { message : string; originalMethod : (...data: unknown[]) => void };
-		error : { message : string; originalMethod : (...data: unknown[]) => void };
-		info  : { message : string; originalMethod : (...data: unknown[]) => void };
-		debug : { message : string; originalMethod : (...data: unknown[]) => void };
-		trace : { message : string; originalMethod : (...data: unknown[]) => void };
+		log: { message: string; originalMethod: (...data: unknown[])=> void };
+		warn: { message: string; originalMethod: (...data: unknown[])=> void };
+		error: { message: string; originalMethod: (...data: unknown[])=> void };
+		info: { message: string; originalMethod: (...data: unknown[])=> void };
+		debug: { message: string; originalMethod: (...data: unknown[])=> void };
+		trace: { message: string; originalMethod: (...data: unknown[])=> void };
 	}
 
 	class ConsoleWatcher extends EventWatcher<
@@ -661,15 +663,15 @@ type ApiProfileData = Record<string, number> & {
 						const lines = args.map((arg) => arg instanceof Error
 							? [ arg.message, arg.stack ].join('\n')
 							: !arg
-								? ((arg) => {
-									console.error('null argument', { arg, args });
-									return 'null';
-								})(arg)
-								: stringify(arg, 'string'));
+									? ((arg) => {
+											console.error('null argument', { arg, args });
+											return 'null';
+										})(arg)
+									: stringify(arg, 'string'));
 
 						this.emit(isError ? 'error' : eventType, {
-							message        : lines.map((line) => line.trim()).join('\n'),
-							originalMethod : (...data: unknown[]) => {
+							message       : lines.map((line) => line.trim()).join('\n'),
+							originalMethod: (...data: unknown[]) => {
 								(isError ? originalError : originalMethod).call(console, ...data);
 							},
 						}, {});
@@ -679,14 +681,15 @@ type ApiProfileData = Record<string, number> & {
 		}
 	}
 
-	const logs : string[] = [];
-	const logParts        = [ 'time', 'eventType', 'message' ] as const;
-	const loggers         = [ 'console', 'alert', 'logs' ] as const;
+	const logs: string[] = [];
+	const logParts       = [ 'time', 'eventType', 'message' ] as const;
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const loggers = [ 'console', 'alert', 'logs' ] as const;
 
 	const loggerOptions: Record<typeof loggers[number], Array<typeof logParts[number]>> = {
-		console : [ 'time', 'message' ],
-		alert   : [ 'message' ],
-		logs    : [ 'message' ],
+		console: [ 'time', 'message' ],
+		alert  : [ 'message' ],
+		logs   : [ 'message' ],
 	};
 
 	class LogEntry {
@@ -740,7 +743,7 @@ type ApiProfileData = Record<string, number> & {
 
 	const stringifyModes = [ 'json', 'keys', 'string' ] as const;
 
-	function stringify(obj: unknown, mode : typeof stringifyModes[number]): string {
+	function stringify(obj: unknown, mode: typeof stringifyModes[number]): string {
 		if (obj === null || obj === undefined) {
 			return typeof obj;
 		}
@@ -757,7 +760,7 @@ type ApiProfileData = Record<string, number> & {
 		}
 	}
 
-	window.__sbg_debug_object = (message: string, obj: Record<string, unknown>, mode : 'json' | 'keys' | 'string' = 'json') => {
+	window.__sbg_debug_object = (message: string, obj: Record<string, unknown>, mode: 'json' | 'keys' | 'string' = 'json') => {
 		const stack = new Error().stack?.replace(/^Error/, '');
 		for (const key in obj) {
 			console.debug(`${message}: ${key} = ${stringify(obj[key], mode)}`);
@@ -780,7 +783,7 @@ type ApiProfileData = Record<string, number> & {
 	};
 
 	window.__sbg_location = new Proxy(window.location, {
-		set : <K extends keyof typeof window.location>(target: typeof window.location, property: K, newValue: typeof window.location[K]) => {
+		set: <K extends keyof typeof window.location>(target: typeof window.location, property: K, newValue: typeof window.location[K]) => {
 			target[property] = newValue;
 
 			if (property === 'href' && typeof newValue === 'string') {
@@ -805,67 +808,67 @@ type ApiProfileData = Record<string, number> & {
 	console.log(`userAgent: ${navigator.userAgent}`);
 
 	interface Labels {
-		save    : Label;
-		close   : Label;
-		ymaps   : Label;
-		upgrade : {
+		save: Label;
+		close: Label;
+		ymaps: Label;
+		upgrade: {
 			package: {
-				compatible : Label;
-				latest     : Label;
+				compatible: Label;
+				latest: Label;
 			};
 		};
 		settings: {
-			title    : Label;
-			button   : Label;
-			version  : Label;
-			logs     : Label;
-			advanced : Label;
+			title: Label;
+			button: Label;
+			version: Label;
+			logs: Label;
+			advanced: Label;
 		};
 		toasts: {
-			back               : Label;
-			logs               : Label;
-			cuiUpdated         : Label;
-			localWarning       : Label;
-			noGeoApp           : Label;
-			noLayer            : Label;
-			featureSwitchedOff : Label;
+			back: Label;
+			logs: Label;
+			cuiUpdated: Label;
+			localWarning: Label;
+			noGeoApp: Label;
+			noLayer: Label;
+			featureSwitchedOff: Label;
 		};
 		builder: {
-			buttons  : Record<BuilderButtons, BuilderButtonLabel>;
+			buttons: Record<BuilderButtons, BuilderButtonLabel>;
 			messages: {
-				setHome    : Label;
-				deleteHome : Label;
-				copied     : Label;
+				setHome: Label;
+				deleteHome: Label;
+				copied: Label;
 			};
 			issues: {
-				title : Label;
-				list  : Label[];
+				title: Label;
+				list: Label[];
 			};
 			help: {
-				title   : Label;
-				buttons : Label;
+				title: Label;
+				buttons: Label;
 			};
 			validationErrors: {
-				json             : Label;
-				empty            : Label;
-				object           : Label;
-				objectProperties : Label;
-				pointProperties  : Label;
-				pointCoords      : Label;
-				lines            : Label;
-				linesCoords      : Label;
-				unknownError     : Label;
+				json: Label;
+				empty: Label;
+				object: Label;
+				objectProperties: Label;
+				pointProperties: Label;
+				pointCoords: Label;
+				lines: Label;
+				linesCoords: Label;
+				unknownError: Label;
 			};
 		};
 	}
 
 	interface BuilderButtonLabel {
-		title : Label; description : Label;
+		title: Label; description: Label;
 	}
 
 	const builderButtons = [ 'home', 'allLines', 'builder', 'undo', 'clear', 'route', 'copy', 'paste', 'help' ] as const;
 	type BuilderButtons = typeof builderButtons[number];
-	type BuilderAction = (previousState: boolean) => boolean | undefined;
+	type BuilderAction = (previousState: boolean)=> boolean | undefined;
 	type BuilderActions = Record<BuilderButtons, BuilderAction>;
 	type BuilderStates = Record<BuilderButtons, boolean>;
 	type BuilderFeatures = Record<BuilderButtons, BuilderFeature>;
@@ -906,255 +909,257 @@ type ApiProfileData = Record<string, number> & {
 	}
 
 	const labels: Labels = {
-		save : new Label({
-			ru : 'Сохранить',
-			en : 'Save',
+		save: new Label({
+			ru: 'Сохранить',
+			en: 'Save',
 		}),
-		close : new Label({
-			ru : 'Закрыть',
-			en : 'Close',
+		close: new Label({
+			ru: 'Закрыть',
+			en: 'Close',
 		}),
-		ymaps : new Label({
-			ru : 'Яндекс Карты',
-			en : 'Yandex Maps',
+		ymaps: new Label({
+			ru: 'Яндекс Карты',
+			en: 'Yandex Maps',
 		}),
-		upgrade : {
-			package : {
-				compatible : new Label({
-					ru : 'Приложение больше не поддерживается. Пожалуйста, скачайте и установите новую версию',
-					en : 'App is no more supported. Please, download and install new version',
+		upgrade: {
+			package: {
+				compatible: new Label({
+					ru: 'Приложение больше не поддерживается. Пожалуйста, скачайте и установите новую версию',
+					en: 'App is no more supported. Please, download and install new version',
 				}),
-				latest : new Label({
-					ru : 'Хотите скачать и установить новую версию приложения сейчас?',
-					en : 'Do you want to download and install new version of the app now?',
+				latest: new Label({
+					ru: 'Хотите скачать и установить новую версию приложения сейчас?',
+					en: 'Do you want to download and install new version of the app now?',
 				}),
 			},
 		},
-		settings : {
-			title : new Label({
-				ru : 'Настройки скриптов',
-				en : 'Scripts settings',
+		settings: {
+			title: new Label({
+				ru: 'Настройки скриптов',
+				en: 'Scripts settings',
 			}),
-			button : new Label({
-				ru : 'Настройки',
-				en : 'Settings',
+			button: new Label({
+				ru: 'Настройки',
+				en: 'Settings',
 			}),
-			version : new Label({
-				ru : 'Версия SBG+',
-				en : 'SBG+ Version',
+			version: new Label({
+				ru: 'Версия SBG+',
+				en: 'SBG+ Version',
 			}),
-			logs : new Label({
-				ru : 'Логи',
-				en : 'Logs',
+			logs: new Label({
+				ru: 'Логи',
+				en: 'Logs',
 			}),
-			advanced : new Label({
-				ru : 'Все настройки',
-				en : 'All settings',
-			}),
-		},
-		toasts : {
-			back : new Label({
-				ru : 'Нажмите кнопку "Назад" ещё раз\nдля выхода из игры',
-				en : 'Press "Back" button again to exit the game',
-			}),
-			logs : new Label({
-				ru : 'Логи скопированы в буфер обмена',
-				en : 'Logs has been copied into the clipboard',
-			}),
-			cuiUpdated : new Label({
-				ru : 'Скрипт Николая обновлён до версии ${currentVersion}',
-				en : 'Nicko script has been updated to ${currentVersion}',
-			}),
-			localWarning : new Label({
-				ru : 'ВНИМАНИЕ!\nВы используете тестовую версию.\nВсе обновления скриптов отключены.\nОбратитесь на форум за стабильной версией приложения.',
-				en : 'WARNING!\nYou are using a test version.\nAll script updates are off.\nRefer to forums for a stable version.',
-			}),
-			noGeoApp : new Label({
-				ru : 'Не найдено ни одного приложения карт. Координаты скопированы в буфер обмена.',
-				en : 'Maps application is not found. Coordinates has been copied to the clipboard.',
-			}),
-			noLayer : new Label({
-				ru : 'Слой ${layerName} не существует',
-				en : 'Layer ${layerName} does not exist',
-			}),
-			featureSwitchedOff : new Label({
-				ru : '${label} временно не работает и отключён до исправления его автором',
-				en : '${label} is temporarily broken and disabled until fixing by its author',
+			advanced: new Label({
+				ru: 'Все настройки',
+				en: 'All settings',
 			}),
 		},
-		builder : {
-			buttons : {
-				home : {
-					title : new Label({
-						ru : 'Я здесь',
-						en : 'Set home',
+		toasts: {
+			back: new Label({
+				ru: 'Нажмите кнопку "Назад" ещё раз\nдля выхода из игры',
+				en: 'Press "Back" button again to exit the game',
+			}),
+			logs: new Label({
+				ru: 'Логи скопированы в буфер обмена',
+				en: 'Logs has been copied into the clipboard',
+			}),
+			cuiUpdated: new Label({
+				ru: 'Скрипт Николая обновлён до версии ${currentVersion}',
+				en: 'Nicko script has been updated to ${currentVersion}',
+			}),
+			localWarning: new Label({
+				ru: 'ВНИМАНИЕ!\nВы используете тестовую версию.\nВсе обновления скриптов отключены.\nОбратитесь на форум за стабильной версией приложения.',
+				en: 'WARNING!\nYou are using a test version.\nAll script updates are off.\nRefer to forums for a stable version.',
+			}),
+			noGeoApp: new Label({
+				ru: 'Не найдено ни одного приложения карт. Координаты скопированы в буфер обмена.',
+				en: 'Maps application is not found. Coordinates has been copied to the clipboard.',
+			}),
+			noLayer: new Label({
+				ru: 'Слой ${layerName} не существует',
+				en: 'Layer ${layerName} does not exist',
+			}),
+			featureSwitchedOff: new Label({
+				ru: '${label} временно не работает и отключён до исправления его автором',
+				en: '${label} is temporarily broken and disabled until fixing by its author',
+			}),
+		},
+		builder: {
+			buttons: {
+				home: {
+					title: new Label({
+						ru: 'Я здесь',
+						en: 'Set home',
 					}),
-					description : new Label({
-						ru : 'устанавливает "домашнее местоположение", с которого игра всегда будет открываться в этом браузере',
-						en : 'sets "home location", which game will always start with in this browser',
-					}),
-				},
-				allLines : {
-					title : new Label({
-						ru : 'Все линии',
-						en : 'All lines',
-					}),
-					description : new Label({
-						ru : 'включает/отключает показ реально существующих линий и регионов',
-						en : 'toggles currently existing lines and regions',
-					}),
-				},
-				builder : {
-					title : new Label({
-						ru : 'Конструктор',
-						en : 'Builder',
-					}),
-					description : new Label({
-						ru : 'включает/отключает режим конструктора: нажатие на точку начинает новую линию, нажатие на другую точку - заканчивает линию',
-						en : 'toggles builder mode: click first point to start new line, click another point to finish the line',
-					}),
-				},
-				undo : {
-					title : new Label({
-						ru : 'Отменить',
-						en : 'Undo',
-					}),
-					description : new Label({
-						ru : 'стирает последнюю построенную линию/регион',
-						en : 'removes last built line/region',
-					}),
-				},
-				clear : {
-					title : new Label({
-						ru : 'Отменить всё',
-						en : 'Clear',
-					}),
-					description : new Label({
-						ru : 'стирает все построенные линии и регионы',
-						en : 'removes all build lines and regions',
+					description: new Label({
+						ru: 'устанавливает "домашнее местоположение", с которого игра всегда будет открываться в этом браузере',
+						en: 'sets "home location", which game will always start with in this browser',
 					}),
 				},
-				route : {
-					title : new Label({
-						ru : 'Маршрут',
-						en : 'Print route',
+				allLines: {
+					title: new Label({
+						ru: 'Все линии',
+						en: 'All lines',
 					}),
-					description : new Label({
-						ru : 'показывает все построенные линии, в виде списка в порядке постройки',
-						en : 'shows all built lines as a list in the order of building',
-					}),
-				},
-				copy : {
-					title : new Label({
-						ru : 'Копировать',
-						en : 'Copy',
-					}),
-					description : new Label({
-						ru : '(Ctrl-C) копирует все построенные линии в буфер обмена',
-						en : '(Ctrl-C) copies all built lines into the clipboard',
+					description: new Label({
+						ru: 'включает/отключает показ реально существующих линий и регионов',
+						en: 'toggles currently existing lines and regions',
 					}),
 				},
-				paste : {
-					title : new Label({
-						ru : 'Вставить',
-						en : 'Paste',
+				builder: {
+					title: new Label({
+						ru: 'Конструктор',
+						en: 'Builder',
 					}),
-					description : new Label({
-						ru : '(Ctrl-V) вставляет ранее построенные линии из буфера обмена',
-						en : '(Ctrl-V) pastes previously built lines from the clipboard',
+					description: new Label({
+						ru: 'включает/отключает режим конструктора: нажатие на точку начинает новую линию, нажатие на другую точку - заканчивает линию',
+						en: 'toggles builder mode: click first point to start new line, click another point to finish the line',
 					}),
 				},
-				help : {
-					title : new Label({
-						ru : 'Помощь',
-						en : 'Help',
+				undo: {
+					title: new Label({
+						ru: 'Отменить',
+						en: 'Undo',
 					}),
-					description : new Label({
-						ru : 'показывает инструкции',
-						en : 'shows instructions',
+					description: new Label({
+						ru: 'стирает последнюю построенную линию/регион',
+						en: 'removes last built line/region',
+					}),
+				},
+				clear: {
+					title: new Label({
+						ru: 'Отменить всё',
+						en: 'Clear',
+					}),
+					description: new Label({
+						ru: 'стирает все построенные линии и регионы',
+						en: 'removes all build lines and regions',
+					}),
+				},
+				route: {
+					title: new Label({
+						ru: 'Маршрут',
+						en: 'Print route',
+					}),
+					description: new Label({
+						ru: 'показывает все построенные линии, в виде списка в порядке постройки',
+						en: 'shows all built lines as a list in the order of building',
+					}),
+				},
+				copy: {
+					title: new Label({
+						ru: 'Копировать',
+						en: 'Copy',
+					}),
+					description: new Label({
+						ru: '(Ctrl-C) копирует все построенные линии в буфер обмена',
+						en: '(Ctrl-C) copies all built lines into the clipboard',
+					}),
+				},
+				paste: {
+					title: new Label({
+						ru: 'Вставить',
+						en: 'Paste',
+					}),
+					description: new Label({
+						ru: '(Ctrl-V) вставляет ранее построенные линии из буфера обмена',
+						en: '(Ctrl-V) pastes previously built lines from the clipboard',
+					}),
+				},
+				help: {
+					title: new Label({
+						ru: 'Помощь',
+						en: 'Help',
+					}),
+					description: new Label({
+						ru: 'показывает инструкции',
+						en: 'shows instructions',
 					}),
 				},
 			},
-			messages : {
-				setHome : new Label({
-					ru : 'Всегда открывать SBG на текущем местоположении?',
-					en : 'Always open SBG using currently opened location?',
+			messages: {
+				setHome: new Label({
+					ru: 'Всегда открывать SBG на текущем местоположении?',
+					en: 'Always open SBG using currently opened location?',
 				}),
-				deleteHome : new Label({
-					ru : 'Забыть "домашнее местоположение" SBG?',
-					en : 'Forget "home location"?',
+				deleteHome: new Label({
+					ru: 'Забыть "домашнее местоположение" SBG?',
+					en: 'Forget "home location"?',
 				}),
-				copied : new Label({
-					ru : 'Данные скопированы в буфер обмена',
-					en : 'Data has been copied into the clipboard',
+				copied: new Label({
+					ru: 'Данные скопированы в буфер обмена',
+					en: 'Data has been copied into the clipboard',
 				}),
 			},
-			issues : {
-				title : new Label({
-					ru : 'Известные ограничения и проблемы',
-					en : 'Known limitations and problems',
+			issues: {
+				title: new Label({
+					ru: 'Известные ограничения и проблемы',
+					en: 'Known limitations and problems',
 				}),
-				list : [
+				list: [
 					new Label({
-						ru : 'Не всегда рисуется линия, потому что если при нажатии мышкой сдвинуть карту хоть на миллиметр - карта думает, что её двигают, а не кликают, и никак не реагирует',
-						en : 'Lines are not always being drawn, because clicking mouse button when moving map even one pixel ahead will make the map treat this click as a moving action and do not react as expected',
+						// eslint-disable-next-line @stylistic/max-len
+						ru: 'Не всегда рисуется линия, потому что если при нажатии мышкой сдвинуть карту хоть на миллиметр - карта думает, что её двигают, а не кликают, и никак не реагирует',
+						// eslint-disable-next-line @stylistic/max-len
+						en: 'Lines are not always being drawn, because clicking mouse button when moving map even one pixel ahead will make the map treat this click as a moving action and do not react as expected',
 					}),
 					new Label({
-						ru : 'Если два раза нажать на точку - она остаётся оранжевой, даже если закончить линию',
-						en : 'Point leaves orange when clicking twice, even when line has been finished',
+						ru: 'Если два раза нажать на точку - она остаётся оранжевой, даже если закончить линию',
+						en: 'Point leaves orange when clicking twice, even when line has been finished',
 					}),
 					new Label({
-						ru : 'Если нажать на точку, а потом подвинуть карту - она перестаёт быть оранжевой',
-						en : 'Orange point stops to be orange if move map',
+						ru: 'Если нажать на точку, а потом подвинуть карту - она перестаёт быть оранжевой',
+						en: 'Orange point stops to be orange if move map',
 					}),
 				],
 			},
-			help : {
-				title : new Label({
-					ru : 'Конструктор',
-					en : 'Builder',
+			help: {
+				title: new Label({
+					ru: 'Конструктор',
+					en: 'Builder',
 				}),
-				buttons : new Label({
-					ru : 'Кнопки',
-					en : 'Buttons',
+				buttons: new Label({
+					ru: 'Кнопки',
+					en: 'Buttons',
 				}),
 			},
-			validationErrors : {
-				json : new Label({
-					ru : 'Текст должен быть валидным JSON-объектом',
-					en : 'Text should be a valid JSON object',
+			validationErrors: {
+				json: new Label({
+					ru: 'Текст должен быть валидным JSON-объектом',
+					en: 'Text should be a valid JSON object',
 				}),
-				empty : new Label({
-					ru : 'Ничего нет',
-					en : 'Nothing found',
+				empty: new Label({
+					ru: 'Ничего нет',
+					en: 'Nothing found',
 				}),
-				object : new Label({
-					ru : 'Данные должны быть объектом',
-					en : 'Data should be an object',
+				object: new Label({
+					ru: 'Данные должны быть объектом',
+					en: 'Data should be an object',
 				}),
-				objectProperties : new Label({
-					ru : "Объект с данными должен содержать два объекта: 'points' и 'lines'",
-					en : "Data object should contain two objects: 'points' and 'lines'",
+				objectProperties: new Label({
+					ru: "Объект с данными должен содержать два объекта: 'points' и 'lines'",
+					en: "Data object should contain two objects: 'points' and 'lines'",
 				}),
-				pointProperties : new Label({
-					ru : "Каждый объект в 'points' должен содержать поля: 'guid' (string), 'title' (string) и 'coords' (object)",
-					en : "Each object in 'points' should contain properties: 'guid' (string), 'title' (string) and 'coords' (object)",
+				pointProperties: new Label({
+					ru: "Каждый объект в 'points' должен содержать поля: 'guid' (string), 'title' (string) и 'coords' (object)",
+					en: "Each object in 'points' should contain properties: 'guid' (string), 'title' (string) and 'coords' (object)",
 				}),
-				pointCoords : new Label({
-					ru : "Каждый объект в 'points' должен содержать массив 'coords', из двух координат типа (number)",
-					en : "Each object in 'points' should contain array 'coords' of two coordinates of type (number)",
+				pointCoords: new Label({
+					ru: "Каждый объект в 'points' должен содержать массив 'coords', из двух координат типа (number)",
+					en: "Each object in 'points' should contain array 'coords' of two coordinates of type (number)",
 				}),
-				lines : new Label({
-					ru : "Массив 'lines' должен состоять из массивов координат линий",
-					en : "Array 'lines' should contain arrays of line coordinates",
+				lines: new Label({
+					ru: "Массив 'lines' должен состоять из массивов координат линий",
+					en: "Array 'lines' should contain arrays of line coordinates",
 				}),
-				linesCoords : new Label({
-					ru : "Каждый массив в 'lines' должен состоять из двух массивов координат точек",
-					en : "Each array in 'lines' should contain two arrays of point coordinates",
+				linesCoords: new Label({
+					ru: "Каждый массив в 'lines' должен состоять из двух массивов координат точек",
+					en: "Each array in 'lines' should contain two arrays of point coordinates",
 				}),
-				unknownError : new Label({
-					ru : 'Причина ошибки неизвестна: ошибка произошла до определения возможных причин',
-					en : 'Error reason is unknown: the error ocurred before defining possible reasons',
+				unknownError: new Label({
+					ru: 'Причина ошибки неизвестна: ошибка произошла до определения возможных причин',
+					en: 'Error reason is unknown: the error occurred before defining possible reasons',
 				}),
 			},
 		},
@@ -1166,7 +1171,7 @@ type ApiProfileData = Record<string, number> & {
 
 	class Settings {
 		private readonly storageKey = 'sbg-plus-settings';
-		private readonly features : Map<string, boolean>;
+		private readonly features: Map<string, boolean>;
 
 		constructor() {
 			try {
@@ -1202,12 +1207,11 @@ type ApiProfileData = Record<string, number> & {
 		}
 
 		save(): void {
-			const json = {} as Record<string, unknown> & {
-				features : Record<string, boolean>;
+			const json = {
+				features: Object.fromEntries(this.features),
 			};
 
-			json.features = Object.fromEntries(this.features);
-			const str     = JSON.stringify(json);
+			const str = JSON.stringify(json);
 			localStorage.setItem(this.storageKey, str);
 		}
 	}
@@ -1216,24 +1220,40 @@ type ApiProfileData = Record<string, number> & {
 
 	console.log('created settings');
 
-	const featureGroupNames = [ 'scripts', 'base', 'cui', 'eui', 'animations', 'toolbar', 'fire', 'inventory', 'leaderboard', 'info', 'buttons', 'draw', 'other', 'custom', 'tests' ] as const;
+	const featureGroupNames = [
+		'scripts',
+		'base',
+		'cui',
+		'eui',
+		'animations',
+		'toolbar',
+		'fire',
+		'inventory',
+		'leaderboard',
+		'info',
+		'buttons',
+		'draw',
+		'other',
+		'custom',
+		'tests',
+	] as const;
 
 	const featureGroups: Record<typeof featureGroupNames[number], LabelValues> = {
-		scripts     : { ru : 'Скрипты', en : 'Scripts' },
-		base        : { ru : 'Основные настройки', en : 'Basic settings' },
-		cui         : { ru : 'Скрипт Николая', en : 'Nicko script' },
-		eui         : { ru : 'Скрипт Егора', en : 'Egor script' },
-		animations  : { ru : 'Анимации', en : 'Animations' },
-		toolbar     : { ru : 'Боковая панель', en : 'Toolbar' },
-		fire        : { ru : 'Атака', en : 'Fire' },
-		inventory   : { ru : 'Инвентарь', en : 'Inventory' },
-		leaderboard : { ru : 'Лидеры', en : 'Leaderboard' },
-		info        : { ru : 'Информация о точке', en : 'Point info' },
-		buttons     : { ru : 'Кнопки', en : 'Buttons' },
-		draw        : { ru : 'Рисование', en : 'Draw' },
-		other       : { ru : 'Прочие настройки', en : 'Other settings' },
-		custom      : { ru : 'Мои настройки', en : 'My settings' },
-		tests       : { ru : 'Тесты', en : 'Tests' },
+		scripts    : { ru: 'Скрипты', en: 'Scripts' },
+		base       : { ru: 'Основные настройки', en: 'Basic settings' },
+		cui        : { ru: 'Скрипт Николая', en: 'Nicko script' },
+		eui        : { ru: 'Скрипт Егора', en: 'Egor script' },
+		animations : { ru: 'Анимации', en: 'Animations' },
+		toolbar    : { ru: 'Боковая панель', en: 'Toolbar' },
+		fire       : { ru: 'Атака', en: 'Fire' },
+		inventory  : { ru: 'Инвентарь', en: 'Inventory' },
+		leaderboard: { ru: 'Лидеры', en: 'Leaderboard' },
+		info       : { ru: 'Информация о точке', en: 'Point info' },
+		buttons    : { ru: 'Кнопки', en: 'Buttons' },
+		draw       : { ru: 'Рисование', en: 'Draw' },
+		other      : { ru: 'Прочие настройки', en: 'Other settings' },
+		custom     : { ru: 'Мои настройки', en: 'My settings' },
+		tests      : { ru: 'Тесты', en: 'Tests' },
 	} as const;
 
 	const featureTriggers = [ '', 'pageLoad', 'cuiTransform', 'mapReady', 'fireClick' ] as const;
@@ -1242,46 +1262,46 @@ type ApiProfileData = Record<string, number> & {
 	type FeatureTrigger = typeof featureTriggers[number];
 
 	interface FeatureParent {
-		dependency : 'all' | 'any';
+		dependency: 'all' | 'any';
 	}
 
 	interface FeatureParents {
-		parent     : FeatureBase<never>;
-		dependency : 'all' | 'any';
+		parent: FeatureBase<never>;
+		dependency: 'all' | 'any';
 	}
 
 	interface FeatureOptions {
-		group      : FeatureGroup;
-		trigger    : FeatureTrigger;
-		broken?    : boolean;
-		public?    : boolean;
-		simple?    : boolean;
-		desktop?   : boolean;
-		unchecked? : boolean | (() => boolean);
-		parent?    : FeatureParent;
+		group: FeatureGroup;
+		trigger: FeatureTrigger;
+		broken?: boolean;
+		public?: boolean;
+		simple?: boolean;
+		desktop?: boolean;
+		unchecked?: boolean | (()=> boolean);
+		parent?: FeatureParent;
 	}
 
 	abstract class FeatureBase<TData> {
-		readonly kind              : 'feature' | 'transformer';
-		key                        : string;
-		label                      : Label;
-		group                      : FeatureGroup;
-		trigger                    : FeatureTrigger;
-		broken                     : boolean;
-		parent?                    : FeatureParent;
-		private readonly public    : boolean;
-		private readonly simple    : boolean;
-		private readonly desktop   : boolean;
-		private readonly unchecked : boolean | (() => boolean);
+		readonly kind: 'feature' | 'transformer';
+		key: string;
+		label: Label;
+		group: FeatureGroup;
+		trigger: FeatureTrigger;
+		broken: boolean;
+		parent?: FeatureParent;
+		private readonly public: boolean;
+		private readonly simple: boolean;
+		private readonly desktop: boolean;
+		private readonly unchecked: boolean | (()=> boolean);
 		private toggleValue = false;
 
-		abstract func: ((data: TData) => void);
+		abstract func: ((data: TData)=> void);
 
 		constructor(
 			kind: 'feature' | 'transformer',
 			key: string,
 			labelValues: LabelValues,
-			options : FeatureOptions,
+			options: FeatureOptions,
 		) {
 			this.kind  = kind;
 			this.key   = key;
@@ -1344,7 +1364,7 @@ type ApiProfileData = Record<string, number> & {
 				document.body.removeAttribute(attributeKey);
 			}
 
-			features.emit('toggle', { feature : this, value }, {});
+			features.emit('toggle', { feature: this, value }, {});
 			return value;
 		}
 
@@ -1377,14 +1397,14 @@ type ApiProfileData = Record<string, number> & {
 	}
 
 	class Feature<TRequiredElement = never> extends FeatureBase<TRequiredElement | undefined> {
-		override func              : (el: TRequiredElement | undefined) => void;
-		private readonly requires? : () => TRequiredElement | undefined;
+		override func: (el: TRequiredElement | undefined)=> void;
+		private readonly requires?: ()=> TRequiredElement | undefined;
 
 		constructor(
-			func: (required: TRequiredElement) => void,
+			func: (required: TRequiredElement)=> void,
 			labelValues: LabelValues,
-			options : FeatureOptions & {
-				requires? : () => TRequiredElement | undefined;
+			options: FeatureOptions & {
+				requires?: ()=> TRequiredElement | undefined;
 			},
 		) {
 			const wrapper = (): void => {
@@ -1411,19 +1431,19 @@ type ApiProfileData = Record<string, number> & {
 				return required;
 			}
 
-			return {} as TRequiredElement;
+			return undefined;
 		}
 	}
 
 	window.Feature = Feature;
 
 	class Transformer extends FeatureBase<Script> {
-		func : (script: Script) => void;
+		func: (script: Script)=> void;
 
 		constructor(
-			func: (script: Script) => void,
+			func: (script: Script)=> void,
 			labelValues: LabelValues,
-			options : FeatureOptions,
+			options: FeatureOptions,
 		) {
 			super('transformer', func.name, labelValues, options);
 			this.func = func;
@@ -1445,9 +1465,9 @@ type ApiProfileData = Record<string, number> & {
 	] as const;
 
 	interface FeaturesEventDataTypes {
-		add     : FeatureBase<never>;
-		inherit : { feature : FeatureBase<never>; value : boolean };
-		toggle  : { feature : FeatureBase<never>; value : boolean };
+		add: FeatureBase<never>;
+		inherit: { feature: FeatureBase<never>; value: boolean };
+		toggle: { feature: FeatureBase<never>; value: boolean };
 	}
 
 	class Features extends EventWatcher<
@@ -1456,8 +1476,8 @@ type ApiProfileData = Record<string, number> & {
 		EventWatcherListenerOptions
 	> {
 		keys = {} as Record<string, FeatureBase<never>>;
-		groups = {} as Record<FeatureGroup, FeatureBase<never>[]>;
-		triggers = {} as Record<FeatureTrigger, FeatureBase<never>[]>;
+		groups = {} as Record<FeatureGroup, FeatureBase<never>[]>; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+		triggers = {} as Record<FeatureTrigger, FeatureBase<never>[]>; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
 		parents = {} as Partial<Record<FeatureGroup, FeatureParents>>;
 
 		constructor() {
@@ -1466,20 +1486,19 @@ type ApiProfileData = Record<string, number> & {
 			featureTriggers.map((key) => this.triggers[key] = []);
 		}
 
-		// eslint-disable-next-line @typescript-eslint/ban-types -- allow any functions to be passed to get according features
 		get(func: Function): FeatureBase<never> | undefined {
 			return this.keys[func.name];
 		}
 
-		add(feature : FeaturesEventDataTypes['add'], { parent } : FeatureOptions): void {
+		add(feature: FeaturesEventDataTypes['add'], { parent }: FeatureOptions): void {
 			this.keys[feature.key] = feature;
 			this.groups[feature.group].push(feature);
 			this.triggers[feature.trigger].push(feature);
 
 			if (parent) {
 				this.parents[feature.group] = {
-					parent     : feature,
-					dependency : parent.dependency,
+					parent    : feature,
+					dependency: parent.dependency,
 				};
 			}
 
@@ -1491,11 +1510,11 @@ type ApiProfileData = Record<string, number> & {
 				const children = this.getChildren(parent);
 
 				if (dependency === 'all' && parent.isExplicitlyEnabled()) {
-					children.forEach((child) => this.emit('inherit', { feature : child, value : true }, {}));
+					children.forEach((child) => this.emit('inherit', { feature: child, value: true }, {}));
 				}
 
 				if (dependency === 'any' && !parent.isExplicitlyEnabled() && children.filter((child) => child.isEnabled()).length > 0) {
-					this.emit('inherit', { feature : parent, value : true }, {});
+					this.emit('inherit', { feature: parent, value: true }, {});
 				}
 			});
 		}
@@ -1515,13 +1534,13 @@ type ApiProfileData = Record<string, number> & {
 				const children = this.getChildren(parent);
 
 				if (value === !parent.isEnabled() && (dependency === 'any' === value || children.filter((child) => child.isEnabled() !== value).length === 0)) {
-					this.emit('inherit', { feature : parent, value }, {});
+					this.emit('inherit', { feature: parent, value }, {});
 				}
 			} else {
 				const children = this.getChildren(feature);
 
 				if (dependency === 'all' === value) {
-					children.forEach((child) =>  this.emit('inherit', { feature : child, value }, {}));
+					children.forEach((child) =>  this.emit('inherit', { feature: child, value }, {}));
 				}
 			}
 		}
@@ -1549,268 +1568,271 @@ type ApiProfileData = Record<string, number> & {
 		}
 	}
 
-	const features          = new Features();
-	let group: FeatureGroup = 'base';
+	const features = new Features();
+	let group: FeatureGroup;
 
 	group = 'scripts';
 
 	new Feature(loadCUI,
-		{ ru : 'Скрипт Николая', en : 'Nicko script' },
-		{ public : true, simple : true, group, trigger : '' });
+		{ ru: 'Скрипт Николая', en: 'Nicko script' },
+		{ public: true, simple: true, group, trigger: '' });
 
 	new Feature(loadEUI,
-		{ ru : 'Скрипт Егора', en : 'Egor script' },
-		{ public : true, simple : true, group, trigger : 'mapReady', desktop : true });
+		{ ru: 'Скрипт Егора', en: 'Egor script' },
+		{ public: true, simple: true, group, trigger: 'mapReady', desktop: true });
 
 	new Feature(showBuilderPanel,
-		{ ru : 'Конструктор (draw tools)', en : 'Builder (draw tools)' },
-		{ public : true, simple : true, group, trigger : 'mapReady', desktop : true });
+		{ ru: 'Конструктор (draw tools)', en: 'Builder (draw tools)' },
+		{ public: true, simple: true, group, trigger: 'mapReady', desktop: true });
 
 	new Feature(showFeatureToggles,
-		{ ru : 'Показать кнопки для быстрого переключения между фичами', en : 'Show buttons for quick toggling features' },
-		{ group, trigger : 'mapReady' });
+		{ ru: 'Показать кнопки для быстрого переключения между фичами', en: 'Show buttons for quick toggling features' },
+		{ group, trigger: 'mapReady' });
 
 	group = 'base';
 
 	new Feature(enableBackButton,
-		{ ru : 'Разрешить кнопку Back', en : 'Enable back button' },
-		{ public : true, group, trigger : 'mapReady' });
+		{ ru: 'Разрешить кнопку Back', en: 'Enable back button' },
+		{ public: true, group, trigger: 'mapReady' });
 
 	new Feature(updateLangCacheAutomatically,
-		{ ru : 'Автоматически обновлять кэш языка', en : 'Update language cache automatically' },
-		{ public : true, group, trigger : 'mapReady', desktop : true });
+		{ ru: 'Автоматически обновлять кэш языка', en: 'Update language cache automatically' },
+		{ public: true, group, trigger: 'mapReady', desktop: true });
 
 	new Feature(fixBlurryBackground,
-		{ ru : 'Размывать фон за полупрозрачными окнами', en : 'Fix blurry background in popups' },
-		{ public : true, group, trigger : 'mapReady', desktop : true });
+		{ ru: 'Размывать фон за полупрозрачными окнами', en: 'Fix blurry background in popups' },
+		{ public: true, group, trigger: 'mapReady', desktop: true });
 
 	new Feature(alignSettingsButtonsVertically,
-		{ ru : 'Выровнять кнопки настроек по ширине', en : 'Align settings buttons vertically' },
-		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => $('.settings') });
+		{ ru: 'Выровнять кнопки настроек по ширине', en: 'Align settings buttons vertically' },
+		{ public: true, group, trigger: 'mapReady', desktop: true, requires: () => $('.settings') });
 
 	new Feature(fixCompass,
-		{ ru : 'Починить компас', en : 'Fix compass' },
-		{ public : true, group, trigger : 'mapReady' });
+		{ ru: 'Починить компас', en: 'Fix compass' },
+		{ public: true, group, trigger: 'mapReady' });
 
 	new Feature(showLevelUpCongratulations,
-		{ ru : 'Показывать поздравления с новым уровнем', en : 'Show level-up congratulations' },
-		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => window.__sbg_variable_self_data });
+		{ ru: 'Показывать поздравления с новым уровнем', en: 'Show level-up congratulations' },
+		{ public: true, group, trigger: 'mapReady', desktop: true, requires: () => window.__sbg_variable_self_data });
 
 	new Feature(hideInventoryLimit,
-		{ ru : 'Не показывать лимит инвентаря', en : 'Hide inventory limit' },
-		{ public : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('#self-info__inv') });
+		{ ru: 'Не показывать лимит инвентаря', en: 'Hide inventory limit' },
+		{ public: true, group, trigger: 'mapReady', unchecked: true, requires: () => $('#self-info__inv') });
 
 	new Feature(disableCopyingLogsWithThreeFingers,
-		{ ru : 'Отключить копирование логов тремя пальцами', en : 'Disable copying logs with three fingers' },
-		{ public : true, group, trigger : 'mapReady', unchecked : true });
+		{ ru: 'Отключить копирование логов тремя пальцами', en: 'Disable copying logs with three fingers' },
+		{ public: true, group, trigger: 'mapReady', unchecked: true });
 
 	group = 'cui';
 
 	new Transformer(disableClusters,
-		{ ru : 'Отключить ромашку', en : 'Disable clusters' },
-		{ public : true, simple : true, group, trigger : 'cuiTransform' });
+		{ ru: 'Отключить ромашку', en: 'Disable clusters' },
+		{ public: true, simple: true, group, trigger: 'cuiTransform' });
 
 	new Transformer(disableAttackZoom,
-		{ ru : 'Отключить изменение зума при атаке', en : 'Disable changing zoom when attack' },
-		{ public : true, simple : true, group, trigger : 'cuiTransform' });
+		{ ru: 'Отключить изменение зума при атаке', en: 'Disable changing zoom when attack' },
+		{ public: true, simple: true, group, trigger: 'cuiTransform' });
 
 	new Transformer(unlockCompassWhenRotateMap,
-		{ ru : 'Разблокировать компас при вращении карты', en : 'Unlock compass when rotate map' },
-		{ public : true, group, trigger : 'cuiTransform' });
+		{ ru: 'Разблокировать компас при вращении карты', en: 'Unlock compass when rotate map' },
+		{ public: true, group, trigger: 'cuiTransform' });
 
 	new Feature(fixSortButton,
-		{ ru : 'Исправить расположение кнопки сортировки', en : 'Fix sort button z-index' },
-		{ public : true, group, trigger : 'mapReady', requires : () => $('.sbgcui_refs-sort-button') });
+		{ ru: 'Исправить расположение кнопки сортировки', en: 'Fix sort button z-index' },
+		{ public: true, group, trigger: 'mapReady', requires: () => $('.sbgcui_refs-sort-button') });
 
 	new Feature(reportCUIUpdates,
-		{ ru : 'Сообщать об обновлениях скрипта', en : 'Report script updates' },
-		{ public : true, group, trigger : 'mapReady', unchecked : true });
+		{ ru: 'Сообщать об обновлениях скрипта', en: 'Report script updates' },
+		{ public: true, group, trigger: 'mapReady', unchecked: true });
 
 	new Feature(moveDestroyNotificationsToTop,
-		{ ru : 'Переместить оповещения об атаке наверх', en : 'Move destroy notifications to top' },
-		{ public : true, group, trigger : 'mapReady', unchecked : () => !features.get(loadEUI)?.isEnabled() });
+		{ ru: 'Переместить оповещения об атаке наверх', en: 'Move destroy notifications to top' },
+		{ public: true, group, trigger: 'mapReady', unchecked: () => !features.get(loadEUI)?.isEnabled() });
 
 	new Feature(enableConsoleDebuggingOfDatabase,
-		{ ru : 'Включить отладку базы данных в консоли', en : 'Enable console debugging of database' },
-		{ public : true, group, trigger : 'cuiTransform', unchecked : true });
+		{ ru: 'Включить отладку базы данных в консоли', en: 'Enable console debugging of database' },
+		{ public: true, group, trigger: 'cuiTransform', unchecked: true });
 
 	new Feature(restoreOPSButtonHeightInIngressTheme,
-		{ ru : 'Восстановить высоту кнопки ОПРЦ в теме Ingress', en : 'Restore OPS button height in Ingress theme' },
-		{ public : true, group, trigger : 'mapReady' });
+		{ ru: 'Восстановить высоту кнопки ОПРЦ в теме Ingress', en: 'Restore OPS button height in Ingress theme' },
+		{ public: true, group, trigger: 'mapReady' });
 
 	group = 'eui';
 
 	new Feature(centerIconsInGraphicalButtons,
-		{ ru : 'Центрировать значки графических кнопок', en : 'Center icons in graphical buttons' },
-		{ public : true, group, trigger : 'mapReady' });
+		{ ru: 'Центрировать значки графических кнопок', en: 'Center icons in graphical buttons' },
+		{ public: true, group, trigger: 'mapReady' });
 
 	new Feature(showReloadButtonInCompactMode,
-		{ ru : 'Показать кнопку перезагрузки в компактном режиме', en : 'Show reload button in compact mode' },
-		{ public : true, group, trigger : 'mapReady' });
+		{ ru: 'Показать кнопку перезагрузки в компактном режиме', en: 'Show reload button in compact mode' },
+		{ public: true, group, trigger: 'mapReady' });
 
 	new Feature(useTeamColorForButtonsInIngressTheme,
-		{ ru : 'Использовать цвет команды для кнопок в теме Ingress', en : 'Use team color for buttons in Ingress theme' },
-		{ public : true, group, trigger : 'mapReady', unchecked : true });
+		{ ru: 'Использовать цвет команды для кнопок в теме Ingress', en: 'Use team color for buttons in Ingress theme' },
+		{ public: true, group, trigger: 'mapReady', unchecked: true });
 
 	group = 'animations';
 
 	new Feature(disableCarouselAnimation,
-		{ ru : 'Отключить анимацию карусели', en : 'Disable carousel animations' },
-		{ public : true, group, trigger : 'pageLoad', requires : () => window.Splide });
+		{ ru: 'Отключить анимацию карусели', en: 'Disable carousel animations' },
+		{ public: true, group, trigger: 'pageLoad', requires: () => window.Splide });
 
 	new Feature(disablePopupAnimation,
-		{ ru : 'Отключить анимацию открытия и закрытия окон', en : 'Disable open/close windows animation' },
-		{ public : true, group, trigger : 'pageLoad', requires : () => $('.popup') });
+		{ ru: 'Отключить анимацию открытия и закрытия окон', en: 'Disable open/close windows animation' },
+		{ public: true, group, trigger: 'pageLoad', requires: () => $('.popup') });
 
 	new Feature(disableMapAnimation,
-		{ ru : 'Отключить анимацию карты', en : 'Disable map animation' },
-		{ public : true, group, trigger : 'pageLoad' });
+		{ ru: 'Отключить анимацию карты', en: 'Disable map animation' },
+		{ public: true, group, trigger: 'pageLoad' });
 
 	new Feature(disableAttackButtonAnimation,
-		{ ru : 'Отключить анимацию кнопки атаки', en : 'Disable attack button animation' },
-		{ public : true, group, trigger : 'pageLoad', requires : () => $('#attack-menu') });
+		{ ru: 'Отключить анимацию кнопки атаки', en: 'Disable attack button animation' },
+		{ public: true, group, trigger: 'pageLoad', requires: () => $('#attack-menu') });
 
 	new Feature(closeToastsAfter1sec,
-		{ ru : 'Закрывать всплывающие сообщения через 1 секунду', en : 'Close toasts after 1 second' },
-		{ public : true, group, trigger : 'pageLoad', requires : () => window.Toastify });
+		{ ru: 'Закрывать всплывающие сообщения через 1 секунду', en: 'Close toasts after 1 second' },
+		{ public: true, group, trigger: 'pageLoad', requires: () => window.Toastify });
 
 	new Feature(disableAllAnimations,
-		{ ru : 'Отключить все анимации', en : 'Disable all animations' },
-		{ public : true, simple : true, group, trigger : 'pageLoad', parent : { dependency : 'all' } });
+		{ ru: 'Отключить все анимации', en: 'Disable all animations' },
+		{ public: true, simple: true, group, trigger: 'pageLoad', parent: { dependency: 'all' } });
 
 	group = 'toolbar';
 
 	new Feature(showQuickAutoSelectButton,
-		{ ru : 'Показать кнопку для быстрого переключения автовыбора коров', en : 'Show button for quick change auto-select settings' },
-		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_toolbar') });
+		{ ru: 'Показать кнопку для быстрого переключения автовыбора коров', en: 'Show button for quick change auto-select settings' },
+		{ group, trigger: 'mapReady', requires: () => $('.sbgcui_toolbar') });
 
 	new Feature(moveAllSidebarsRight,
-		{ ru : 'Показывать все боковые панели справа', en : 'Move all sidebars to the right' },
-		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_toolbar-control') });
+		{ ru: 'Показывать все боковые панели справа', en: 'Move all sidebars to the right' },
+		{ group, trigger: 'mapReady', requires: () => $('.sbgcui_toolbar-control') });
 
 	new Feature(hideCUIToolbarToggleButton,
-		{ ru : 'Скрыть кнопку закрытия панели скрипта Николая', en : 'Hide CUI toolbar toggle button' },
-		{ public : true, group, trigger : 'mapReady', requires : () => $('.sbgcui_toolbar') });
+		{ ru: 'Скрыть кнопку закрытия панели скрипта Николая', en: 'Hide CUI toolbar toggle button' },
+		{ public: true, group, trigger: 'mapReady', requires: () => $('.sbgcui_toolbar') });
 
 	group = 'fire';
 
 	new Feature(alwaysCenterAlignFireItemsCount,
-		{ ru : 'Всегда выравнивать количество предметов по центру', en : 'Always center align items count' },
-		{ group, trigger : 'fireClick', requires : () => $('#attack-slider') });
+		{ ru: 'Всегда выравнивать количество предметов по центру', en: 'Always center align items count' },
+		{ group, trigger: 'fireClick', requires: () => $('#attack-slider') });
 
 	new Feature(replaceHighlevelWarningWithIcon,
-		{ ru : 'Заменить предупреждение про недостаточный уровень на значок поверх предмета', en : 'Replace highlevel warning with an icon on top of the item' },
-		{ group, trigger : 'fireClick' });
+		{ ru: 'Заменить предупреждение про недостаточный уровень на значок поверх предмета', en: 'Replace highlevel warning with an icon on top of the item' },
+		{ group, trigger: 'fireClick' });
 
 	new Feature(joinFireButtons,
-		{ ru : 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en : 'Join attack button and attack panel button, close panel by clicking outside' },
-		{ group, trigger : 'fireClick', requires : () => $('#attack-menu') });
+		// eslint-disable-next-line @stylistic/max-len
+		{ ru: 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en: 'Join attack button and attack panel button, close panel by clicking outside' },
+		{ group, trigger: 'fireClick', requires: () => $('#attack-menu') });
 
 	group = 'inventory';
 
 	new Feature(increaseItemsFont,
-		{ ru : 'Увеличить размер шрифта за счёт сокращения названий предметов', en : 'Increase font size by shortening item names' },
-		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ ru: 'Увеличить размер шрифта за счёт сокращения названий предметов', en: 'Increase font size by shortening item names' },
+		{ group, trigger: 'mapReady', requires: () => $('.info.popup') });
 
 	new Feature(showAutoDeleteSettingsButton,
-		{ ru : 'Показать кнопку перехода к настройкам авто-удаления', en : 'Show auto-delete settings button' },
-		{ group, trigger : 'mapReady', requires : () => $('.inventory.popup') });
+		{ ru: 'Показать кнопку перехода к настройкам авто-удаления', en: 'Show auto-delete settings button' },
+		{ group, trigger: 'mapReady', requires: () => $('.inventory.popup') });
 
 	new Feature(restoreCUISort,
-		{ ru : 'Заменить сортировку Егора на сортировку Николая', en : 'Replace Egor sort with Nicko sort' },
-		{ public : true, simple : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('.inventory__content') });
+		{ ru: 'Заменить сортировку Егора на сортировку Николая', en: 'Replace Egor sort with Nicko sort' },
+		{ public: true, simple: true, group, trigger: 'mapReady', unchecked: true, requires: () => $('.inventory__content') });
 
 	new Feature(moveReferenceButtonsDown,
-		{ ru : 'Сдвинуть ниже кнопки направления сортировки и закрытия', en : 'Move down sort direction button and close button' },
-		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ ru: 'Сдвинуть ниже кнопки направления сортировки и закрытия', en: 'Move down sort direction button and close button' },
+		{ group, trigger: 'mapReady', requires: () => $('.inventory__content') });
 
 	new Feature(hideManualClearButtons,
-		{ ru : 'Спрятать кнопки ручного удаления предметов', en : 'Hide manual clear buttons' },
-		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ ru: 'Спрятать кнопки ручного удаления предметов', en: 'Hide manual clear buttons' },
+		{ group, trigger: 'mapReady', requires: () => $('.inventory__content') });
 
 	new Feature(quickRecycleAllRefs,
-		{ ru : 'Удалять все имеющиеся рефы от точки при нажатии кнопки удаления', en : 'Recycle all existing refs of the point by clicking recycle button' },
-		{ group, trigger : 'mapReady', requires : () => $('.inventory__content') });
+		{ ru: 'Удалять все имеющиеся рефы от точки при нажатии кнопки удаления', en: 'Recycle all existing refs of the point by clicking recycle button' },
+		{ group, trigger: 'mapReady', requires: () => $('.inventory__content') });
 
 	new Feature(shrinkRefsListUntilMinimumNeededLength,
-		{ ru : 'Уменьшать ширину списка рефов до минимально необходимого', en : 'Shrink refs list until minimum needed width' },
-		{ public : true, group, trigger : 'mapReady', desktop : true, requires : () => $('.inventory__content') });
+		{ ru: 'Уменьшать ширину списка рефов до минимально необходимого', en: 'Shrink refs list until minimum needed width' },
+		{ public: true, group, trigger: 'mapReady', desktop: true, requires: () => $('.inventory__content') });
 
 	group = 'leaderboard';
 
 	new Feature(alwaysShowSelfStatistics,
-		{ ru : 'Всегда показывать собственную статистику', en : 'Always show self statistics' },
-		{ group, trigger : 'mapReady', requires : () => window.__sbg_function_drawLeaderboard, desktop : true });
+		{ ru: 'Всегда показывать собственную статистику', en: 'Always show self statistics' },
+		{ group, trigger: 'mapReady', requires: () => window.__sbg_function_drawLeaderboard, desktop: true });
 
 	group = 'info';
 
 	new Feature(makeInfoPopupSemiTransparent,
-		{ ru : 'Сделать окно точки полупрозрачным', en : 'Make info popup semi-transparent' },
-		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ ru: 'Сделать окно точки полупрозрачным', en: 'Make info popup semi-transparent' },
+		{ group, trigger: 'mapReady', requires: () => $('.info.popup') });
 
 	new Feature(alwaysShowSecondsForCoolDowns,
-		{ ru : 'Всегда показывать отсчёт в секундах для кулдауна', en : 'Always show seconds for cooldowns' },
-		{ group, trigger : 'mapReady', requires : () => $('#discover') });
+		{ ru: 'Всегда показывать отсчёт в секундах для кулдауна', en: 'Always show seconds for cooldowns' },
+		{ group, trigger: 'mapReady', requires: () => $('#discover') });
 
 	new Feature(enlargeCoreSlots,
-		{ ru : 'Увеличить размер коров', en : 'Enlarge core slots' },
-		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ ru: 'Увеличить размер коров', en: 'Enlarge core slots' },
+		{ group, trigger: 'mapReady', requires: () => $('.info.popup') });
 
 	group = 'buttons';
 
 	new Feature(arrangeButtons,
-		{ ru : 'Привести в порядок кнопки', en : 'Arrange buttons' },
-		{ group, trigger : 'mapReady', parent : { dependency : 'any' } });
+		{ ru: 'Привести в порядок кнопки', en: 'Arrange buttons' },
+		{ group, trigger: 'mapReady', parent: { dependency: 'any' } });
 
 	new Feature(colorizeTimer,
-		{ ru : 'Менять цвет таймера в зависимости от количества оставшихся дискаверов', en : 'Change color of timer depending on remaining discovers' },
-		{ group, trigger : 'mapReady', requires : () => $('#discover') });
+		{ ru: 'Менять цвет таймера в зависимости от количества оставшихся дискаверов', en: 'Change color of timer depending on remaining discovers' },
+		{ group, trigger: 'mapReady', requires: () => $('#discover') });
 
 	new Feature(replaceSwipeWithButton,
-		{ ru : 'Показать кнопку для переключения между точками', en : 'Show button to swipe between points' },
-		{ group, trigger : 'mapReady', requires : () => $('.sbgcui_swipe-cards-arrow') });
+		{ ru: 'Показать кнопку для переключения между точками', en: 'Show button to swipe between points' },
+		{ group, trigger: 'mapReady', requires: () => $('.sbgcui_swipe-cards-arrow') });
 
 	new Feature(hideCloseButton,
-		{ ru : 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en : 'Hide close button, close only by pressing Back' },
-		{ group, trigger : 'mapReady', requires : () => $('.popup-close, #inventory__close') });
+		{ ru: 'Спрятать кнопку закрытия, закрывать только по нажатию Back', en: 'Hide close button, close only by pressing Back' },
+		{ group, trigger: 'mapReady', requires: () => $('.popup-close, #inventory__close') });
 
 	new Feature(hideRepairButton,
-		{ ru : 'Спрятать кнопку зарядки', en : 'Hide repair button' },
-		{ group, trigger : 'mapReady', requires : () => $('.info.popup') });
+		{ ru: 'Спрятать кнопку зарядки', en: 'Hide repair button' },
+		{ group, trigger: 'mapReady', requires: () => $('.info.popup') });
 
 	group = 'draw';
 
 	new Feature(selectTargetPointByClick,
-		{ ru : 'Разрешить выбирать конечную точку кликом по ней', en : 'Allow select target point by clicking it' },
-		{ group, trigger : 'mapReady', requires : () => window.__sbg_function_showInfo });
+		{ ru: 'Разрешить выбирать конечную точку кликом по ней', en: 'Allow select target point by clicking it' },
+		{ group, trigger: 'mapReady', requires: () => window.__sbg_function_showInfo });
 
 	new Feature(highlightSelectedTargetPoint,
-		{ ru : 'Подсвечивать выбранную конечную точку', en : 'Highlight selected target point' },
-		{ group, trigger : 'mapReady', requires : () => window.__sbg_variable_map });
+		{ ru: 'Подсвечивать выбранную конечную точку', en: 'Highlight selected target point' },
+		{ group, trigger: 'mapReady', requires: () => window.__sbg_variable_map });
 
 	new Feature(matchDrawSliderButtons,
-		{ ru : 'Расположить кнопку рисования ровно под кнопкой карусели рисования', en : 'Place draw button exactly under draw carousel button' },
-		{ group, trigger : 'mapReady', requires : () => $('.draw-slider-wrp') });
+		{ ru: 'Расположить кнопку рисования ровно под кнопкой карусели рисования', en: 'Place draw button exactly under draw carousel button' },
+		{ group, trigger: 'mapReady', requires: () => $('.draw-slider-wrp') });
 
 	group = 'other';
 
 	new Feature(enableOldWebViewCompatibility,
-		{ ru : 'Включить совместимость со старыми webview', en : 'Enable old web view compatibility' },
-		{ public : true, group, trigger : 'mapReady', unchecked : true, requires : () => $('.popup.pp-center') });
+		{ ru: 'Включить совместимость со старыми webview', en: 'Enable old web view compatibility' },
+		{ public: true, group, trigger: 'mapReady', unchecked: true, requires: () => $('.popup.pp-center') });
 
 	group = 'tests';
 
 	new Feature(testNotifications,
-		{ ru : 'Тестовые нотификации', en : 'Test notifications' },
-		{ group, trigger : 'mapReady', unchecked : true });
+		{ ru: 'Тестовые нотификации', en: 'Test notifications' },
+		{ group, trigger: 'mapReady', unchecked: true });
 
 	settings.cleanupFeatures();
 
 	const presetTypes = [ 'allscripts', 'browser', 'egorscript', 'full', 'nicoscript' ] as const;
 	type Presets = typeof presetTypes[number];
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const presets = {} as Record<Presets, FeatureBase<never>[]>;
 
 	function isPreset(preset: unknown): preset is Presets {
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		return presetTypes.includes(preset as Presets);
 	}
 
@@ -1834,19 +1856,19 @@ type ApiProfileData = Record<string, number> & {
 
 	presets.browser = window.innerWidth < 800
 		? [
-			...presets.nicoscript,
-			...presets.egorscript,
-		]
+				...presets.nicoscript,
+				...presets.egorscript,
+			]
 		: [
-			...presets.egorscript,
-			features.get(showBuilderPanel)!,
-			features.get(shrinkRefsListUntilMinimumNeededLength)!,
-		];
+				...presets.egorscript,
+				features.get(showBuilderPanel)!,
+				features.get(shrinkRefsListUntilMinimumNeededLength)!,
+			];
 
 	presets.full = [];
 
 	const protectedFeatures: Record<string, Array<FeatureBase<never>>> = {
-		'MadMaxNsK' : [ features.get(joinFireButtons)! ],
+		'MadMaxNsK': [ features.get(joinFireButtons)! ],
 	};
 
 	features.inheritAll();
@@ -1854,7 +1876,7 @@ type ApiProfileData = Record<string, number> & {
 	console.log('created features');
 
 	class Layers {
-		private readonly layers : Map<LayerName, OlLayer>;
+		private readonly layers: Map<LayerName, OlLayer>;
 
 		constructor() {
 			this.layers = new Map();
@@ -1885,16 +1907,16 @@ type ApiProfileData = Record<string, number> & {
 
 	type ScriptReplacer<TSearchValue extends RegExp | string> = TSearchValue extends string
 		? string
-		: (string | ((substring: string, ...args: string[]) => string));
+		: (string | ((substring: string, ...args: string[])=> string));
 
 	class Script {
 		constructor(private data: string | undefined) {}
 
 		static async create({ src, prefix, transformer, data }: {
-			src         : string;
-			data?       : string;
-			prefix      : `__sbg_${string}`;
-			transformer : (script: Script) => void;
+			src: string;
+			data?: string;
+			prefix: `__sbg_${string}`;
+			transformer: (script: Script)=> void;
 		}): Promise<Script> {
 			if (!data) {
 				console.log('load script: started');
@@ -1932,7 +1954,7 @@ type ApiProfileData = Record<string, number> & {
 			data: string | undefined,
 			searchValue: TSearchValue,
 			replacer: ScriptReplacer<TSearchValue>,
-			options?: TSearchValue extends string ? { global : boolean } : never,
+			options?: TSearchValue extends string ? { global: boolean } : never,
 		): typeof data {
 			if (typeof data === 'undefined') {
 				console.error(`replace ${searchValue.toString()}: data is undefined`);
@@ -1956,7 +1978,7 @@ type ApiProfileData = Record<string, number> & {
 			return data;
 		}
 
-		private static append(fill: (el: HTMLScriptElement) => void): void {
+		private static append(fill: (el: HTMLScriptElement)=> void): void {
 			const el = document.createElement('script');
 			el.type  = 'text/javascript';
 			fill(el);
@@ -1973,7 +1995,7 @@ type ApiProfileData = Record<string, number> & {
 		}
 
 		replaceAll(searchValue: string, replacement: string): this {
-			this.data = Script.replaceData(this.data, searchValue, replacement, { global : true });
+			this.data = Script.replaceData(this.data, searchValue, replacement, { global: true });
 			return this;
 		}
 
@@ -1996,14 +2018,14 @@ type ApiProfileData = Record<string, number> & {
 			return this.replaceCUIBlock(block, /[\s\S]+/, '');
 		}
 
-		transform(func: (script: Script) => void): void {
+		transform(func: (script: Script)=> void): void {
 			console.log(`transform: ${func.name}`);
 			func(this);
 		}
 
 		expose(prefix: `__sbg${string}`, { variables, functions }: {
-			variables? : { readable? : string[]; writable? : string[] };
-			functions? : { readable? : string[]; writable? : string[]; disabled? : string[] };
+			variables?: { readable?: string[]; writable?: string[] };
+			functions?: { readable?: string[]; writable?: string[]; disabled?: string[] };
 		}): this {
 			if (!this.data) {
 				console.error('expose: data is undefined');
@@ -2069,8 +2091,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	const versionWatcherEventTypes = [ 'init', 'update' ] as const;
 
 	interface VersionWatcherEventDataTypes {
-		init   : { currentVersion : string };
-		update : { previousVersion : string; currentVersion : string };
+		init: { currentVersion: string };
+		update: { previousVersion: string; currentVersion: string };
 	}
 
 	class VersionWatcher extends EventWatcher<
@@ -2080,7 +2102,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	> {
 		constructor(
 			private readonly storageKey: string,
-			private readonly getter: () => ReadableVariable<string> | undefined,
+			private readonly getter: ()=> ReadableVariable<string> | undefined,
 		) {
 			super(versionWatcherEventTypes);
 		}
@@ -2116,8 +2138,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	const versionWatchers: Record<'cui' | 'native', VersionWatcher> = {
-		native : new VersionWatcher('__sbg_version_native', () => window.__sbg_variable_VERSION),
-		cui    : new VersionWatcher('__sbg_version_cui', () => window.__sbg_cui_variable_USERSCRIPT_VERSION),
+		native: new VersionWatcher('__sbg_version_native', () => window.__sbg_variable_VERSION),
+		cui   : new VersionWatcher('__sbg_version_cui', () => window.__sbg_cui_variable_USERSCRIPT_VERSION),
 	};
 
 	console.log('created version watchers');
@@ -2125,16 +2147,16 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	const localStorageWatcherEventTypes = [ 'getItem', 'setItem', 'removeItem' ] as const;
 
 	interface LocalStorageWatcherEventOptions {
-		key  : string;
-		when : 'after' | 'before';
+		key: string;
+		when: 'after' | 'before';
 	}
 
 	type LocalStorageWatcherListenerOptions = EventWatcherListenerOptions & LocalStorageWatcherEventOptions;
 
 	interface LocalStorageWatcherEventDataTypes {
-		getItem    : { key : string };
-		setItem    : { key : string; value : string };
-		removeItem : { key : string };
+		getItem: { key: string };
+		setItem: { key: string; value: string };
+		removeItem: { key: string };
 	}
 
 	class LocalStorageWatcher extends EventWatcher<
@@ -2150,9 +2172,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		protected override watch(): void {
 			((originalMethod) => {
 				localStorage.getItem = (key: string) => {
-					this.emit('getItem', { key }, { key, when : 'before' });
+					this.emit('getItem', { key }, { key, when: 'before' });
 					const result = originalMethod.call(localStorage, key);
-					this.emit('getItem', { key }, { key, when : 'after' });
+					this.emit('getItem', { key }, { key, when: 'after' });
 					return result;
 				};
 			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
@@ -2160,18 +2182,18 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 			((originalMethod) => {
 				localStorage.setItem = (key: string, value: string) => {
-					this.emit('setItem', { key, value }, { key, when : 'before' });
+					this.emit('setItem', { key, value }, { key, when: 'before' });
 					originalMethod.call(localStorage, key, value);
-					this.emit('setItem', { key, value }, { key, when : 'after' });
+					this.emit('setItem', { key, value }, { key, when: 'after' });
 				};
 			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 			})(localStorage.setItem);
 
 			((originalMethod) => {
 				localStorage.removeItem = (key: string) => {
-					this.emit('removeItem', { key }, { key, when : 'before' });
+					this.emit('removeItem', { key }, { key, when: 'before' });
 					originalMethod.call(localStorage, key);
-					this.emit('removeItem', { key }, { key, when : 'after' });
+					this.emit('removeItem', { key }, { key, when: 'after' });
 				};
 			// eslint-disable-next-line @typescript-eslint/unbound-method -- called safely
 			})(localStorage.removeItem);
@@ -2240,15 +2262,15 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	function initUrls(): Urls {
 		const urls: Urls = {
-			homepage : () => 'https://sbg-game.ru/',
-			game     : () => 'https://sbg-game.ru/app',
-			login    : () => 'https://sbg-game.ru/login',
-			desktop  : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-			mobile   : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-			intel    : () => `https://sbg-game.ru/app/intel@${window.__sbg_native_intel_version}.js`,
-			script   : () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.js`,
-			cui      : () => 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
-			eui      : () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
+			homepage: () => 'https://sbg-game.ru/',
+			game    : () => 'https://sbg-game.ru/app',
+			login   : () => 'https://sbg-game.ru/login',
+			desktop : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
+			mobile  : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
+			intel   : () => `https://sbg-game.ru/app/intel@${window.__sbg_native_intel_version}.js`,
+			script  : () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.js`,
+			cui     : () => 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+			eui     : () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
 		};
 
 		console.log('initialized urls');
@@ -2284,12 +2306,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	function showToast(label: Label, duration: number): void {
 		window.Toastify && window.Toastify({
-			text          : label.toString(),
+			text         : label.toString(),
 			duration,
-			forceDuration : true,
-			gravity       : 'top',
-			position      : 'right',
-			className     : 'interaction-toast',
+			forceDuration: true,
+			gravity      : 'top',
+			position     : 'right',
+			className    : 'interaction-toast',
 		}).showToast();
 	}
 
@@ -2341,14 +2363,15 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			value = value[key];
 		}
 
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		return value as T;
 	}
 
 	function addLayer<TLayerName extends LayerName>(layerName: TLayerName, layerLikeName: LayerName): OlLayer {
 		const source = new window.ol.source.Vector();
-		const layer  = new window.ol.layer.Vector({ source, className : `ol-layer__${layerName}` });
-		layer.setProperties({ name : layerName }, true);
-		layer.setProperties({ zIndex : layers.get(layerLikeName).getProperties().zIndex }, true);
+		const layer  = new window.ol.layer.Vector({ source, className: `ol-layer__${layerName}` });
+		layer.setProperties({ name: layerName }, true);
+		layer.setProperties({ zIndex: layers.get(layerLikeName).getProperties().zIndex }, true);
 		window.__sbg_variable_map.get().addLayer(layer);
 		return layer;
 	}
@@ -2387,9 +2410,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	async function loadGame(): Promise<void> {
 		const gameHTML = await Script.create({
-			src         : urls.game(),
-			prefix      : '__sbg_html',
-			transformer : transformGameHTML,
+			src        : urls.game(),
+			prefix     : '__sbg_html',
+			transformer: transformGameHTML,
 		});
 
 		document.write(gameHTML.valueOf()!);
@@ -2446,7 +2469,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			if (!feature.isEnabled() && feature.isEnabled(true)) {
 				if (!localStorage.getItem(storageKey)) {
 					localStorage.setItem(storageKey, '1');
-					alert(labels.toasts.featureSwitchedOff.format({ label : feature.label }).toString());
+					alert(labels.toasts.featureSwitchedOff.format({ label: feature.label }).toString());
 				}
 			} else {
 				localStorage.removeItem(storageKey);
@@ -2461,9 +2484,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function enhanceEventListeners(): void {
 		((addEventListener, removeEventListener) => {
 			function initEventListeners<TEventType extends string>(target: EventTarget, type: TEventType): EventTargetWithEventType<TEventType> {
-				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- __events might not be initialized in native target
+
 				target.__events       = target.__events ?? {};
-				target.__events[type] = target.__events[type] ?? { listeners : [], sealed : false };
+				target.__events[type] = target.__events[type] ?? { listeners: [], sealed: false };
 				return target;
 			}
 
@@ -2513,8 +2536,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 			EventTarget.prototype.getEventHandlers = function<T = EventListener>(type: string): T[] {
 				return this.getEventListeners(type)
-					// eslint-disable-next-line @typescript-eslint/unbound-method -- intentionally unbound listener method to use statically then
+
+					// eslint-disable-next-line @typescript-eslint/unbound-method
 					.map((listener) => 'handleEvent' in listener ? listener.handleEvent : listener)
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 					.map((handler) => handler as T);
 			};
 
@@ -2551,7 +2576,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 			EventTarget.prototype.addRepeatingEventListener = function<TEvent extends Event>(
 				type: string,
-				handler: (ev: TEvent) => void,
+				handler: (ev: TEvent)=> void,
 				{
 					repeats: limit,
 					timeout,
@@ -2559,20 +2584,23 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 					filter = () => true,
 					cancel = () => true,
 				}: {
-					repeats : number;
-					timeout : number;
-					tick?   : (ev: TEvent, iteration: number) => void;
-					filter? : (ev: TEvent) => boolean;
-					cancel? : (ev: TEvent) => boolean;
+					repeats: number;
+					timeout: number;
+					tick?: (ev: TEvent, iteration: number)=> void;
+					filter?: (ev: TEvent)=> boolean;
+					cancel?: (ev: TEvent)=> boolean;
 				}): void {
 				let repeats = 0;
 
 				this.addEventListener(type, (ev) => {
-					if (!filter(ev as TEvent)) {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+					const event = ev as TEvent;
+
+					if (!filter(event)) {
 						return;
 					}
 
-					if (!cancel(ev as TEvent)) {
+					if (!cancel(event)) {
 						repeats = 0;
 						return;
 					}
@@ -2581,11 +2609,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 					if (repeats >= limit) {
 						repeats = 0;
-						handler(ev as TEvent);
+						handler(event);
 						return;
 					}
 
-					tick(ev as TEvent, repeats);
+					tick(event, repeats);
 
 					setTimeout(() => {
 						repeats = 0;
@@ -2621,9 +2649,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		document.addRepeatingEventListener<TouchEvent>('touchstart', () => {
 			void copyLogs();
 		}, {
-			repeats : feedbackTouchRepeats,
-			timeout : feedbackClickTimeout,
-			filter  : (ev: TouchEvent) => ev.touches.length === feedbackTouches && !window.__sbg_plus_logs_gesture_disabled,
+			repeats: feedbackTouchRepeats,
+			timeout: feedbackClickTimeout,
+			filter : (ev: TouchEvent) => ev.touches.length === feedbackTouches && !window.__sbg_plus_logs_gesture_disabled,
 		});
 	}
 
@@ -2638,8 +2666,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	async function isReleaseAvailable(): Promise<boolean> {
 		const checkUrl = 'https://api.github.com/repos/anmiles/sbg/releases';
 		const resp     = await fetch(checkUrl);
-		const json     = await resp.json() as Array<Record<string, unknown>>;
-		const release  = json.find((r) => r['tag_name'] === `v${window.__sbg_plus_version}`);
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		const json    = await resp.json() as Array<Record<string, unknown>>;
+		const release = json.find((r) => r['tag_name'] === `v${window.__sbg_plus_version}`);
 		return !!release;
 	}
 
@@ -2678,8 +2707,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function fixPermissionsCompatibility(): void {
 		if (typeof navigator.permissions === 'undefined') {
 			Object.defineProperty(navigator, 'permissions', {
-				value : {
-					query : () => ({ state : 'granted' }),
+				value: {
+					query: () => ({ state: 'granted' }),
 				},
 			});
 		}
@@ -2701,9 +2730,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('embedCUI: started');
 
 		const cuiScript = await Script.create({
-			src         : urls.cui(),
-			prefix      : '__sbg_cui_script',
-			transformer : transformCUIScript,
+			src        : urls.cui(),
+			prefix     : '__sbg_cui_script',
+			transformer: transformCUIScript,
 		});
 
 		console.log('embedCUI: wait dbReady');
@@ -2756,7 +2785,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('loaded DOM content');
 	}
 
-	async function resolveOnce(addListener: (resolver: () => unknown) => void, immediateCondition: () => boolean): Promise<void> {
+	async function resolveOnce(addListener: (resolver: ()=> unknown)=> void, immediateCondition: ()=> boolean): Promise<void> {
 		return new Promise((resolve) => {
 			let resolved = false;
 
@@ -2778,9 +2807,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	async function getNativeScript(): Promise<Script>  {
 		return Script.create({
-			src         : getNativeScriptSrc(),
-			prefix      : '__sbg_script',
-			transformer : transformNativeScript,
+			src        : getNativeScriptSrc(),
+			prefix     : '__sbg_script',
+			transformer: transformNativeScript,
 		});
 	}
 
@@ -2799,7 +2828,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		}
 
 		// @ts-expect-error 2339 -- navigator is narrowed to never because TS assumes navigator always has 'maxTouchPoints' property
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+
 		return /\b(BlackBerry|webOS|iPhone|IEMobile|Android|Windows Phone|iPad|iPod)\b/i.test(navigator.userAgent);
 	}
 
@@ -2825,14 +2854,14 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		const disabledLocationFunctions = !isMobile() && localStorage.getItem('homeCoords') ? [ 'movePlayer' ] : [];
 
 		script.expose('__sbg', {
-			variables : {
-				readable : [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
-				writable : [ 'self_data' ],
+			variables: {
+				readable: [ 'draw_slider', 'FeatureStyles', 'is_dark', 'ItemTypes', 'LANG', 'map', 'TeamColors', 'temp_lines_source', 'units', 'VERSION' ],
+				writable: [ 'self_data' ],
 			},
-			functions : {
-				readable : [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
-				writable : [ 'drawLeaderboard', 'manageDrawing', 'movePlayer', 'showInfo', 'timeToString' ],
-				disabled : [ ...disabledLocationFunctions ],
+			functions: {
+				readable: [ 'apiQuery', 'deleteInventoryItem', 'jquerypassargs', 'openProfile', 'takeUnits' ],
+				writable: [ 'drawLeaderboard', 'manageDrawing', 'movePlayer', 'showInfo', 'timeToString' ],
+				disabled: [ ...disabledLocationFunctions ],
 			},
 		});
 	}
@@ -2976,7 +3005,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('initialized CSS');
 	}
 
-	async function wait<T>(func: () => T | null | undefined): Promise<T> {
+	async function wait<T>(func: ()=> T | null | undefined): Promise<T> {
 		return new Promise((resolve) => {
 			const waitInterval = setInterval(() => {
 				const result = func();
@@ -2995,7 +3024,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('initialized settings');
 	}
 
-	function createPopup(cssClass: string, options: { roundClose : boolean } = { roundClose : true }): JQuery {
+	function createPopup(cssClass: string, options: { roundClose: boolean } = { roundClose: true }): JQuery {
 		const closeButton = $('<button></button>')
 			.addClass(options.roundClose ? 'popup-close' : 'popup-button-secondary')
 			.attr('data-round', options.roundClose ? 'true' : null)
@@ -3047,6 +3076,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return;
 		}
 
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		const center = JSON.parse(homeCoords) as OlCoords;
 		window.__sbg_variable_map.get().getView().setCenter(center);
 		console.log('initialized home location');
@@ -3062,6 +3092,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 					? 'lines_temp'
 					: layerName;
 
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			layers.set(key as LayerName, layer);
 		}
 
@@ -3123,12 +3154,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function exposeCUIScript(script: Script): void {
 		script
 			.expose('__sbg_cui', {
-				variables : {
-					readable : [ 'USERSCRIPT_VERSION', 'config', 'database' ],
+				variables: {
+					readable: [ 'USERSCRIPT_VERSION', 'config', 'database' ],
 				},
-				functions : {
-					readable : [ ],
-					writable : [ 'createToast', 'getNotifs' ],
+				functions: {
+					readable: [ ],
+					writable: [ 'createToast', 'getNotifs' ],
 				},
 			});
 	}
@@ -3172,8 +3203,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				(_match: string, func: string) => `window.__sbg_onerror_handlers.push(${func});`,
 			)
 			.expose('__sbg_cui', {
-				functions : {
-					readable : [ 'olInjection', 'loadMainScript', 'main' ],
+				functions: {
+					readable: [ 'olInjection', 'loadMainScript', 'main' ],
 				},
 			})
 		;
@@ -3183,7 +3214,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		if (typeof window.__sbg_plus_animation_duration === 'number') {
 			((animate) => {
 				window.ol.View.prototype.animate = function(...args) {
-					const instantArgs = args.map((arg) => typeof arg === 'object' ? { ...arg, duration : window.__sbg_plus_animation_duration } : arg);
+					const instantArgs = args.map((arg) => typeof arg === 'object' ? { ...arg, duration: window.__sbg_plus_animation_duration } : arg);
 					animate.call(this, ...instantArgs);
 				};
 			})(window.ol.View.prototype.animate);
@@ -3369,13 +3400,15 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			.replaceCUIBlock(
 				'Вращение карты',
 				'if (latestTouchPoint == null) { return; }',
+				// eslint-disable-next-line @stylistic/max-len
 				'if (latestTouchPoint == null) { if (isRotationLocked) { toggleRotationLock(event); touchStartHandler({...event, target: event.target, touches: [event.touches[0]], targetTouches: [event.targetTouches[0]] }); } return; }',
 			)
 		;
 	}
 
 	function disableCarouselAnimation(splide: Splide): void {
-		(splide.defaults ||= {} as { speed : number }).speed = 0;
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		(splide.defaults ||= {} as { speed: number }).speed = 0;
 	}
 
 	function disablePopupAnimation(): void {
@@ -3416,7 +3449,6 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				return this;
 			};
 
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- intentional assignment of prototype
 			toastify.prototype.init.prototype = _init.prototype;
 		})(toastify.prototype.init);
 	}
@@ -3428,9 +3460,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function enableBackButton(): void {
 		const backClickTimeout = 1000;
 
-		const popups: Array<{ hiddenClass : string; selectors : string[] }> = [
-			{ hiddenClass : 'hidden', selectors : [ '.popup', '.draw-slider-wrp', '.attack-slider-wrp' ] },
-			{ hiddenClass : 'sbgcui_hidden', selectors : [ '.sbgcui_settings' ] },
+		const popups: Array<{ hiddenClass: string; selectors: string[] }> = [
+			{ hiddenClass: 'hidden', selectors: [ '.popup', '.draw-slider-wrp', '.attack-slider-wrp' ] },
+			{ hiddenClass: 'sbgcui_hidden', selectors: [ '.sbgcui_settings' ] },
 		];
 
 		function isPopupClosed(): boolean {
@@ -3464,12 +3496,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		document.addRepeatingEventListener('backbutton', () => {
 			location.replace('/window.close');
 		}, {
-			repeats : 2,
-			timeout : backClickTimeout,
-			tick    : () => {
+			repeats: 2,
+			timeout: backClickTimeout,
+			tick   : () => {
 				showToast(labels.toasts.back, backClickTimeout);
 			},
-			cancel : () => !isPopupClosed(),
+			cancel: () => !isPopupClosed(),
 		});
 	}
 
@@ -3482,22 +3514,22 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	function showFeatureToggles(): void {
 		const containers = {
-			info      : $('.info.popup .i-image-box'),
-			inventory : $('.inventory.popup'),
+			info     : $('.info.popup .i-image-box'),
+			inventory: $('.inventory.popup'),
 		} as const;
 
 		Object.values(containers).forEach((container) => $('<div></div>').addClass('i-buttons i-feature-toggles').appendTo(container));
 
-		const featureToggles: Array<{ container : keyof typeof containers; title : string; feature : FeatureBase<never> }> = [
-			{ container : 'info', title : 'ARR', feature : features.get(arrangeButtons)! },
-			{ container : 'info', title : 'CLS', feature : features.get(hideCloseButton)! },
-			{ container : 'info', title : 'REP', feature : features.get(hideRepairButton)! },
-			{ container : 'info', title : 'TMR', feature : features.get(colorizeTimer)! },
-			{ container : 'info', title : 'SWP', feature : features.get(replaceSwipeWithButton)! },
+		const featureToggles: Array<{ container: keyof typeof containers; title: string; feature: FeatureBase<never> }> = [
+			{ container: 'info', title: 'ARR', feature: features.get(arrangeButtons)! },
+			{ container: 'info', title: 'CLS', feature: features.get(hideCloseButton)! },
+			{ container: 'info', title: 'REP', feature: features.get(hideRepairButton)! },
+			{ container: 'info', title: 'TMR', feature: features.get(colorizeTimer)! },
+			{ container: 'info', title: 'SWP', feature: features.get(replaceSwipeWithButton)! },
 
-			{ container : 'inventory', title : 'CUI', feature : features.get(restoreCUISort)! },
-			{ container : 'inventory', title : 'BUT', feature : features.get(moveReferenceButtonsDown)! },
-			{ container : 'inventory', title : 'CLR', feature : features.get(hideManualClearButtons)! },
+			{ container: 'inventory', title: 'CUI', feature: features.get(restoreCUISort)! },
+			{ container: 'inventory', title: 'BUT', feature: features.get(moveReferenceButtonsDown)! },
+			{ container: 'inventory', title: 'CLR', feature: features.get(hideManualClearButtons)! },
 		];
 
 		for (const { container, title, feature } of featureToggles) {
@@ -3540,7 +3572,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		versionWatchers.native.on('update', ({ currentVersion }) => {
 			console.log(`update lang cache to match ${currentVersion} version`);
 			$('#lang-cache').trigger('click');
-		}, { previous : true });
+		}, { previous: true });
 	}
 
 	function fixBlurryBackground(): void {
@@ -3581,10 +3613,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function fixCompass(): void {
-		const handlers = [ ...window.getEventHandlers<(ev: DeviceOrientationEvent) => void>('deviceorientation') ];
+		const handlers = [ ...window.getEventHandlers<(ev: DeviceOrientationEvent)=> void>('deviceorientation') ];
 
-		function triggerHandlers(webkitCompassHeading: number): void {
+		function triggerHandlers(webkitCompassHeading: number | null): void {
 			handlers.map((handler) => {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				handler({ webkitCompassHeading } as DeviceOrientationEvent);
 			});
 		}
@@ -3682,12 +3715,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			.addRepeatingEventListener('click', () => {
 				showPopup();
 			}, {
-				repeats : 3,
-				timeout : 1000,
+				repeats: 3,
+				timeout: 1000,
 			});
 
 		window.__sbg_variable_self_data.set(new Proxy(selfData, {
-			set : <K extends keyof SelfData>(target: SelfData, property: K, newValue: SelfData[K]) => {
+			set: <K extends keyof SelfData>(target: SelfData, property: K, newValue: SelfData[K]) => {
 				target[property] = newValue;
 
 				if (property === 'l') {
@@ -3890,6 +3923,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		`);
 
 		$(window).on('click', function(ev) {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			const target = ev.target as unknown as Element;
 
 			if (target.id !== 'attack-menu' && $('.attack-slider-wrp.hidden').length === 0 && $(target).parents('.attack-slider-wrp').length === 0) {
@@ -3976,7 +4010,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function showAutoDeleteSettingsButton(inventoryPopup: JQuery): void {
 		$('<button></button>')
 			.text('Auto-delete')
-			.css({ height : '40px' })
+			.css({ height: '40px' })
 			.appendTo(inventoryPopup)
 			.on('click', () => {
 				$('#inventory__close').trigger('click');
@@ -4072,22 +4106,22 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			await drawLeaderboard();
 
 			const statMap: Record<string, string> = {
-				owned : 'owned_points',
+				owned: 'owned_points',
 			};
 
 			const stat  = $('#leaderboard__term-select').val()?.toString() ?? '';
-			const data  = (await window.__sbg_function_apiQuery('profile', { guid : String($('#self-info__name').data('guid')) })).response.data;
+			const data  = (await window.__sbg_function_apiQuery('profile', { guid: String($('#self-info__name').data('guid')) })).response.data;
 			const value = data[statMap[stat] ?? stat];
 
 			const entry = window.__sbg_function_jquerypassargs(
 				$('<li>'),
 				'$1$ — $2$; $3$ $4$',
-				$('<span>', { class : 'profile-link' })
+				$('<span>', { class: 'profile-link' })
 					.text(data.name)
 					.css('color', `var(--team-${data.team})`)
 					.attr('data-name', data.name)
 					.on('click', (el) => void window.__sbg_function_openProfile(el)),
-				$('<span>').text(window.i18next.t('leaderboard.level', { count : data.level })).css('color', `var(--level-${data.level})`),
+				$('<span>').text(window.i18next.t('leaderboard.level', { count: data.level })).css('color', `var(--level-${data.level})`),
 				...window.__sbg_function_takeUnits(value ?? 0),
 			);
 
@@ -4140,7 +4174,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			if (window.__sbg_local) {
 				alert(message);
 			}
-		}, { previous : true });
+		}, { previous: true });
 	}
 
 	function moveDestroyNotificationsToTop(): void {
@@ -4199,6 +4233,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			}
 		`);
 
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		const inventoryContentEl = inventoryContent.get(0) as Element;
 		inventoryContentEl.getEventListeners('click').forEach((listener) => {
 			inventoryContentEl.removeEventListener('click', listener);
@@ -4221,9 +4256,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				return;
 			}
 
-			const el        = $(ev.target).parents('.inventory__item');
+			const el = $(ev.target).parents('.inventory__item');
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			const inventory = (JSON.parse(localStorage.getItem('inventory-cache') ?? '[]') || []) as Array<InventoryItem>;
-			const item      = inventory.find((item: { g : string }) => item.g == el.attr('data-guid'));
+			const item      = inventory.find((item: { g: string }) => item.g == el.attr('data-guid'));
 			if (!item) {
 				return;
 			}
@@ -4231,9 +4267,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			const fakeEl = $('<input />')
 				.addClass('inventory__ma-amount')
 				.val(item.a)
-				.css({ display : 'none' });
+				.css({ display: 'none' });
 
-			Object.defineProperty(fakeEl.get(0), 'reportValidity', { value : () => true });
+			Object.defineProperty(fakeEl.get(0), 'reportValidity', { value: () => true });
 			el.append(fakeEl);
 			el.attr('data-tab', item.t);
 
@@ -4265,8 +4301,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		window.__sbg_function_timeToString = function(seconds) {
 			return seconds >= visibleSeconds
-				? window.i18next.t('units.min', { count : Math.floor(seconds / 60) })
-				: window.i18next.t('units.sec', { count : seconds });
+				? window.i18next.t('units.min', { count: Math.floor(seconds / 60) })
+				: window.i18next.t('units.sec', { count: seconds });
 		};
 
 		setCSS(`
@@ -4491,20 +4527,20 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function replaceSwipeWithButton(arrow: JQuery): void {
 		arrow.hide();
 
-		function createTouch(touchData: Partial<Touch> & { target : EventTarget }): { touches : TouchEvent['touches'] } {
+		function createTouch(touchData: Partial<Touch> & { target: EventTarget }): { touches: TouchEvent['touches'] } {
 			const touch = {
-				clientX       : touchData.clientX ?? 0,
-				clientY       : touchData.clientY ?? 0,
-				pageX         : touchData.pageX ?? touchData.clientX ?? 0,
-				pageY         : touchData.pageY ?? touchData.clientY ?? 0,
-				screenX       : touchData.screenX ?? touchData.clientX ?? 0,
-				screenY       : touchData.screenY ?? touchData.clientY ?? 0,
-				force         : touchData.force ?? 0,
-				identifier    : touchData.identifier ?? 0,
-				radiusX       : touchData.radiusX ?? 1,
-				radiusY       : touchData.radiusY ?? 1,
-				rotationAngle : touchData.rotationAngle ?? 0,
-				target        : touchData.target,
+				clientX      : touchData.clientX ?? 0,
+				clientY      : touchData.clientY ?? 0,
+				pageX        : touchData.pageX ?? touchData.clientX ?? 0,
+				pageY        : touchData.pageY ?? touchData.clientY ?? 0,
+				screenX      : touchData.screenX ?? touchData.clientX ?? 0,
+				screenY      : touchData.screenY ?? touchData.clientY ?? 0,
+				force        : touchData.force ?? 0,
+				identifier   : touchData.identifier ?? 0,
+				radiusX      : touchData.radiusX ?? 1,
+				radiusY      : touchData.radiusY ?? 1,
+				rotationAngle: touchData.rotationAngle ?? 0,
+				target       : touchData.target,
 			};
 
 			const touches = [ touch ];
@@ -4512,10 +4548,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			const set = new Set(touches);
 
 			return {
-				touches : {
-					length            : set.size,
-					item              : (index: number) => index === 0 ? touch : null,
-					[Symbol.iterator] : set[Symbol.iterator],
+				touches: {
+					length           : set.size,
+					item             : (index: number) => index === 0 ? touch : null,
+					[Symbol.iterator]: set[Symbol.iterator],
 				},
 			};
 		}
@@ -4526,8 +4562,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			[ endX, endY ]: [ number, number ],
 		): void {
 			const identifier = Math.random() * Number.MAX_SAFE_INTEGER;
-			const startTouch = createTouch({ target, identifier, clientX : startX, clientY : startY });
-			const endTouch   = createTouch({ target, identifier, clientX : endX, clientY : endY });
+			const startTouch = createTouch({ target, identifier, clientX: startX, clientY: startY });
+			const endTouch   = createTouch({ target, identifier, clientX: endX, clientY: endY });
 
 			const touchStartHandlers = target.getEventHandlers<CustomTouchEvent>('touchstart').filter((f) => f.name === 'touchStartHandler');
 			const touchMoveHandlers  = target.getEventHandlers<CustomTouchEvent>('touchmove').filter((f) => f.name === 'touchMoveHandler');
@@ -4563,7 +4599,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			.map(() => {
 				button.prop('disabled', arrow.hasClass('sbgcui_hidden'));
 			}),
-		).observe(arrow.get(0)!, { attributes : true });
+		).observe(arrow.get(0)!, { attributes: true });
 
 		setCSS(`
 			.i-stat .i-buttons .next {
@@ -4609,7 +4645,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function hideCloseButton(): void {
-		$('#draw').on('click', (ev) => $('.draw-slider-buttons button').css({ height : `${$(ev.target).outerHeight()}px` }));
+		$('#draw').on('click', (ev) => $('.draw-slider-buttons button').css({ height: `${$(ev.target).outerHeight()}px` }));
 
 		setCSS(`
 			[data-feat-hideCloseButton] .popup-close,
@@ -4675,6 +4711,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		})(window.__sbg_function_showInfo);
 
 		$(document).on('click', 'a[href*="point="]', (ev) => {
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			const guid = (ev.currentTarget as HTMLLinkElement).href.split('point=').pop()?.split('&').shift();
 			window.__sbg_function_showInfo(guid);
 			ev.stopPropagation();
@@ -4700,11 +4737,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				const tempLineCoords = tempLine!.getGeometry().flatCoordinates;
 
 				const highlightFeature = new window.ol.Feature({
-					geometry : new window.ol.geom.Circle([ tempLineCoords.slice(tempLineCoords.length - 2) ], 16),
+					geometry: new window.ol.geom.Circle([ tempLineCoords.slice(tempLineCoords.length - 2) ], 16),
 				});
 
 				const highlightStyle = new window.ol.style.Style({
-					stroke : new window.ol.style.Stroke({ color : '#F80', width : 3 }),
+					stroke: new window.ol.style.Stroke({ color: '#F80', width: 3 }),
 				});
 
 				highlightFeature.setStyle(highlightStyle);
@@ -4715,8 +4752,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	function matchDrawSliderButtons(slider: JQuery): void {
 		$('#draw').on('click', (ev) => {
-			slider.css({ bottom : `${($(window).height()!) - $(ev.target).offset()!.top - ($('#draw').outerHeight()!)}px` });
-			slider.find('.draw-slider-buttons').css({ padding : `0 ${$(ev.target).offset()!.left}px` });
+			slider.css({ bottom: `${($(window).height()!) - $(ev.target).offset()!.top - ($('#draw').outerHeight()!)}px` });
+			slider.find('.draw-slider-buttons').css({ padding: `0 ${$(ev.target).offset()!.left}px` });
 		});
 
 		setCSS(`
@@ -4764,19 +4801,21 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function testNotifications(): void {
 		window.__sbg_cui_function_getNotifs = function<TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) {
 			if (typeof latest === 'number') {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				return 1 as TResult;
 			}
 
 			if (typeof latest === 'undefined') {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				return [
 					{
-						id : 1,
-						g  : 'guid',
-						na : 'TestUser',
-						ta : 0,
-						ti : new Date().toISOString(),
-						c  : [ 0, 0 ],
-						t  : 'test point',
+						id: 1,
+						g : 'guid',
+						na: 'TestUser',
+						ta: 0,
+						ti: new Date().toISOString(),
+						c : [ 0, 0 ],
+						t : 'test point',
 					} as Notif,
 				] as TResult;
 			}
@@ -4786,17 +4825,18 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	class Builder {
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		features = {} as BuilderFeatures;
-		points      : Record<OlGuid, string> = {};
-		pointStyles : Record<OlGuid, OlStyle> = {};
+		points: Record<OlGuid, string> = {};
+		pointStyles: Record<OlGuid, OlStyle> = {};
 		lines        = new CoordsMap<OlLineCoords, OlFeature>();
 		regions      = new CoordsMap<OlRegionCoords, OlFeature>();
-		linesMap     = new CoordsMap<OlCoords, { coords : OlCoords; mine : boolean }[]>();
-		regionsMap   = new CoordsMap<OlLineCoords, { region : OlFeature; mine : boolean }[]>();
-		data        : BuilderData = new BuilderData(this);
-		startPoint? : OlFeature;
-		ownTeam     : Team = 0;
-		drawTeam    : Team = 4;
+		linesMap     = new CoordsMap<OlCoords, { coords: OlCoords; mine: boolean }[]>();
+		regionsMap   = new CoordsMap<OlLineCoords, { region: OlFeature; mine: boolean }[]>();
+		data: BuilderData = new BuilderData(this);
+		startPoint?: OlFeature;
+		ownTeam: Team = 0;
+		drawTeam: Team = 4;
 		maxDrawAttempts = 3;
 
 		constructor(buttonsSection: JQuery) {
@@ -4812,7 +4852,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			this.initRoutePopup();
 			this.initCopyPaste();
 
-			Object.defineProperty(window, 'builder', { value : this });
+			Object.defineProperty(window, 'builder', { value: this });
 		}
 
 		setHome(previousState: boolean): boolean {
@@ -4923,6 +4963,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		getCoords(flatCoordinates: OlFlatCoordinates): OlCoords {
 			const coordsList = window.ol.proj.toLonLat(flatCoordinates);
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			return coordsList.map((coord) => parseFloat(coord.toFixed(6))) as typeof coordsList;
 		}
 
@@ -4934,7 +4975,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			const arcCoords: OlLineCoords[] = [];
 
 			for (let i = 1; i < coordsList.length; i++) {
-				const arc = window.turf.greatCircle(coordsList[i - 1]!, coordsList[i]!, { npoints : this.getNPoints() });
+				const arc = window.turf.greatCircle(coordsList[i - 1]!, coordsList[i]!, { npoints: this.getNPoints() });
 				arcCoords.push(arc.geometry.coordinates);
 			}
 
@@ -4979,18 +5020,18 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return [ sortedCoords[0], sortedCoords[1], sortedCoords[2], sortedCoords[0] ];
 		}
 
-		addLine(line: OlFeature, lineCoords: OlLineCoords, { mine }: { mine : boolean }): void {
+		addLine(line: OlFeature, lineCoords: OlLineCoords, { mine }: { mine: boolean }): void {
 			if (![ this.ownTeam, this.drawTeam ].includes(line.getProperties().team)) {
 				return;
 			}
 
-			this.linesMap.create(lineCoords[0], []).push({ coords : lineCoords[1], mine });
-			this.linesMap.create(lineCoords[1], []).push({ coords : lineCoords[0], mine });
+			this.linesMap.create(lineCoords[0], []).push({ coords: lineCoords[1], mine });
+			this.linesMap.create(lineCoords[1], []).push({ coords: lineCoords[0], mine });
 			this.lines.set(lineCoords, line);
 			this.checkRegions(lineCoords, { mine });
 		}
 
-		addRegion(region: OlFeature, regionCoords: OlRegionCoords, { mine }: { mine : boolean }): void {
+		addRegion(region: OlFeature, regionCoords: OlRegionCoords, { mine }: { mine: boolean }): void {
 			if (![ this.ownTeam, this.drawTeam ].includes(region.getProperties().team)) {
 				return;
 			}
@@ -5019,11 +5060,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			}
 
 			const arcFlatCoordinates = this.getArcFlatCoordinates(lineCoords);
-			const feature            = new window.ol.Feature({ geometry : new window.ol.geom.LineString(arcFlatCoordinates) });
+			const feature            = new window.ol.Feature({ geometry: new window.ol.geom.LineString(arcFlatCoordinates) });
 			feature.setId(id);
-			feature.setProperties({ team : this.drawTeam, mine : true });
+			feature.setProperties({ team: this.drawTeam, mine: true });
 			feature.setStyle(new window.ol.style.Style({
-				stroke : new window.ol.style.Stroke({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.stroke ?? '', width : 2 }),
+				stroke: new window.ol.style.Stroke({ color: window.__sbg_variable_TeamColors.get()[this.drawTeam]?.stroke ?? '', width: 2 }),
 			}));
 
 			const source        = layers.get(layerName).getSource();
@@ -5042,7 +5083,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				return;
 			}
 
-			this.addLine(feature, lineCoords, { mine : true });
+			this.addLine(feature, lineCoords, { mine: true });
 			this.data.add({ linePoints, lineCoords });
 			return feature;
 		}
@@ -5066,11 +5107,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			}
 
 			const arcFlatCoordinates = this.getArcFlatCoordinates(regionCoords);
-			const feature            = new window.ol.Feature({ geometry : new window.ol.geom.Polygon([ arcFlatCoordinates ]) });
+			const feature            = new window.ol.Feature({ geometry: new window.ol.geom.Polygon([ arcFlatCoordinates ]) });
 			feature.setId(id);
-			feature.setProperties({ team : this.drawTeam, mine : true, shared });
+			feature.setProperties({ team: this.drawTeam, mine: true, shared });
 			feature.setStyle(new window.ol.style.Style({
-				fill : new window.ol.style.Fill({ color : window.__sbg_variable_TeamColors.get()[this.drawTeam]?.fill ?? '' }),
+				fill: new window.ol.style.Fill({ color: window.__sbg_variable_TeamColors.get()[this.drawTeam]?.fill ?? '' }),
 			}));
 
 			const layer         = layers.get(layerName);
@@ -5090,11 +5131,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				return;
 			}
 
-			this.addRegion(feature, regionCoords, { mine : true });
+			this.addRegion(feature, regionCoords, { mine: true });
 			return feature;
 		}
 
-		checkRegions(lineCoords: OlLineCoords, { mine }: { mine : boolean }): void {
+		checkRegions(lineCoords: OlLineCoords, { mine }: { mine: boolean }): void {
 			const startSiblings = this.linesMap.get(lineCoords[0]);
 			const endSiblings   = this.linesMap.get(lineCoords[1]);
 			if (!startSiblings || !endSiblings) {
@@ -5152,11 +5193,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				const matches = style.match(/team-(\d+)/);
 
 				if (matches) {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 					this.ownTeam = parseInt(matches[1]!) as Team;
 				}
 			}
 
-			window.__sbg_variable_TeamColors.get().push({ fill : '#FF880030', stroke : '#F80' });
+			window.__sbg_variable_TeamColors.get().push({ fill: '#FF880030', stroke: '#F80' });
 		}
 
 		private initLayers(): void {
@@ -5165,20 +5207,20 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			this.addLayer('regions_shared', 'regions');
 
 			layers.get('lines').getSource().on('addfeature', (ev) => {
-				this.addLine(ev.feature, this.getLineCoords(ev.feature), { mine : false });
+				this.addLine(ev.feature, this.getLineCoords(ev.feature), { mine: false });
 			});
 
 			layers.get('regions').getSource().on('addfeature', (ev) => {
 				const feature = ev.feature;
-				this.addRegion(feature, this.getRegionCoords(feature), { mine : false });
+				this.addRegion(feature, this.getRegionCoords(feature), { mine: false });
 			});
 
 			layers.get('lines').getSource().getFeatures().forEach((line) => {
-				this.addLine(line, this.getLineCoords(line), { mine : false });
+				this.addLine(line, this.getLineCoords(line), { mine: false });
 			});
 
 			layers.get('regions').getSource().getFeatures().forEach((region) => {
-				this.addRegion(region, this.getRegionCoords(region), { mine : false });
+				this.addRegion(region, this.getRegionCoords(region), { mine: false });
 			});
 		}
 
@@ -5195,39 +5237,39 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		private initFeatures(buttonContainer: JQuery): void {
 			const initialStates: BuilderStates = {
-				home     : false,
-				allLines : true,
-				builder  : false,
-				undo     : false,
-				clear    : false,
-				route    : false,
-				copy     : false,
-				paste    : false,
-				help     : true,
+				home    : false,
+				allLines: true,
+				builder : false,
+				undo    : false,
+				clear   : false,
+				route   : false,
+				copy    : false,
+				paste   : false,
+				help    : true,
 			};
 
 			/* eslint-disable @typescript-eslint/unbound-method -- intended to be bound in BuilderFeature constructor */
 			const actions: BuilderActions = {
-				home     : this.setHome,
-				allLines : this.toggleAllLines,
-				builder  : this.toggle,
-				undo     : this.undo,
-				clear    : this.clear,
-				route    : this.printRoute,
-				copy     : this.copy,
-				paste    : this.paste,
-				help     : this.showHelp,
+				home    : this.setHome,
+				allLines: this.toggleAllLines,
+				builder : this.toggle,
+				undo    : this.undo,
+				clear   : this.clear,
+				route   : this.printRoute,
+				copy    : this.copy,
+				paste   : this.paste,
+				help    : this.showHelp,
 			};
 			/* eslint-enable @typescript-eslint/unbound-method */
 
 			for (const button of builderButtons) {
 				this.features[button] = new BuilderFeature({
-					name         : button,
+					name        : button,
 					buttonContainer,
-					initialState : initialStates[button],
-					action       : actions[button],
-					label        : labels.builder.buttons[button],
-					builder      : this,
+					initialState: initialStates[button],
+					action      : actions[button],
+					label       : labels.builder.buttons[button],
+					builder     : this,
 				});
 			}
 		}
@@ -5311,12 +5353,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		private setPointDrawing(point: OlFeature, drawing: boolean): void {
 			if (drawing) {
 				this.pointStyles[point.getId()] = point.getStyle();
-				point.setStyle(window.__sbg_variable_FeatureStyles.get().POINT(point.getGeometry().flatCoordinates, this.drawTeam, 1, true));
+				point.setStyle([ window.__sbg_variable_FeatureStyles.get().POINT(point.getGeometry().flatCoordinates, this.drawTeam, 1, true) ]);
 			} else {
 				const style = this.pointStyles[point.getId()];
 
 				if (style) {
-					point.setStyle(style);
+					point.setStyle([ style ]);
 				} else {
 					throw new Error(`Attempt to get non-existing style for point id = '${point.getId()}'`);
 				}
@@ -5374,10 +5416,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	class BuilderFeature {
-		name                   : string;
-		action                 : BuilderAction;
-		button                 : JQuery;
-		private readonly state : { value : boolean };
+		name: string;
+		action: BuilderAction;
+		button: JQuery;
+		private readonly state: { value: boolean };
 
 		constructor({
 			name,
@@ -5387,12 +5429,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			buttonContainer,
 			builder,
 		}: {
-			name            : BuilderButtons;
-			buttonContainer : JQuery;
-			initialState    : boolean;
-			label           : BuilderButtonLabel;
-			action          : BuilderAction;
-			builder         : Builder;
+			name: BuilderButtons;
+			buttonContainer: JQuery;
+			initialState: boolean;
+			label: BuilderButtonLabel;
+			action: BuilderAction;
+			builder: Builder;
 		}) {
 			this.name   = name;
 			this.action = action.bind(builder);
@@ -5401,12 +5443,12 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			const value = this.loadState(initialState);
 
 			this.state = new Proxy<typeof this.state>({ value }, {
-				get : (
+				get: (
 					data: typeof this.state,
 					property: keyof typeof this.state,
 				): boolean => data[property],
 
-				set : (
+				set: (
 					data: typeof this.state,
 					property: keyof typeof this.state,
 					value: typeof this.state[keyof typeof this.state],
@@ -5462,8 +5504,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 	class BuilderData {
 		storageKey = 'builderData';
-		private data             : LineData[];
-		private readonly builder : Builder;
+		private data: LineData[];
+		private readonly builder: Builder;
 
 		constructor(builder: Builder) {
 			this.builder = builder;
@@ -5482,7 +5524,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				});
 			}
 
-			return { points : pointsMap.getData(), lines };
+			return { points: pointsMap.getData(), lines };
 		}
 
 		private static unpack(pack: BuilderDataPack): LineData[] {
@@ -5490,6 +5532,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			const pointsMap        = new CoordsMap<OlCoords, PointData>(new Map(Object.entries(pack.points)));
 
 			for (const lineCoords of pack.lines) {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				const points   = [ pointsMap.get(lineCoords[0]), pointsMap.get(lineCoords[1]) ] as [PointData, PointData];
 				const lineData = new LineData(points, lineCoords);
 				data.push(lineData);
@@ -5545,7 +5588,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			}
 		}
 
-		copy(previousState: boolean) : boolean | undefined {
+		copy(previousState: boolean): boolean | undefined {
 			if (!previousState) {
 				return false;
 			}
@@ -5558,7 +5601,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return undefined;
 		}
 
-		paste(previousState: boolean) : boolean | undefined {
+		paste(previousState: boolean): boolean | undefined {
 			if (!previousState) {
 				return false;
 			}
@@ -5601,19 +5644,20 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return undefined;
 		}
 
-		private parse(text: string): { error : Label | undefined } | { pack : BuilderDataPack } {
+		private parse(text: string): { error: Label | undefined } | { pack: BuilderDataPack } {
 			let pack: unknown;
 
 			try {
 				pack = JSON.parse(text);
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			} catch (ex) {
-				return { error : labels.builder.validationErrors.json };
+				return { error: labels.builder.validationErrors.json };
 			}
 
 			const validator = new BuilderDataPackValidator(labels.builder.validationErrors);
 
 			if (!validator.validate(pack)) {
-				return { error : validator.getError() };
+				return { error: validator.getError() };
 			}
 
 			return { pack };
@@ -5624,13 +5668,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		constructor(
 			public linePoints: [PointData, PointData],
 			public lineCoords: OlLineCoords,
-		) {
-			this.linePoints = linePoints;
-			this.lineCoords = lineCoords;
-		}
+		) {}
 
 		static async load(points: [OlFeature, OlFeature], builder: Builder): Promise<LineData> {
-			const promises   = points.map(async (point) => PointData.resolve(point, builder));
+			const promises = points.map(async (point) => PointData.resolve(point, builder));
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			const linePoints = await Promise.all(promises) as [PointData, PointData];
 			const lineCoords = builder.createLineCoords(linePoints[0].coords, linePoints[1].coords);
 			return new LineData(linePoints, lineCoords);
@@ -5664,16 +5706,17 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	interface BuilderDataPack {
-		points : Record<string, PointData>;
-		lines  : OlLineCoords[];
+		points: Record<string, PointData>;
+		lines: OlLineCoords[];
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const validTypeOf = typeof {};
 	type ValidTypeOf = typeof validTypeOf;
 
 	class BuilderDataPackValidator {
-		private readonly validationErrors : Labels['builder']['validationErrors'];
-		private validationError           : Label | undefined;
+		private readonly validationErrors: Labels['builder']['validationErrors'];
+		private validationError: Label | undefined;
 
 		constructor(validationErrors: Labels['builder']['validationErrors']) {
 			this.validationErrors = validationErrors;
@@ -5711,7 +5754,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return true;
 		}
 
-		private checkObject(pack: unknown) : pack is object {
+		// TODO: probably use zod instead of all these functions
+		private checkObject(pack: unknown): pack is object {
 			if (typeof pack !== 'object') {
 				this.validationError = this.validationErrors.object;
 				return false;
@@ -5720,8 +5764,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return true;
 		}
 
-		private checkObjectProperties(pack: object): pack is { points : unknown; lines : unknown } {
-			if (!isObjectContaining(pack, { points : 'object', lines : 'object' })) {
+		private checkObjectProperties(pack: object): pack is { points: unknown; lines: unknown } {
+			if (!isObjectContaining(pack, { points: 'object', lines: 'object' })) {
 				this.validationError = this.validationErrors.objectProperties;
 				return false;
 			}
@@ -5729,8 +5773,10 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return true;
 		}
 
-		private checkPoints(points: unknown): points is Record<string, { guid : string; title : string; coords : unknown }> {
-			if (!isRecord(points) || Object.values(points).filter((point) => !isObjectContaining(point, { guid : 'string', title : 'string', coords : 'object' })).length > 0) {
+		private checkPoints(points: unknown): points is Record<string, { guid: string; title: string; coords: unknown }> {
+			if (!isRecord(points) || Object.values(points).filter(
+				(point) => !isObjectContaining(point, { guid: 'string', title: 'string', coords: 'object' }),
+			).length > 0) {
 				this.validationError = this.validationErrors.pointProperties;
 				return false;
 			}
@@ -5738,8 +5784,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return true;
 		}
 
-		private checkPointsCoords(points: Record<string, { guid : string; title : string; coords : unknown }>)
-			: points is Record<string, { guid : string; title : string; coords : [number, number] }> {
+		private checkPointsCoords(points: Record<string, { guid: string; title: string; coords: unknown }>):
+			points is Record<string, { guid: string; title: string; coords: [number, number] }> {
+
 			if (Object.values(points).map((point) => point.coords).filter((coords) => !this.isArray(coords, 2, 'number')).length > 0) {
 				this.validationError = this.validationErrors.pointCoords;
 				return false;
@@ -5790,6 +5837,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				this.set(key, initialValue);
 			}
 
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 			return this.get(key) as V;
 		}
 
@@ -5797,7 +5845,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return this.data.has(this.stringifyKey(key));
 		}
 
-		forEach(func: (value: V, key: string) => void): void {
+		forEach(func: (value: V, key: string)=> void): void {
 			this.data.forEach((value: V, key: string) => {
 				func(value, key);
 			});
@@ -5805,13 +5853,15 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		deleteMine(key: K | string): void {
 			const stringKey = this.stringifyKey(key);
-			const item      = this.data.get(stringKey) as Array<{ mine : boolean }>;
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+			const item = this.data.get(stringKey) as Array<{ mine: boolean }>;
 
 			if (item instanceof window.ol.Feature && item.getProperties().mine) {
 				this.data.delete(stringKey);
 			}
 
 			if (Array.isArray(item)) {
+				// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 				const others = item.filter((subItem) => !subItem.mine) as unknown[] & V;
 
 				if (others.length === 0) {
@@ -5836,7 +5886,8 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	class SettingsPopup {
-		private container : JQuery | undefined;
+		private container: JQuery | undefined;
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		private sections = {} as Record<FeatureGroup, JQuery>;
 		private checkboxes = {} as Record<string, JQuery>;
 
@@ -5878,7 +5929,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 		private render(): void {
 			const parentSettingsPopup = $('.settings');
-			const settingsPopup       = createPopup('sbg-plus-settings', { roundClose : false }).appendTo(parentSettingsPopup);
+			const settingsPopup       = createPopup('sbg-plus-settings', { roundClose: false }).appendTo(parentSettingsPopup);
 			this.container            = $('<div></div>').addClass('settings-content');
 
 			const settingsTitle = $('<h3></h3>').text(labels.settings.title.toString());
@@ -5951,6 +6002,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return $('<input type="checkbox" />')
 				.prop('checked', feature.isEnabled())
 				.on('change', (ev) => {
+					// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 					feature.setEnabled((ev.target as HTMLInputElement).checked);
 				});
 		}
