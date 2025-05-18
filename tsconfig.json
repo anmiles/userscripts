@@ -5,9 +5,11 @@
 		"rootDir" : "./src",
 		"outDir" : "./dist",
 
-		"module" : "ES2015",
+		"module" : "CommonJS",
 		"target" : "ES2019",
-		},
+
+		"moduleResolution": "Node",
+	},
 
 	"include" : [
 		"src",
