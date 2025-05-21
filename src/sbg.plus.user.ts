@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.11
+// @version        1.0.12
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -16,7 +16,7 @@
 import type JQuery from 'jquery';
 
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version            = '1.0.11';
+window.__sbg_plus_version            = '1.0.12';
 window.__sbg_plus_compatible_version = '1.0.11';
 
 declare global {
@@ -1431,7 +1431,8 @@ type ApiProfileData = Record<string, number> & {
 				return required;
 			}
 
-			return undefined;
+			// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+			return {} as TRequiredElement;
 		}
 	}
 
@@ -1476,8 +1477,10 @@ type ApiProfileData = Record<string, number> & {
 		EventWatcherListenerOptions
 	> {
 		keys = {} as Record<string, FeatureBase<never>>;
-		groups = {} as Record<FeatureGroup, FeatureBase<never>[]>; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-		triggers = {} as Record<FeatureTrigger, FeatureBase<never>[]>; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		groups = {} as Record<FeatureGroup, FeatureBase<never>[]>;
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+		triggers = {} as Record<FeatureTrigger, FeatureBase<never>[]>;
 		parents = {} as Partial<Record<FeatureGroup, FeatureParents>>;
 
 		constructor() {

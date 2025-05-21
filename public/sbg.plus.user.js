@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           SBG plus
 // @namespace      sbg
-// @version        1.0.11
+// @version        1.0.12
 // @updateURL      https://anmiles.net/userscripts/sbg.plus.user.js
 // @downloadURL    https://anmiles.net/userscripts/sbg.plus.user.js
 // @description    Extended functionality for SBG
@@ -13,7 +13,7 @@
 // @grant          none
 // ==/UserScript==
 /* eslint-disable camelcase -- allow snake_case for __sbg variables and let @typescript-eslint/naming-convention cover other cases */
-window.__sbg_plus_version = '1.0.11';
+window.__sbg_plus_version = '1.0.12';
 window.__sbg_plus_compatible_version = '1.0.11';
 Object.typedKeys = (obj, allKeys) => {
     function isOwnKey(key) {
@@ -666,7 +666,8 @@ const langs = ['ru', 'en'];
                 }
                 return required;
             }
-            return undefined;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            return {};
         }
     }
     window.Feature = Feature;
@@ -691,8 +692,10 @@ const langs = ['ru', 'en'];
         constructor() {
             super(featuresEventTypes);
             this.keys = {};
-            this.groups = {}; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
-            this.triggers = {}; // eslint-disable-line @typescript-eslint/no-unsafe-type-assertion
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            this.groups = {};
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            this.triggers = {};
             this.parents = {};
             Object.typedKeys(featureGroups, featureGroupNames).map((key) => this.groups[key] = []);
             featureTriggers.map((key) => this.triggers[key] = []);
