@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        6.0.1
+// @version        6.0.2
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -23,7 +23,7 @@ const debug = {
 
 const defaultListID = 6; // favorites
 const perPage       = 100;
-const pageInterval  = parseInt(localStorage.getItem('pageInterval') ?? '0') || 1000;
+const pageInterval  = 1000;
 
 const boxWidth = 1000;
 const boxItem  = 24;
@@ -727,15 +727,6 @@ String.prototype.toFilename = function() {
 		}
 	}
 
-	function isConsoleOpened(): boolean {
-		const startTime = new Date();
-		console.warn('Нажмите F8 для продолжения');
-		// eslint-disable-next-line no-debugger
-		debugger;
-		const endTime = new Date();
-		return endTime.getTime() - startTime.getTime() > 200;
-	}
-
 	function error(ex: string): never {
 		if (currentProgress) {
 			currentProgress.error(`Не удалось обработать страницу ${currentUrl}. Ошибка: ${ex}`);
@@ -745,9 +736,9 @@ String.prototype.toFilename = function() {
 		throw new Error(ex);
 	}
 
-	function select(context: JQuery, selector: string, skipError?: boolean): JQuery {
+	function select(context: JQuery, selector: string, throwIfNotExists = true): JQuery {
 		const obj = context.find(selector);
-		if (obj.length === 0 && skipError !== false) {
+		if (obj.length === 0 && throwIfNotExists) {
 			error(`Не удалось найти элемент по селектору ${selector}`);
 		}
 		return obj;
@@ -816,24 +807,19 @@ String.prototype.toFilename = function() {
 	}
 
 	function downloadAll(): void {
-		if (!isConsoleOpened()) {
-			alert('Нажмите F12 чтобы открыть консоль и попробуйте ещё раз');
-			return;
-		}
-
 		listsProgress = new Progress('Загрузка списков');
 		filmsProgress = new Progress('Загрузка фильмов');
 
 		currentProgress = listsProgress;
 
-		const loadButton = $('<a></a>')
-			.addClass('button')
-			.text('Загрузить списки')
-			.appendTo(listsProgress.buttonPanel);
-
 		const startButton = $('<a></a>')
 			.addClass('button')
 			.text('Начать')
+			.appendTo(listsProgress.buttonPanel);
+
+		const loadButton = $('<a></a>')
+			.addClass('button secondary')
+			.text('Добавить уже загруженные списки')
 			.appendTo(listsProgress.buttonPanel);
 
 		const fileInput = createFileInput({
@@ -946,14 +932,14 @@ String.prototype.toFilename = function() {
 		const id            = parseInt(String($(li).data('id')));
 		const text          = $(li).text().trim();
 		const firstPageHTML = $(li).find('a').attr('href') ? null : startHTML;
-		const matches       = text.match(/^\s*(.*?)\s+\((\d+)\)\s*$/);
+		const matches       = text.match(/^\s*(.*?)(\s+\((\d+)\)\s*)?$/);
 
 		if (!matches) {
 			error(`Text '${text}' doesn't match regexp`);
 		}
 
 		const title      = matches[1]!;
-		const totalPages = Math.ceil(parseInt(matches[2]!) / perPage);
+		const totalPages = matches[3] ? Math.ceil(parseInt(matches[3]) / perPage) : 0;
 		return { id, title, firstPageHTML, totalPages };
 	}
 
@@ -966,7 +952,7 @@ String.prototype.toFilename = function() {
 		const html = currentPage === 1 && list.firstPageHTML ? list.firstPageHTML : await get(url);
 		listsProgress.increment(`${list.title} [${currentPage} of ${list.totalPages}]`, url);
 
-		const listItems = select($(html), '#itemList li');
+		const listItems = select($(html), '#itemList li', false);
 
 		for (const listItem of listItems) {
 			const id = parseFilmId(listItem);
@@ -1233,7 +1219,7 @@ String.prototype.toFilename = function() {
 				text-decoration: none;
 				border: none;
 				outline: none;
-				width: 200px;
+				min-width: 200px;
 				color: #ffffff;
 				text-align: center;
 				box-shadow: 0px 0px 8px 0px black;
@@ -1245,12 +1231,21 @@ String.prototype.toFilename = function() {
 				font-weight: 500;
 				line-height: 20px;
 				border-radius: ${boxItem}px;
-				background: linear-gradient(135deg, #f50 69.93%, #d6bb00);
+				background: linear-gradient(135deg, #eb4e00 69.91%, #c5ac00);
 				transition: background .2s ease, transform .2s ease;
 			}
 
 			.download-container .button:hover {
-				background: linear-gradient(135deg, #eb4e00 69.91%, #c5ac00);
+				background: linear-gradient(135deg, #f50 69.93%, #d6bb00);
+			}
+
+			.download-container .button.secondary {
+				background: none;
+				color: #eb4e00;
+			}
+
+			.download-container .button.secondary:hover {
+				filter: brightness(1.5);
 			}
 
 			.download-container input[type="file"] {
