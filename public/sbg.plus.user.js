@@ -520,8 +520,8 @@ const langs = ['ru', 'en'];
             Array.from(this.features.keys())
                 .filter((key) => !featureKeys.includes(key))
                 .forEach((key) => {
-                this.features.delete(key);
-            });
+                    this.features.delete(key);
+                });
         }
         save() {
             const json = {
@@ -807,9 +807,9 @@ const langs = ['ru', 'en'];
     group = 'fire';
     new Feature(alwaysCenterAlignFireItemsCount, { ru: 'Всегда выравнивать количество предметов по центру', en: 'Always center align items count' }, { group, trigger: 'fireClick', requires: () => $('#attack-slider') });
     new Feature(replaceHighlevelWarningWithIcon, { ru: 'Заменить предупреждение про недостаточный уровень на значок поверх предмета', en: 'Replace highlevel warning with an icon on top of the item' }, { group, trigger: 'fireClick' });
-    new Feature(joinFireButtons, 
-    // eslint-disable-next-line @stylistic/max-len
-    { ru: 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en: 'Join attack button and attack panel button, close panel by clicking outside' }, { group, trigger: 'fireClick', requires: () => $('#attack-menu') });
+    new Feature(joinFireButtons,
+        // eslint-disable-next-line @stylistic/max-len
+        { ru: 'Объединить кнопку атаки и кнопку открытия панели атаки, закрывать панель кликом снаружи', en: 'Join attack button and attack panel button, close panel by clicking outside' }, { group, trigger: 'fireClick', requires: () => $('#attack-menu') });
     group = 'inventory';
     new Feature(increaseItemsFont, { ru: 'Увеличить размер шрифта за счёт сокращения названий предметов', en: 'Increase font size by shortening item names' }, { group, trigger: 'mapReady', requires: () => $('.info.popup') });
     new Feature(showAutoDeleteSettingsButton, { ru: 'Показать кнопку перехода к настройкам авто-удаления', en: 'Show auto-delete settings button' }, { group, trigger: 'mapReady', requires: () => $('.inventory.popup') });
@@ -1158,11 +1158,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             homepage: () => 'https://sbg-game.ru/',
             game: () => 'https://sbg-game.ru/app',
             login: () => 'https://sbg-game.ru/login',
-            desktop: () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-            mobile: () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-            intel: () => `https://sbg-game.ru/app/intel@${window.__sbg_native_intel_version}.js`,
-            script: () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.js`,
-            cui: () => 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+            desktop: () => 'https://raw.githubusercontent.com/pr0head/userscripts/main/public/sbg.plus.user.js',
+            mobile: () => 'https://raw.githubusercontent.com/pr0head/userscripts/main/public/sbg.plus.user.min.js',
+            intel: () => `https://sbg-game.ru/app/intel@${window.__sbg_native_script_version}.${window.__sbg_native_intel_version}.js`,
+            script: () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.${window.__sbg_native_intel_version}.js`,
+            cui: () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/cui.user.js',
             eui: () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
         };
         console.log('initialized urls');
@@ -1265,13 +1265,13 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
                 [...document.querySelectorAll('a')]
                     .filter((a) => isUrl('game', a.href))
                     .map((a) => {
-                    a.href = 'javascript:;';
-                    a.addEventListener('click', () => {
-                        localStorage.setItem(storageKey, '1');
-                        console.log('loading game on click');
-                        resolve();
+                        a.href = 'javascript:;';
+                        a.addEventListener('click', () => {
+                            localStorage.setItem(storageKey, '1');
+                            console.log('loading game on click');
+                            resolve();
+                        });
                     });
-                });
                 unsetHideCSS();
             }
         });
@@ -1292,11 +1292,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function removeNativeScript(script) {
         script
-            .replace(/<script class="mobile-check">.+?sv='(.*?)',iv='(.*?)'.+?<\/script>/, (_, $1, $2) => {
-            window.__sbg_native_script_version = $1;
-            window.__sbg_native_intel_version = $2;
-            return '';
-        });
+            .replace(/<script class="mobile-check">.+?v='(.*?)',hs='(.*?)'.+?<\/script>/, (_, $1, $2) => {
+                window.__sbg_native_script_version = $1;
+                window.__sbg_native_intel_version = $2;
+                return '';
+            });
     }
     function redirectToLogin(script) {
         script
@@ -1844,14 +1844,14 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function exposeCUIScript(script) {
         script
             .expose('__sbg_cui', {
-            variables: {
-                readable: ['USERSCRIPT_VERSION', 'config', 'database'],
-            },
-            functions: {
-                readable: [],
-                writable: ['createToast', 'getNotifs'],
-            },
-        });
+                variables: {
+                    readable: ['USERSCRIPT_VERSION', 'config', 'database'],
+                },
+                functions: {
+                    readable: [],
+                    writable: ['createToast', 'getNotifs'],
+                },
+            });
     }
     function fixCompatibility(script) {
         script
@@ -1865,10 +1865,10 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             .replace(/\} catch.*\n.*SBG CUI: Ошибка в main/, (match) => `window.cuiStatus = 'loaded';${match}`)
             .replace(/window\.onerror = (.*);/, (_match, func) => `window.__sbg_onerror_handlers.push(${func});`)
             .expose('__sbg_cui', {
-            functions: {
-                readable: ['olInjection', 'loadMainScript', 'main'],
-            },
-        });
+                functions: {
+                    readable: ['olInjection', 'loadMainScript', 'main'],
+                },
+            });
     }
     function setViewAnimationDuration() {
         if (typeof window.__sbg_plus_animation_duration === 'number') {
@@ -1891,89 +1891,89 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     function enableConsoleDebuggingOfDatabase(script) {
         script
             .replace(/const openRequest = .*/, (line) => [
-            'console.log(`IDB: before open',
-            '`);',
-            line,
-            'console.log(`IDB: after open',
-            '`);',
-        ].join(' '))
+                'console.log(`IDB: before open',
+                '`);',
+                line,
+                'console.log(`IDB: after open',
+                '`);',
+            ].join(' '))
             .replace(/openRequest\.addEventListener\('(.*?)', event => \{/, (line, eventName) => [
-            line,
-            'console.log(`IDB: openRequest',
-            `event=${eventName}`,
-            '`);',
-        ].join(' '))
+                line,
+                'console.log(`IDB: openRequest',
+                `event=${eventName}`,
+                '`);',
+            ].join(' '))
             .replace(/database\.addEventListener\('(.*?)', event => \{/, (line, eventName) => [
-            line,
-            'console.log(`IDB: database',
-            `event=${eventName}`,
-            '`);',
-        ].join(' '))
+                line,
+                'console.log(`IDB: database',
+                `event=${eventName}`,
+                '`);',
+            ].join(' '))
             .replace(/function initializeDB.*/, (line) => [
-            line,
-            'console.log(`IDB: initializeDB',
-            '`);',
-        ].join(' '))
+                line,
+                'console.log(`IDB: initializeDB',
+                '`);',
+            ].join(' '))
             .replace(/function updateDB.*/, (line) => [
-            line,
-            'console.log(`IDB: updateDB',
-            'oldVersion=` + oldVersion + `',
-            'newVersion=` + newVersion + `',
-            '`);',
-        ].join(' '))
+                line,
+                'console.log(`IDB: updateDB',
+                'oldVersion=` + oldVersion + `',
+                'newVersion=` + newVersion + `',
+                '`);',
+            ].join(' '))
             .replace(/\{ (updateToVersion.*?) \}/, (_line, code) => [
-            '{',
-            'console.log(`IDB: updateToVersion started',
-            'v=` + v + `',
-            '`);',
-            code,
-            'console.log(`IDB: updateToVersion finished',
-            'v=` + v + `',
-            '`);',
-            '}',
-        ].join(' '))
+                '{',
+                'console.log(`IDB: updateToVersion started',
+                'v=` + v + `',
+                '`);',
+                code,
+                'console.log(`IDB: updateToVersion finished',
+                'v=` + v + `',
+                '`);',
+                '}',
+            ].join(' '))
             .replace(/database = event.target.result;/, (line) => [
-            'console.log(`IDB: upgradeneeded',
-            'oldVersion=` + oldVersion + `',
-            'newVersion=` + newVersion + `',
-            '`);',
-            line,
-        ].join(' '))
+                'console.log(`IDB: upgradeneeded',
+                'oldVersion=` + oldVersion + `',
+                'newVersion=` + newVersion + `',
+                '`);',
+                line,
+            ].join(' '))
             .replace('transaction.addEventListener(\'complete\', () => { window.dispatchEvent(new Event(\'dbReady\')); });', 'transaction.addEventListener(\'complete\', () => { console.log(`IDB: transaction completed`); window.dispatchEvent(new Event(\'dbReady\')); });')
             .replace(/const transaction = database\.transaction\((.*?)\);/, (line, code) => [
-            'console.log(`IDB: transaction',
-            `args=${JSON.stringify(code)}`,
-            '`);',
-            line,
-            ...['complete', 'error', 'success', 'abort'].map((eventName) => [
-                `transaction.addEventListener('${eventName}', (...args) => {`,
                 'console.log(`IDB: transaction',
-                `event=${eventName}`,
-                'args=` + JSON.stringify(args) + `',
+                `args=${JSON.stringify(code)}`,
                 '`);',
-                '});',
-            ]).flat(),
-        ].join(' '))
+                line,
+                ...['complete', 'error', 'success', 'abort'].map((eventName) => [
+                    `transaction.addEventListener('${eventName}', (...args) => {`,
+                    'console.log(`IDB: transaction',
+                    `event=${eventName}`,
+                    'args=` + JSON.stringify(args) + `',
+                    '`);',
+                    '});',
+                ]).flat(),
+            ].join(' '))
             .replace(/function getData\(event\) \{/, (line) => [
-            line,
-            'console.log(`IDB: getData',
-            'storeName=` + event.target.source.name + `',
-            'result=` + JSON.stringify(event.target.result) + `',
-            '`);',
-        ].join(' '))
+                line,
+                'console.log(`IDB: getData',
+                'storeName=` + event.target.source.name + `',
+                'result=` + JSON.stringify(event.target.result) + `',
+                '`);',
+            ].join(' '))
             .replace(/if \(cursor != undefined\) \{/, (line) => [
-            line,
-            'console.log(`IDB: objectToPopulate',
-            'cursor=` + JSON.stringify(cursor) + `',
-            'hasKey=` + (\'key\' in cursor) + `',
-            '`);',
-        ].join(' '))
+                line,
+                'console.log(`IDB: objectToPopulate',
+                'cursor=` + JSON.stringify(cursor) + `',
+                'hasKey=` + (\'key\' in cursor) + `',
+                '`);',
+            ].join(' '))
             .replace(/window.dispatchEvent\(new Event\('(.*?)'\)\)/, (line, eventName) => [
-            'console.log(`IDB: dispatch',
-            `event=${eventName}`,
-            '`);',
-            line,
-        ].join(' '));
+                'console.log(`IDB: dispatch',
+                `event=${eventName}`,
+                '`);',
+                line,
+            ].join(' '));
     }
     function restoreOPSButtonHeightInIngressTheme() {
         setCSS(`
@@ -1997,9 +1997,9 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
     }
     function unlockCompassWhenRotateMap(script) {
         script
-            .replaceCUIBlock('Вращение карты', 'if (latestTouchPoint == null) { return; }', 
-        // eslint-disable-next-line @stylistic/max-len
-        'if (latestTouchPoint == null) { if (isRotationLocked) { toggleRotationLock(event); touchStartHandler({...event, target: event.target, touches: [event.touches[0]], targetTouches: [event.targetTouches[0]] }); } return; }');
+            .replaceCUIBlock('Вращение карты', 'if (latestTouchPoint == null) { return; }',
+                // eslint-disable-next-line @stylistic/max-len
+                'if (latestTouchPoint == null) { if (isRotationLocked) { toggleRotationLock(event); touchStartHandler({...event, target: event.target, touches: [event.touches[0]], targetTouches: [event.targetTouches[0]] }); } return; }');
     }
     function disableCarouselAnimation(splide) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
@@ -2247,11 +2247,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             setTimeout(() => {
                 overlay
                     .on('click.close', () => {
-                    overlay
-                        .removeClass('active')
-                        .off('click.close')
-                        .hide();
-                });
+                        overlay
+                            .removeClass('active')
+                            .off('click.close')
+                            .hide();
+                    });
             }, 1000);
         };
         const checkPopup = (newValue) => {
@@ -2262,11 +2262,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         };
         document.querySelector('#self-info__explv')
             .addRepeatingEventListener('click', () => {
-            showPopup();
-        }, {
-            repeats: 3,
-            timeout: 1000,
-        });
+                showPopup();
+            }, {
+                repeats: 3,
+                timeout: 1000,
+            });
         window.__sbg_variable_self_data.set(new Proxy(selfData, {
             set: (target, property, newValue) => {
                 target[property] = newValue;
@@ -2534,10 +2534,10 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             .css({ height: '40px' })
             .appendTo(inventoryPopup)
             .on('click', () => {
-            $('#inventory__close').trigger('click');
-            $('.sbgcui_settings').removeClass('sbgcui_hidden');
-            $('.sbgcui_settings-title:contains("Автоудаление")').trigger('click');
-        });
+                $('#inventory__close').trigger('click');
+                $('.sbgcui_settings').removeClass('sbgcui_hidden');
+                $('.sbgcui_settings-title:contains("Автоудаление")').trigger('click');
+            });
     }
     function moveReferenceButtonsDown() {
         setCSS(`
@@ -3050,17 +3050,17 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             .addClass('next')
             .html('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" focusable="false"><path d="m15.5 0.932-4.3 4.38 14.5 14.6-14.5 14.5 4.3 4.4 14.6-14.6 4.4-4.3-4.4-4.4-14.6-14.6z"></path></svg>')
             .on('click', (ev) => {
-            const infoPopup = document.querySelector('.info.popup');
-            swipe(infoPopup, [200, 0], [0, 0]);
-            ev.stopPropagation();
-            return false;
-        })
+                const infoPopup = document.querySelector('.info.popup');
+                swipe(infoPopup, [200, 0], [0, 0]);
+                ev.stopPropagation();
+                return false;
+            })
             .appendTo($('#discover'));
         new MutationObserver((mutations) => mutations
             .filter(({ attributeName }) => attributeName === 'class')
             .map(() => {
-            button.prop('disabled', arrow.hasClass('sbgcui_hidden'));
-        })).observe(arrow.get(0), { attributes: true });
+                button.prop('disabled', arrow.hasClass('sbgcui_hidden'));
+            })).observe(arrow.get(0), { attributes: true });
         setCSS(`
 			.i-stat .i-buttons .next {
 				display: none;
@@ -3742,11 +3742,11 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
         initRoutePopup() {
             const routeElement = $('<textarea></textarea>')
                 .on('click', (ev) => {
-                ev.stopPropagation();
-            })
+                    ev.stopPropagation();
+                })
                 .on('keydown', (ev) => {
-                ev.stopPropagation();
-            });
+                    ev.stopPropagation();
+                });
             createPopup('route').prepend(routeElement);
         }
         initCopyPaste() {
@@ -4145,22 +4145,22 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             const saveButton = $('<button></button>')
                 .text(labels.save.toString())
                 .on('click', () => {
-                settings.save();
-                window.location.reload();
-            });
+                    settings.save();
+                    window.location.reload();
+                });
             const logsButton = $('<button></button>')
                 .addClass('popup-button-secondary')
                 .text(labels.settings.logs.toString())
                 .on('click', () => {
-                void copyLogs();
-            });
+                    void copyLogs();
+                });
             const advancedButton = $('<button></button>')
                 .addClass('popup-button-secondary')
                 .text(labels.settings.advanced.toString())
                 .on('click', () => {
-                advancedButton.toggleClass('popup-button-secondary');
-                settingsPopup.toggleClass('advanced');
-            });
+                    advancedButton.toggleClass('popup-button-secondary');
+                    settingsPopup.toggleClass('advanced');
+                });
             settingsPopup.find('.buttons').prepend(saveButton);
             settingsPopup.find('.buttons').append(logsButton);
             settingsPopup.find('.buttons').append(advancedButton);
@@ -4198,11 +4198,10 @@ window.${prefix}_function_${functionName} = ${async !== null && async !== void 0
             return $('<input type="checkbox" />')
                 .prop('checked', feature.isEnabled())
                 .on('change', (ev) => {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-                feature.setEnabled(ev.target.checked);
-            });
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+                    feature.setEnabled(ev.target.checked);
+                });
         }
     }
     void main();
 })();
-
