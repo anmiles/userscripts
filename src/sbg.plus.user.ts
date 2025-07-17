@@ -2268,11 +2268,11 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			homepage: () => 'https://sbg-game.ru/',
 			game    : () => 'https://sbg-game.ru/app',
 			login   : () => 'https://sbg-game.ru/login',
-			desktop : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.js',
-			mobile  : () => 'https://raw.githubusercontent.com/anmiles/userscripts/main/dist/sbg.plus.user.min.js',
-			intel   : () => `https://sbg-game.ru/app/intel@${window.__sbg_native_intel_version}.js`,
-			script  : () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.js`,
-			cui     : () => 'https://raw.githubusercontent.com/nicko-v/sbg-cui/main/index.js',
+			desktop : () => 'https://raw.githubusercontent.com/pr0head/userscripts/main/public/sbg.plus.user.js',
+			mobile  : () => 'https://raw.githubusercontent.com/pr0head/userscripts/main/public/sbg.plus.user.min.js',
+			intel   : () => `https://sbg-game.ru/app/intel@${window.__sbg_native_script_version}.${window.__sbg_native_intel_version}.js`,
+			script  : () => `https://sbg-game.ru/app/script@${window.__sbg_native_script_version}.${window.__sbg_native_intel_version}.js`,
+			cui     : () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/cui.user.js',
 			eui     : () => 'https://github.com/egorantonov/sbg-enhanced/releases/latest/download/eui.user.js',
 		};
 
@@ -2431,7 +2431,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	function removeNativeScript(script: Script): void {
 		script
 			.replace(
-				/<script class="mobile-check">.+?sv='(.*?)',iv='(.*?)'.+?<\/script>/,
+				/<script class="mobile-check">.+?v='(.*?)',hs='(.*?)'.+?<\/script>/,
 				(_, $1, $2) => {
 					window.__sbg_native_script_version = $1;
 					window.__sbg_native_intel_version  = $2;
