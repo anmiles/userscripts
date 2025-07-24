@@ -392,8 +392,8 @@ type Version = `${number}.${number}.${number}`;
 
 type Level = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
-type CUIPointHighlighting =
-	'cores' | 'fav' | 'highlevel' | 'off' | 'ref' | 'uniqc' | 'uniqv';
+type CUIPointHighlighting
+	= 'cores' | 'fav' | 'highlevel' | 'off' | 'ref' | 'uniqc' | 'uniqv';
 
 interface CUIConfig {
 	maxAmountInBag: {
@@ -1295,7 +1295,7 @@ type ApiProfileData = Record<string, number> & {
 		private readonly unchecked: boolean | (()=> boolean);
 		private toggleValue = false;
 
-		abstract func: ((data: TData)=> void);
+		abstract func: (data: TData)=> void;
 
 		constructor(
 			kind: 'feature' | 'transformer',
