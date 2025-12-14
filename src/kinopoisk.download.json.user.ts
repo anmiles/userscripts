@@ -147,6 +147,7 @@ String.prototype.toFilename = function() {
 	interface FilmData {
 		kind: 'film';
 		key: `${FilmTypeName}:${number}`;
+		online: string | undefined;
 		data: Data;
 		extendedData: ExtendedData;
 	}
@@ -300,6 +301,7 @@ String.prototype.toFilename = function() {
 		private constructor(
 			public kind: 'film',
 			public key: `${FilmTypeName}:${number}`,
+			public online: string | undefined,
 			data: Data,
 			public extendedData: ExtendedData,
 		) {
@@ -361,6 +363,9 @@ String.prototype.toFilename = function() {
 
 				const key = relatedFilm.key;
 
+				const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0];
+				const online      = watchButton?.closest('a')?.href.split('?')[0];
+
 				const jsonFilmData = jsonData[key];
 				if (!jsonFilmData) {
 					throw new Error(`Cannot find jsonFilmData by key ${key}`);
@@ -376,6 +381,7 @@ String.prototype.toFilename = function() {
 				return {
 					kind        : 'film',
 					key,
+					online,
 					data        : FilmBase.parseJSON(jsonFilmData),
 					extendedData: { related, genres, lists, poster, description, note, directors },
 				};
@@ -388,8 +394,8 @@ String.prototype.toFilename = function() {
 				return film;
 			}
 
-			const { kind, key, data, extendedData } = getData();
-			return Film.map[id] = new Film(kind, key, data, extendedData);
+			const { kind, key, online, data, extendedData } = getData();
+			return Film.map[id] = new Film(kind, key, online, data, extendedData);
 		}
 
 		private static getRelated(data: JSONData): number[] {
@@ -799,11 +805,11 @@ String.prototype.toFilename = function() {
 	}
 
 	function shouldSkipFilm(filmId: number): boolean {
-		return debug.enabled && debug.filmIds.length > 0 && debug.filmIds.includes(filmId);
+		return debug.enabled && debug.filmIds.length > 0 && !debug.filmIds.includes(filmId);
 	}
 
 	function shouldSkipList(listName: string): boolean {
-		return debug.enabled && debug.listNames.length > 0 && debug.listNames.includes(listName);
+		return debug.enabled && debug.listNames.length > 0 && !debug.listNames.includes(listName);
 	}
 
 	function downloadAll(): void {
@@ -834,11 +840,11 @@ String.prototype.toFilename = function() {
 
 					for (const item of Object.values(data.lists)) {
 						if (!ListItem.is(item)) {
-							return;
+							continue;
 						}
 
 						if (shouldSkipFilm(item.data.id)) {
-							return;
+							continue;
 						}
 
 						ListItem.fromJSON(item.data.id, item);
@@ -1046,9 +1052,10 @@ String.prototype.toFilename = function() {
 
 	function createTestFilm(id: number): FilmData {
 		return {
-			kind: 'film',
-			key : `Film:${id}`,
-			data: {
+			kind  : 'film',
+			key   : `Film:${id}`,
+			online: `https://hd.kinopoisk.ru/film${id}`,
+			data  : {
 				id,
 				name        : `Test film ${id}`,
 				originalName: '',

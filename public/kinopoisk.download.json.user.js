@@ -194,10 +194,11 @@ String.prototype.toFilename = function () {
     }
     Related.map = {};
     class Film extends FilmBase {
-        constructor(kind, key, data, extendedData) {
+        constructor(kind, key, online, data, extendedData) {
             super(data);
             this.kind = kind;
             this.key = key;
+            this.online = online;
             this.extendedData = extendedData;
         }
         static is(item) {
@@ -205,6 +206,7 @@ String.prototype.toFilename = function () {
         }
         static fromHTML(id, html) {
             return Film.create(id, () => {
+                var _a;
                 if (!html) {
                     error('Пустое содержимое страницы фильма');
                 }
@@ -240,6 +242,8 @@ String.prototype.toFilename = function () {
                     error('Не удалось найти связанные фильмы');
                 }
                 const key = relatedFilm.key;
+                const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0];
+                const online = (_a = watchButton === null || watchButton === void 0 ? void 0 : watchButton.closest('a')) === null || _a === void 0 ? void 0 : _a.href.split('?')[0];
                 const jsonFilmData = jsonData[key];
                 if (!jsonFilmData) {
                     throw new Error(`Cannot find jsonFilmData by key ${key}`);
@@ -253,6 +257,7 @@ String.prototype.toFilename = function () {
                 return {
                     kind: 'film',
                     key,
+                    online,
                     data: FilmBase.parseJSON(jsonFilmData),
                     extendedData: { related, genres, lists, poster, description, note, directors },
                 };
@@ -263,8 +268,8 @@ String.prototype.toFilename = function () {
             if (film) {
                 return film;
             }
-            const { kind, key, data, extendedData } = getData();
-            return Film.map[id] = new Film(kind, key, data, extendedData);
+            const { kind, key, online, data, extendedData } = getData();
+            return Film.map[id] = new Film(kind, key, online, data, extendedData);
         }
         static getRelated(data) {
             return Object.keys(data)
@@ -519,10 +524,10 @@ String.prototype.toFilename = function () {
         return id;
     }
     function shouldSkipFilm(filmId) {
-        return debug.enabled && debug.filmIds.length > 0 && debug.filmIds.includes(filmId);
+        return debug.enabled && debug.filmIds.length > 0 && !debug.filmIds.includes(filmId);
     }
     function shouldSkipList(listName) {
-        return debug.enabled && debug.listNames.length > 0 && debug.listNames.includes(listName);
+        return debug.enabled && debug.listNames.length > 0 && !debug.listNames.includes(listName);
     }
     function downloadAll() {
         listsProgress = new Progress('Загрузка списков');
@@ -546,10 +551,10 @@ String.prototype.toFilename = function () {
                     }
                     for (const item of Object.values(data.lists)) {
                         if (!ListItem.is(item)) {
-                            return;
+                            continue;
                         }
                         if (shouldSkipFilm(item.data.id)) {
-                            return;
+                            continue;
                         }
                         ListItem.fromJSON(item.data.id, item);
                     }
@@ -713,6 +718,7 @@ String.prototype.toFilename = function () {
         return {
             kind: 'film',
             key: `Film:${id}`,
+            online: `https://hd.kinopoisk.ru/film${id}`,
             data: {
                 id,
                 name: `Test film ${id}`,
