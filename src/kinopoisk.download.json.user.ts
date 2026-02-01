@@ -363,7 +363,7 @@ String.prototype.toFilename = function() {
 
 				const key = relatedFilm.key;
 
-				const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0];
+				const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0] || select($(html), 'span:contains("Смотреть сериал")', false)[0];
 				const online      = watchButton?.closest('a')?.href.split('?')[0];
 
 				const jsonFilmData = jsonData[key];

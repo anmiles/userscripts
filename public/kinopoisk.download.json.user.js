@@ -242,7 +242,7 @@ String.prototype.toFilename = function () {
                     error('Не удалось найти связанные фильмы');
                 }
                 const key = relatedFilm.key;
-                const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0];
+                const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0] || select($(html), 'span:contains("Смотреть сериал")', false)[0];
                 const online = (_a = watchButton === null || watchButton === void 0 ? void 0 : watchButton.closest('a')) === null || _a === void 0 ? void 0 : _a.href.split('?')[0];
                 const jsonFilmData = jsonData[key];
                 if (!jsonFilmData) {
