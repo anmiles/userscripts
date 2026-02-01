@@ -248,7 +248,7 @@ String.prototype.toFilename = function() {
 			return ListItem.create(id, () => film);
 		}
 
-		private static create(id: number, getData: ()=> ListItemData): ListItem {
+		private static create(id: number, getData: () => ListItemData): ListItem {
 			const listItem = ListItem.map[id];
 
 			if (listItem) {
@@ -283,7 +283,7 @@ String.prototype.toFilename = function() {
 			}));
 		}
 
-		private static create(id: number, getData: ()=> RelatedData): Related {
+		private static create(id: number, getData: () => RelatedData): Related {
 			const related = Related.map[id];
 
 			if (related) {
@@ -388,7 +388,7 @@ String.prototype.toFilename = function() {
 			});
 		}
 
-		private static create(id: number, getData: ()=> FilmData): FilmData {
+		private static create(id: number, getData: () => FilmData): FilmData {
 			const film = Film.map[id];
 			if (film) {
 				return film;
@@ -879,7 +879,7 @@ String.prototype.toFilename = function() {
 		});
 	}
 
-	function createFileInput({ success, fail }: { success: (contents: string)=> void; fail: (message: string)=> void }): JQuery {
+	function createFileInput({ success, fail }: { success: (contents: string) => void; fail: (message: string) => void }): JQuery {
 		const fileInput = $('<input type="file" />');
 
 		fileInput.on('change', (ev) => {
@@ -1126,7 +1126,7 @@ String.prototype.toFilename = function() {
 		container: JQuery;
 		icon: string;
 		title: string;
-		func: ()=> void;
+		func: () => void;
 		top: number;
 		fontSize: number;
 	}

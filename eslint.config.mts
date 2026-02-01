@@ -1,10 +1,10 @@
 import { configs, globals, patterns } from '@anmiles/eslint-config';
 import type { Linter } from 'eslint';
+import nodePlugin from 'eslint-plugin-n';
 
 export default [
 	...configs.base,
 	...configs.ts,
-	...configs.react,
 
 	{
 		ignores: [
@@ -40,6 +40,15 @@ export default [
 
 		rules: {
 			'@typescript-eslint/no-unused-vars': [ 'error', { args: 'none' } ],
+		},
+	},
+
+	{
+		plugins: {
+			'n': nodePlugin,
+		},
+		rules: {
+			'n/no-unsupported-features/node-builtins': [ 'off' ],
 		},
 	},
 ] as Linter.Config[];

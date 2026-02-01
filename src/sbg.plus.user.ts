@@ -31,23 +31,23 @@ declare global {
 		i18next: I18Next;
 
 		Feature: unknown;
-		setCSS: (css: string)=> void;
+		setCSS: (css: string) => void;
 		cuiStatus: 'loaded' | 'loading';
 		cuiEmbedded: boolean | undefined;
 
 		DeviceOrientationEvent: {
 			prototype: DeviceOrientationEvent;
-			requestPermission: ()=> Promise<'denied' | 'granted'>;
+			requestPermission: () => Promise<'denied' | 'granted'>;
 			new(type: string, eventInitDict?: DeviceOrientationEvent): DeviceOrientationEvent;
 		};
 
 		__sbg_game: {
-			enableBackButton: ()=> void;
+			enableBackButton: () => void;
 		} | undefined;
 
 		__sbg_share: {
-			open: (url: string)=> boolean;
-			navigate: (coords: OlCoordsString)=> boolean;
+			open: (url: string) => boolean;
+			navigate: (coords: OlCoordsString) => boolean;
 		} | undefined;
 
 		__sbg_local: boolean | undefined;
@@ -61,9 +61,9 @@ declare global {
 		__sbg_language: Lang;
 		__sbg_location: typeof window.location;
 		__sbg_onerror_handlers: Array<NonNullable<typeof window.onerror>>;
-		__sbg_debug_object: (message: string, obj: Record<string, unknown>)=> void;
+		__sbg_debug_object: (message: string, obj: Record<string, unknown>) => void;
 		__sbg_plus_localStorage_watcher: unknown;
-		__sbg_plus_modifyFeatures: ((...args: unknown[])=> void) | undefined;
+		__sbg_plus_modifyFeatures: ((...args: unknown[]) => void) | undefined;
 		__sbg_plus_animation_duration: number;
 		__sbg_plus_logs_gesture_disabled: boolean;
 
@@ -79,14 +79,14 @@ declare global {
 		__sbg_variable_VERSION: ReadableVariable<string>;
 
 		__sbg_function_apiQuery: ApiQuery;
-		__sbg_function_drawLeaderboard: ()=> Promise<void>;
-		__sbg_function_deleteInventoryItem: (parent: JQuery)=> Promise<void>;
-		__sbg_function_jquerypassargs: (container: JQuery, template: string, ...elements: Array<JQuery | string>)=> JQuery;
-		__sbg_function_manageDrawing: (event: SplideEvent)=> void;
-		__sbg_function_openProfile: (data: JQuery.Event | OlGuid)=> Promise<void>;
-		__sbg_function_showInfo: (data: OlGuid   | undefined)=> void;
-		__sbg_function_takeUnits: (value: number)=> [string, string];
-		__sbg_function_timeToString: (seconds: number)=> string;
+		__sbg_function_drawLeaderboard: () => Promise<void>;
+		__sbg_function_deleteInventoryItem: (parent: JQuery) => Promise<void>;
+		__sbg_function_jquerypassargs: (container: JQuery, template: string, ...elements: Array<JQuery | string>) => JQuery;
+		__sbg_function_manageDrawing: (event: SplideEvent) => void;
+		__sbg_function_openProfile: (data: JQuery.Event | OlGuid) => Promise<void>;
+		__sbg_function_showInfo: (data: OlGuid   | undefined) => void;
+		__sbg_function_takeUnits: (value: number) => [string, string];
+		__sbg_function_timeToString: (seconds: number) => string;
 
 		__sbg_native_intel_version: string;
 		__sbg_native_script_version: string;
@@ -94,30 +94,30 @@ declare global {
 		__sbg_cui_variable_USERSCRIPT_VERSION: ReadableVariable<string>;
 		__sbg_cui_variable_config: ReadableVariable<CUIConfig>;
 
-		__sbg_cui_function_main: ()=> Promise<void>;
-		__sbg_cui_function_olInjection: ()=> void;
-		__sbg_cui_function_loadMainScript: ()=> void;
-		__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean)=> Toast;
-		__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest)=> TResult;
+		__sbg_cui_function_main: () => Promise<void>;
+		__sbg_cui_function_olInjection: () => void;
+		__sbg_cui_function_loadMainScript: () => void;
+		__sbg_cui_function_createToast: (content?: string, position?: string, duration?: number, className?: string, oldestFirst?: boolean) => Toast;
+		__sbg_cui_function_getNotifs: <TLatest extends number | undefined, TResult = TLatest extends number ? number : Notif[]>(latest: TLatest) => TResult;
 	}
 
 	interface EventTarget {
 		__events: Record<string, EventListeners>;
-		getEventListeners: (type: string)=> EventListenerOrEventListenerObject[];
-		getEventHandlers: <T = EventListener>(type: string)=> T[];
-		clearEventListeners: (type: string, sealed: boolean)=> void;
+		getEventListeners: (type: string) => EventListenerOrEventListenerObject[];
+		getEventHandlers: <T = EventListener>(type: string) => T[];
+		clearEventListeners: (type: string, sealed: boolean) => void;
 		addOnlyEventListener: EventTarget['addEventListener'];
 		addRepeatingEventListener: <TEvent extends Event>(
 			type: string,
-			callback: (ev: TEvent)=> void,
+			callback: (ev: TEvent) => void,
 			options: {
 				repeats: number;
 				timeout: number;
-				tick?: (ev: TEvent, iteration: number)=> void;
-				filter?: (ev: TEvent)=> boolean;
-				cancel?: (ev: TEvent)=> boolean;
+				tick?: (ev: TEvent, iteration: number) => void;
+				filter?: (ev: TEvent) => boolean;
+				cancel?: (ev: TEvent) => boolean;
 			},
-		)=> void;
+		) => void;
 	}
 
 	interface WindowEventMap {
@@ -129,8 +129,8 @@ declare global {
 	}
 
 	interface Object {
-		typedKeys: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[])=> K[];
-		typedEntries: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[])=> [K, V][];
+		typedKeys: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]) => K[];
+		typedEntries: <K extends string, V>(obj: Record<K, V>, allKeys: string[] | readonly string[]) => [K, V][];
 	}
 }
 
@@ -158,45 +158,45 @@ interface EventListeners {
 	sealed: boolean;
 }
 
-type CustomTouchEvent = (data: { touches: TouchEvent['touches'] })=> void;
+type CustomTouchEvent = (data: { touches: TouchEvent['touches'] }) => void;
 
 interface Ol {
 	Map: OlMap;
 	View: OlView;
 	proj: OlProj;
 	source: {
-		Vector: new ()=> OlSource;
+		Vector: new () => OlSource;
 	};
 	layer: {
 		Vector: new<TLayerName extends LayerName>({ source, className }: {
 			source: OlSource;
 			className: `ol-layer__${TLayerName}`;
-		})=> OlLayer;
+		}) => OlLayer;
 	};
-	Feature: new ({ geometry }: { geometry: OlGeometry })=> OlFeature;
+	Feature: new ({ geometry }: { geometry: OlGeometry }) => OlFeature;
 	geom: {
-		LineString: new (flatCoordinates: OlFlatCoordinates[])=> OlGeometry;
-		Polygon: new (flatCoordinates: OlFlatCoordinates[][])=> OlGeometry;
-		Circle: new (flatCoordinates: OlFlatCoordinates[], radius: number)=> OlGeometry;
+		LineString: new (flatCoordinates: OlFlatCoordinates[]) => OlGeometry;
+		Polygon: new (flatCoordinates: OlFlatCoordinates[][]) => OlGeometry;
+		Circle: new (flatCoordinates: OlFlatCoordinates[], radius: number) => OlGeometry;
 	};
 	format: {
-		GeoJSON: new ()=> OlFormat;
+		GeoJSON: new () => OlFormat;
 	};
 	style: {
-		Style: new (styles: OlStyles)=> OlStyle;
-		Fill: new (fillStyle: { color: string })=> OlFill;
-		Stroke: new (strokeStyle: { color: string; width: number })=> OlStroke;
+		Style: new (styles: OlStyles) => OlStyle;
+		Fill: new (fillStyle: { color: string }) => OlFill;
+		Stroke: new (strokeStyle: { color: string; width: number }) => OlStroke;
 	};
 }
 
 interface OlMap {
-	addLayer: (layer: OlLayer)=> void;
-	getAllLayers: ()=> OlLayer[];
-	getView: ()=> OlView;
-	forEachFeatureAtPixel: (pixel: OlPixel, callback: (feature: OlFeature, layer: OlLayer)=> void)=> void;
-	getListeners: <TEventType extends OlMapEventType>(eventName: TEventType)=> Array<OlMapEventListener<TEventType>>;
-	on: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>)=> void;
-	un: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>)=> void;
+	addLayer: (layer: OlLayer) => void;
+	getAllLayers: () => OlLayer[];
+	getView: () => OlView;
+	forEachFeatureAtPixel: (pixel: OlPixel, callback: (feature: OlFeature, layer: OlLayer) => void) => void;
+	getListeners: <TEventType extends OlMapEventType>(eventName: TEventType) => Array<OlMapEventListener<TEventType>>;
+	on: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
+	un: <TEventType extends OlMapEventType>(eventName: TEventType, listener: OlMapEventListener<TEventType>) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -204,29 +204,29 @@ const layerNames = [ 'base', 'highlights', 'lines_built', 'lines_temp', 'lines',
 type LayerName = typeof layerNames[number];
 
 type OlLayer = OlObject<true> & {
-	getSource: ()=> OlSource;
-	setVisible: (visible: boolean)=> void;
+	getSource: () => OlSource;
+	setVisible: (visible: boolean) => void;
 };
 
 interface OlSource {
-	addFeature: (feature: OlFeature)=> void;
-	removeFeature: (feature: OlFeature)=> void;
-	getFeatures: ()=> OlFeature[];
-	clear: (fast?: boolean)=> void;
-	on: <T extends OlSourceEventName>(eventName: T, handler: (...args: OlSourceEvents[T][])=> void)=> void;
+	addFeature: (feature: OlFeature) => void;
+	removeFeature: (feature: OlFeature) => void;
+	getFeatures: () => OlFeature[];
+	clear: (fast?: boolean) => void;
+	on: <T extends OlSourceEventName>(eventName: T, handler: (...args: OlSourceEvents[T][]) => void) => void;
 }
 
 type OlFeature = OlObject<false> & {
-	getGeometry: ()=> OlGeometry;
-	getId: ()=> OlGuid;
-	setId: (id: OlGuid)=> void;
-	getStyle: ()=> OlStyle;
-	setStyle: (style: OlStyle)=> void;
+	getGeometry: () => OlGeometry;
+	getId: () => OlGuid;
+	setId: (id: OlGuid) => void;
+	getStyle: () => OlStyle;
+	setStyle: (style: OlStyle) => void;
 };
 
 interface OlFeatureStyles {
-	TEXT: (text: string)=> OlStyle;
-	POINT: (pos: OlFlatCoordinates, team: Team, energy: number, light: boolean | number)=> OlStyle;
+	TEXT: (text: string) => OlStyle;
+	POINT: (pos: OlFlatCoordinates, team: Team, energy: number, light: boolean | number) => OlStyle;
 }
 
 type OlTeamColors = Array<{
@@ -239,8 +239,8 @@ type TProperties<TLayer extends boolean> = TLayer extends true
 	: OlFeatureProperties;
 
 interface OlObject<TLayer extends boolean> {
-	getProperties: ()=> TProperties<TLayer>;
-	setProperties: (properties: Partial<TProperties<TLayer>>, silent?: true)=> void;
+	getProperties: () => TProperties<TLayer>;
+	setProperties: (properties: Partial<TProperties<TLayer>>, silent?: true) => void;
 }
 
 interface OlLayerProperties {
@@ -286,11 +286,11 @@ interface OlSourceEvents {
 
 type OlView = MapView<OlCoords> & {
 	prototype: OlView;
-	animate: (...args: Array<Record<'duration', number>>)=> void;
+	animate: (...args: Array<Record<'duration', number>>) => void;
 };
 
 type OlMapEventType = 'click' | 'moveend' | 'movestart' | 'pointerdrag';
-type OlMapEventListener<TMapEventType extends OlMapEventType> = (ev: OlMapEvents[TMapEventType])=> void;
+type OlMapEventListener<TMapEventType extends OlMapEventType> = (ev: OlMapEvents[TMapEventType]) => void;
 
 interface OlMapEvents {
 	click: OlMapClickEvent;
@@ -308,12 +308,12 @@ interface OlMapEvent {
 }
 
 interface OlProj {
-	fromLonLat: (coords: OlCoords)=> OlFlatCoordinates;
-	toLonLat: (flatCoordinates: OlFlatCoordinates)=> OlCoords;
+	fromLonLat: (coords: OlCoords) => OlFlatCoordinates;
+	toLonLat: (flatCoordinates: OlFlatCoordinates) => OlCoords;
 }
 
 interface OlFormat {
-	readFeature: (arc: Arc)=> OlFeature;
+	readFeature: (arc: Arc) => OlFeature;
 }
 
 interface Arc {
@@ -323,22 +323,22 @@ interface Arc {
 }
 
 interface Turf {
-	greatCircle: (coord1: OlCoords, coord2: OlCoords, options: { npoints: number })=> Arc;
+	greatCircle: (coord1: OlCoords, coord2: OlCoords, options: { npoints: number }) => Arc;
 }
 
 interface MapView<TCoords extends [number, number]> {
-	getZoom: ()=> number;
-	setZoom: (zoom: number)=> void;
-	getCenter: ()=> TCoords;
-	setCenter: (coords: TCoords)=> void;
+	getZoom: () => number;
+	setZoom: (zoom: number) => void;
+	getCenter: () => TCoords;
+	setCenter: (coords: TCoords) => void;
 }
 
 interface Splide {
 	defaults?: {
 		speed: number;
 	};
-	go: (index: number)=> void;
-	on: (type: string, handler: (event: SplideEvent)=> void)=> void;
+	go: (index: number) => void;
+	on: (type: string, handler: (event: SplideEvent) => void) => void;
 }
 
 interface SplideEvent {
@@ -356,14 +356,14 @@ interface ToastifyOptions {
 
 interface Toastify {
 	(options: ToastifyOptions): Toastify;
-	showToast: ()=> void;
+	showToast: () => void;
 	prototype: {
-		init: (options: ToastifyOptions)=> void;
+		init: (options: ToastifyOptions) => void;
 	};
 }
 
 interface I18Next {
-	t: (key: string, data?: unknown)=> string;
+	t: (key: string, data?: unknown) => string;
 	translator: unknown;
 }
 
@@ -373,8 +373,8 @@ interface Toast {
 		selector: HTMLElement;
 		toastElement: HTMLElement;
 		close: boolean;
-		callback: ()=> void;
-		onClick: ()=> void;
+		callback: () => void;
+		onClick: () => void;
 	};
 }
 
@@ -382,7 +382,7 @@ interface Toast {
 const urlTypes = [ 'homepage', 'game', 'login', 'desktop', 'mobile', 'script', 'intel', 'cui', 'eui' ] as const;
 
 type UrlType = typeof urlTypes[number];
-type Urls = Record<UrlType, ()=> string>;
+type Urls = Record<UrlType, () => string>;
 
 const langs = [ 'ru', 'en' ] as const;
 
@@ -482,13 +482,13 @@ interface InventoryItem {
 }
 
 interface ReadableVariable<T> {
-	get: ()=> T;
+	get: () => T;
 }
-type WritableVariable<T> = ReadableVariable<T> & { set: (value: T)=> void };
+type WritableVariable<T> = ReadableVariable<T> & { set: (value: T) => void };
 
 type ApiQueryType = 'point' | 'profile';
 
-type ApiQuery = <T extends ApiQueryType>(kind: T, data: { guid: OlGuid })=> Promise<ApiResponse<ApiData[T]>>;
+type ApiQuery = <T extends ApiQueryType>(kind: T, data: { guid: OlGuid }) => Promise<ApiResponse<ApiData[T]>>;
 
 interface ApiResponse<T> {
 	response: { data: T };
@@ -516,7 +516,7 @@ type ApiProfileData = Record<string, number> & {
 	}
 
 	interface EventWatcherListener<TEventData, TListenerOptions extends EventWatcherListenerOptions> {
-		handler: (eventData: TEventData)=> void;
+		handler: (eventData: TEventData) => void;
 		enabled: boolean;
 		listenerOptions: TListenerOptions;
 	}
@@ -569,7 +569,7 @@ type ApiProfileData = Record<string, number> & {
 
 		on<TEventType extends TEventTypes>(
 			eventType: TEventType,
-			handler: (eventData: TEventDataTypes[TEventType])=> void,
+			handler: (eventData: TEventDataTypes[TEventType]) => void,
 			listenerOptions: TListenerOptions,
 		): typeof this {
 			const listener = { handler, listenerOptions, enabled: true };
@@ -637,12 +637,12 @@ type ApiProfileData = Record<string, number> & {
 	const consoleWatcherEventTypes = [ 'log', 'warn', 'error', 'info', 'debug', 'trace' ] as const;
 
 	interface ConsoleWatcherEventDataTypes {
-		log: { message: string; originalMethod: (...data: unknown[])=> void };
-		warn: { message: string; originalMethod: (...data: unknown[])=> void };
-		error: { message: string; originalMethod: (...data: unknown[])=> void };
-		info: { message: string; originalMethod: (...data: unknown[])=> void };
-		debug: { message: string; originalMethod: (...data: unknown[])=> void };
-		trace: { message: string; originalMethod: (...data: unknown[])=> void };
+		log: { message: string; originalMethod: (...data: unknown[]) => void };
+		warn: { message: string; originalMethod: (...data: unknown[]) => void };
+		error: { message: string; originalMethod: (...data: unknown[]) => void };
+		info: { message: string; originalMethod: (...data: unknown[]) => void };
+		debug: { message: string; originalMethod: (...data: unknown[]) => void };
+		trace: { message: string; originalMethod: (...data: unknown[]) => void };
 	}
 
 	class ConsoleWatcher extends EventWatcher<
@@ -868,7 +868,7 @@ type ApiProfileData = Record<string, number> & {
 
 	const builderButtons = [ 'home', 'allLines', 'builder', 'undo', 'clear', 'route', 'copy', 'paste', 'help' ] as const;
 	type BuilderButtons = typeof builderButtons[number];
-	type BuilderAction = (previousState: boolean)=> boolean | undefined;
+	type BuilderAction = (previousState: boolean) => boolean | undefined;
 	type BuilderActions = Record<BuilderButtons, BuilderAction>;
 	type BuilderStates = Record<BuilderButtons, boolean>;
 	type BuilderFeatures = Record<BuilderButtons, BuilderFeature>;
@@ -1277,7 +1277,7 @@ type ApiProfileData = Record<string, number> & {
 		public?: boolean;
 		simple?: boolean;
 		desktop?: boolean;
-		unchecked?: boolean | (()=> boolean);
+		unchecked?: boolean | (() => boolean);
 		parent?: FeatureParent;
 	}
 
@@ -1292,10 +1292,10 @@ type ApiProfileData = Record<string, number> & {
 		private readonly public: boolean;
 		private readonly simple: boolean;
 		private readonly desktop: boolean;
-		private readonly unchecked: boolean | (()=> boolean);
+		private readonly unchecked: boolean | (() => boolean);
 		private toggleValue = false;
 
-		abstract func: (data: TData)=> void;
+		abstract func: (data: TData) => void;
 
 		constructor(
 			kind: 'feature' | 'transformer',
@@ -1397,14 +1397,14 @@ type ApiProfileData = Record<string, number> & {
 	}
 
 	class Feature<TRequiredElement = never> extends FeatureBase<TRequiredElement | undefined> {
-		override func: (el: TRequiredElement | undefined)=> void;
-		private readonly requires?: ()=> TRequiredElement | undefined;
+		override func: (el: TRequiredElement | undefined) => void;
+		private readonly requires?: () => TRequiredElement | undefined;
 
 		constructor(
-			func: (required: TRequiredElement)=> void,
+			func: (required: TRequiredElement) => void,
 			labelValues: LabelValues,
 			options: FeatureOptions & {
-				requires?: ()=> TRequiredElement | undefined;
+				requires?: () => TRequiredElement | undefined;
 			},
 		) {
 			const wrapper = (): void => {
@@ -1439,10 +1439,10 @@ type ApiProfileData = Record<string, number> & {
 	window.Feature = Feature;
 
 	class Transformer extends FeatureBase<Script> {
-		func: (script: Script)=> void;
+		func: (script: Script) => void;
 
 		constructor(
-			func: (script: Script)=> void,
+			func: (script: Script) => void,
 			labelValues: LabelValues,
 			options: FeatureOptions,
 		) {
@@ -1910,7 +1910,7 @@ type ApiProfileData = Record<string, number> & {
 
 	type ScriptReplacer<TSearchValue extends RegExp | string> = TSearchValue extends string
 		? string
-		: (string | ((substring: string, ...args: string[])=> string));
+		: (string | ((substring: string, ...args: string[]) => string));
 
 	class Script {
 		constructor(private data: string | undefined) {}
@@ -1919,7 +1919,7 @@ type ApiProfileData = Record<string, number> & {
 			src: string;
 			data?: string;
 			prefix: `__sbg_${string}`;
-			transformer: (script: Script)=> void;
+			transformer: (script: Script) => void;
 		}): Promise<Script> {
 			if (!data) {
 				console.log('load script: started');
@@ -1981,7 +1981,7 @@ type ApiProfileData = Record<string, number> & {
 			return data;
 		}
 
-		private static append(fill: (el: HTMLScriptElement)=> void): void {
+		private static append(fill: (el: HTMLScriptElement) => void): void {
 			const el = document.createElement('script');
 			el.type  = 'text/javascript';
 			fill(el);
@@ -2021,7 +2021,7 @@ type ApiProfileData = Record<string, number> & {
 			return this.replaceCUIBlock(block, /[\s\S]+/, '');
 		}
 
-		transform(func: (script: Script)=> void): void {
+		transform(func: (script: Script) => void): void {
 			console.log(`transform: ${func.name}`);
 			func(this);
 		}
@@ -2105,7 +2105,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	> {
 		constructor(
 			private readonly storageKey: string,
-			private readonly getter: ()=> ReadableVariable<string> | undefined,
+			private readonly getter: () => ReadableVariable<string> | undefined,
 		) {
 			super(versionWatcherEventTypes);
 		}
@@ -2579,7 +2579,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 
 			EventTarget.prototype.addRepeatingEventListener = function<TEvent extends Event>(
 				type: string,
-				handler: (ev: TEvent)=> void,
+				handler: (ev: TEvent) => void,
 				{
 					repeats: limit,
 					timeout,
@@ -2589,9 +2589,9 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 				}: {
 					repeats: number;
 					timeout: number;
-					tick?: (ev: TEvent, iteration: number)=> void;
-					filter?: (ev: TEvent)=> boolean;
-					cancel?: (ev: TEvent)=> boolean;
+					tick?: (ev: TEvent, iteration: number) => void;
+					filter?: (ev: TEvent) => boolean;
+					cancel?: (ev: TEvent) => boolean;
 				}): void {
 				let repeats = 0;
 
@@ -2788,7 +2788,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('loaded DOM content');
 	}
 
-	async function resolveOnce(addListener: (resolver: ()=> unknown)=> void, immediateCondition: ()=> boolean): Promise<void> {
+	async function resolveOnce(addListener: (resolver: () => unknown) => void, immediateCondition: () => boolean): Promise<void> {
 		return new Promise((resolve) => {
 			let resolved = false;
 
@@ -3008,7 +3008,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 		console.log('initialized CSS');
 	}
 
-	async function wait<T>(func: ()=> T | null | undefined): Promise<T> {
+	async function wait<T>(func: () => T | null | undefined): Promise<T> {
 		return new Promise((resolve) => {
 			const waitInterval = setInterval(() => {
 				const result = func();
@@ -3616,7 +3616,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 	}
 
 	function fixCompass(): void {
-		const handlers = [ ...window.getEventHandlers<(ev: DeviceOrientationEvent)=> void>('deviceorientation') ];
+		const handlers = [ ...window.getEventHandlers<(ev: DeviceOrientationEvent) => void>('deviceorientation') ];
 
 		function triggerHandlers(webkitCompassHeading: number | null): void {
 			handlers.map((handler) => {
@@ -5848,7 +5848,7 @@ window.${prefix}_function_${functionName} = ${async ?? ''}function(${args ?? ''}
 			return this.data.has(this.stringifyKey(key));
 		}
 
-		forEach(func: (value: V, key: string)=> void): void {
+		forEach(func: (value: V, key: string) => void): void {
 			this.data.forEach((value: V, key: string) => {
 				func(value, key);
 			});
