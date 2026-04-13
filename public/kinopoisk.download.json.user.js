@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        6.1.1
+// @version        6.1.2
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -249,7 +249,7 @@ String.prototype.toFilename = function () {
                     throw new Error(`Cannot find jsonFilmData by key ${key}`);
                 }
                 const genres = Film.getGenres(jsonFilmData, jsonData);
-                const lists = Film.getLists(jsonFilmData);
+                const lists = Film.getLists(jsonFilmData, jsonData);
                 const poster = Film.getPoster(jsonFilmData);
                 const description = Film.getDescription(jsonFilmData);
                 const note = Film.getNote(jsonFilmData);
@@ -288,25 +288,30 @@ String.prototype.toFilename = function () {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             return filmTypeNames.includes(typeName);
         }
-        static getGenres(jsonFilmData, jsonData) {
-            const genres = [];
-            for (const { __ref } of jsonFilmData.genres) {
-                const genre = jsonData[__ref];
-                if (!genre) {
-                    error(`Не удалось найти связь '${__ref}' в данных #${jsonFilmData.id}`);
+        static dereference(links, jsonData) {
+            const result = [];
+            for (const { __ref } of links) {
+                const data = jsonData[__ref];
+                if (!data) {
+                    error(`Не удалось найти связь '${__ref}'`);
                 }
-                genres.push(genre.name);
+                result.push(data);
             }
+            return result;
+        }
+        static getGenres(jsonFilmData, jsonData) {
+            const genres = this.dereference(jsonFilmData.genres, jsonData).map(({ name }) => name);
             if (jsonFilmData.__typename === 'TvSeries') {
                 genres.push('сериал');
             }
             return genres.sort();
         }
-        static getLists(jsonFilmData) {
+        static getLists(jsonFilmData, jsonData) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const key = Object.keys(jsonFilmData.userData)
                 .find((key) => key.startsWith('userFolders'));
-            return jsonFilmData.userData[key].items.map((folder) => folder.name).sort();
+            const links = jsonFilmData.userData[key].items;
+            return this.dereference(links, jsonData).map(({ name }) => name);
         }
         static getPoster(jsonFilmData) {
             var _a;
@@ -332,16 +337,8 @@ String.prototype.toFilename = function () {
         static getMembers(jsonFilmData, jsonData, jsonRole) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
             const key = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole));
-            const refs = jsonFilmData[key].items.map((item) => item.person.__ref);
-            const names = [];
-            for (const ref of refs) {
-                const member = jsonData[ref];
-                if (!member) {
-                    error(`Не удалось найти связь '${ref}' в данных #${jsonFilmData.id}`);
-                }
-                names.push(member.name || member.originalName);
-            }
-            return names;
+            const links = jsonFilmData[key].items.map((item) => item.person);
+            return this.dereference(links, jsonData).map((member) => member.name || member.originalName);
         }
     }
     Film.map = {};
