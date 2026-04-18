@@ -54,20 +54,20 @@ fs.readFileSync(template)
 				throw `No section '${sectionName}' found`;
 			}
 
-			// console.log(`    ${sectionName}:${sectionLanguage || ''}`);
-			output.push(`    <h2>${sectionTitle}</h2>`);
-			output.push('    <ul>');
+			// console.log(`\t${sectionName}:${sectionLanguage || ''}`);
+			output.push(`\t<h2>${sectionTitle}</h2>`);
+			output.push('\t<ul>');
 
 			section.forEach((script) => {
 				const filename    = script.filename;
 				const version     = script.version;
 				const description = script[sectionLanguage === 'en' ? 'description' : `description:${sectionLanguage}`];
 				const link        = `<a class="break-word" href="${filename}?version=${version}" title="${description}">${filename}</a>`;
-				const listItem    = `<li>${link} - ${description} (version ${version})</li>`;
+				const listItem    = `\t\t<li>${link} - ${description} (version ${version})</li>`;
 				output.push(listItem);
 			});
-			output.push('    </ul>');
-			output.push('    <hr />');
+			output.push('\t</ul>');
+			output.push('\t<hr />');
 		}
 
 		if (!isSection) {
