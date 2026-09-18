@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name           Kinopoisk - download json
 // @namespace      kinopoisk
-// @version        6.1.2
+// @version        6.2.0
 // @updateURL      https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @downloadURL    https://anmiles.net/userscripts/kinopoisk.download.json.user.js
 // @description    Click top right arrow icon to download json with all saved movies
@@ -22,6 +22,11 @@ const perPage = 100;
 const pageInterval = 1000;
 const boxWidth = 1000;
 const boxItem = 24;
+const systemFolders = {
+    watched: 'Любимые фильмы',
+    planned: 'Буду смотреть',
+    notes: 'Примечания',
+};
 Number.prototype.case = function (zero, one, two) {
     let num = Math.abs(this);
     num %= 100;
@@ -84,61 +89,172 @@ String.prototype.toFilename = function () {
     let currentUrl;
     let listsProgress;
     let filmsProgress;
+    let watchedProgress;
+    let plannedProgress;
     let currentProgress;
     const filmTypeNames = ['Film', 'TvSeries'];
-    class FilmBase {
-        constructor(data) {
-            this.data = data;
+    class KPError extends Error {
+        constructor(message) {
+            super(message);
+            if (currentProgress) {
+                currentProgress.error(`Не удалось обработать страницу ${currentUrl}. Ошибка: ${message}`);
+            }
+            // eslint-disable-next-line no-debugger
+            debugger;
         }
-        static parseJSON(jsonFilmData) {
+    }
+    class HTMLParser {
+        constructor(state) {
+            this.state = state;
+        }
+        static parse(html, url) {
+            if (!html) {
+                throw new KPError(`Пустое содержимое html-страницы ${url}`);
+            }
+            if (typeof html.match !== 'function') {
+                throw new KPError(`Некорректное содержимое html-страницы ${url}`);
+            }
+            const htmlMatch = html.match(/__ssr_initial_data\s*=\s*(.*?);?<\/script>/);
+            if (!htmlMatch) {
+                throw new KPError(`Не удалось найти объект __ssr_initial_data на html-странице ${url}`);
+            }
+            const state = this.jsonSelect(htmlMatch[1], ['apolloState']);
+            return new HTMLParser(state);
+        }
+        static isRecord(obj) {
+            return typeof obj === 'object' && obj !== null;
+        }
+        static jsonSelect(text, keys) {
+            const json = JSON.parse(text);
+            let value = json;
+            for (const key of keys) {
+                if (!this.isRecord(value)) {
+                    throw new KPError(`Значение является null (попытка получить ${key} из списка ${keys.join(', ')})`);
+                }
+                if (!(key in value)) {
+                    throw new KPError(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
+                }
+                value = value[key];
+            }
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            return value;
+        }
+        getData(filmKey) {
             var _a, _b, _c, _d, _e;
+            const jsonFilmData = this.getFilm(filmKey);
             const id = jsonFilmData.id;
             const name = (_a = jsonFilmData.title.russian) !== null && _a !== void 0 ? _a : '';
             const originalName = (_b = jsonFilmData.title.original) !== null && _b !== void 0 ? _b : '';
-            const year = FilmBase.getYear(jsonFilmData);
+            const year = getYear(jsonFilmData);
             const time = (_e = (_d = (_c = jsonFilmData.totalDuration) !== null && _c !== void 0 ? _c : jsonFilmData.seriesDuration) !== null && _d !== void 0 ? _d : jsonFilmData.duration) !== null && _e !== void 0 ? _e : 0;
-            return { id, year, time, ...FilmBase.getNames({ name, originalName, year }) };
+            return { id, year, time, ...getNames({ name, originalName, year }) };
         }
-        static getNames({ name, originalName, year }) {
-            if (!name && originalName) {
-                name = originalName;
-                originalName = '';
-            }
-            const fullNameParts = [];
-            fullNameParts.push(name);
-            if (originalName.length > 0 && originalName !== name) {
-                fullNameParts.push(`(${originalName})`);
-            }
-            fullNameParts.push(`[${year ? year : '...'}]`);
-            const fullName = fullNameParts.join(' ').toFilename();
-            return { name, originalName, fullName };
-        }
-        static getYear(data) {
+        getDescription(filmKey) {
             var _a, _b;
-            if (!data.releaseYears || data.releaseYears.length === 0) {
-                return data.productionYear ? data.productionYear.toString() : '';
+            const jsonFilmData = this.getFilm(filmKey);
+            return ((_b = (_a = jsonFilmData.synopsis) !== null && _a !== void 0 ? _a : jsonFilmData.shortDescription) !== null && _b !== void 0 ? _b : '').beautify();
+        }
+        getGenres(filmKey) {
+            const jsonFilmData = this.getFilm(filmKey);
+            const genres = this.dereference(jsonFilmData.genres).map(({ name }) => name);
+            if (jsonFilmData.__typename === 'TvSeries') {
+                genres.push('сериал');
             }
-            const start = (_a = data.releaseYears[0]) === null || _a === void 0 ? void 0 : _a.start;
-            const end = (_b = data.releaseYears.slice(-1)[0]) === null || _b === void 0 ? void 0 : _b.end;
-            if (start == null) {
-                return '...';
+            return genres.sort();
+        }
+        getLists(filmKey) {
+            const jsonFilmData = this.getFilm(filmKey);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            const key = Object.keys(jsonFilmData.userData)
+                .find((key) => key.startsWith('userFolders'));
+            const links = jsonFilmData.userData[key].items;
+            const lists = this.dereference(links).map(({ name }) => name);
+            if (jsonFilmData.userData.isFavorite !== jsonFilmData.userData.watchStatuses.watched.value && !lists.includes('Корзина')) {
+                console.warn(`[KP DEBUG] #${jsonFilmData.id} не в корзине, но isFavorite: ${jsonFilmData.userData.isFavorite}, a watched: ${jsonFilmData.userData.watchStatuses.watched.value}`);
             }
-            if (start === end) {
-                return start.toString();
+            if (jsonFilmData.userData.isPlannedToWatch === jsonFilmData.userData.watchStatuses.watched.value && !lists.includes('Корзина')) {
+                console.warn(`[KP DEBUG] #${jsonFilmData.id} не в корзине, но isPlannedToWatch: ${jsonFilmData.userData.isPlannedToWatch} и watched: ${jsonFilmData.userData.watchStatuses.watched.value}`);
             }
-            if (end) {
-                return `${start} - ${end}`;
+            if (jsonFilmData.userData.isFavorite) {
+                lists.push(systemFolders.watched);
             }
-            if (data.__typename === 'TvSeries') {
-                return `${start} - ...`;
+            if (jsonFilmData.userData.isPlannedToWatch) {
+                lists.push(systemFolders.planned);
             }
-            return start.toString();
+            if (jsonFilmData.userData.note) {
+                lists.push(systemFolders.notes);
+            }
+            return lists;
+        }
+        getMembers(filmKey, jsonRole) {
+            const jsonFilmData = this.getFilm(filmKey);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            const key = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole));
+            const links = jsonFilmData[key].items.map((item) => item.person);
+            return this.dereference(links).map((member) => member.name || member.originalName);
+        }
+        getNote(filmKey) {
+            var _a, _b;
+            const jsonFilmData = this.getFilm(filmKey);
+            return (_b = (_a = jsonFilmData.userData.note) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : null;
+        }
+        getPoster(filmKey) {
+            var _a;
+            const jsonFilmData = this.getFilm(filmKey);
+            let poster = jsonFilmData.poster && ((_a = jsonFilmData.poster.avatarsUrl) !== null && _a !== void 0 ? _a : jsonFilmData.poster.fallbackUrl);
+            if (poster) {
+                if (poster.startsWith('//')) {
+                    poster = `https:${poster}`;
+                }
+                if (!poster.match(/\d+x\d+$/)) {
+                    poster = `${poster}/600x900`;
+                }
+            }
+            return poster;
+        }
+        getProfileAlias() {
+            const userProfile = this.dereference([this.state.ROOT_QUERY.userProfile])[0];
+            return userProfile.social.alias.defaultValue.value;
+        }
+        getRelatedFilms() {
+            return Object.keys(this.state)
+                .filter((key) => this.isFilmKey(key))
+                .map((filmKey) => {
+                const jsonFilmData = this.getFilm(filmKey);
+                return [filmKey, jsonFilmData];
+            });
+        }
+        getFilm(filmKey) {
+            const jsonFilmData = this.state[filmKey];
+            if (!jsonFilmData) {
+                throw new KPError(`Не удалось найти jsonFilmData по ключу ${filmKey}`);
+            }
+            return jsonFilmData;
+        }
+        isFilmKey(key) {
+            const [typeName, idString] = key.split(':');
+            return this.isFilmTypeName(typeName) && !isNaN(Number(idString));
+        }
+        isFilmTypeName(typeName) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+            return filmTypeNames.includes(typeName);
+        }
+        dereference(links) {
+            const result = [];
+            for (const { __ref } of links) {
+                const data = this.state[__ref];
+                if (!data) {
+                    throw new KPError(`Не удалось найти связь '${__ref}'`);
+                }
+                result.push(data);
+            }
+            return result;
         }
     }
-    class ListItem extends FilmBase {
+    class ListItem {
         constructor(kind, data) {
-            super(data);
             this.kind = kind;
+            this.data = data;
         }
         static is(item) {
             return typeof item === 'object' && item !== null && 'kind' in item && item.kind === 'listItem';
@@ -151,7 +267,7 @@ String.prototype.toFilename = function () {
                 const originalName = desc[0].trim() || '';
                 const year = desc.length >= 2 ? desc[1].trim().replace(/^-$/, '') : '';
                 const time = desc.length >= 3 && /^\d+$/.test(desc[2]) ? parseInt(desc[2]) : 0;
-                return { kind: 'listItem', data: { id, year, time, ...FilmBase.getNames({ name, originalName, year }) } };
+                return { kind: 'listItem', data: { id, year, time, ...getNames({ name, originalName, year }) } };
             });
         }
         static fromJSON(id, film) {
@@ -167,21 +283,47 @@ String.prototype.toFilename = function () {
         }
     }
     ListItem.map = {};
-    class Related extends FilmBase {
+    class Watched {
+        constructor(kind, id, name, href, rate) {
+            this.kind = kind;
+            this.id = id;
+            this.name = name;
+            this.href = href;
+            this.rate = rate;
+        }
+        static is(item) {
+            return typeof item === 'object' && item !== null && 'kind' in item && item.kind === 'watched';
+        }
+        static create(data) {
+            this.map[data.id] = { ...data, kind: 'watched' };
+            return this.map[data.id];
+        }
+    }
+    Watched.map = {};
+    class Planned {
+        constructor(kind, id, name, href) {
+            this.kind = kind;
+            this.id = id;
+            this.name = name;
+            this.href = href;
+        }
+        static is(item) {
+            return typeof item === 'object' && item !== null && 'kind' in item && item.kind === 'planned';
+        }
+        static create(data) {
+            this.map[data.id] = { ...data, kind: 'planned' };
+            return this.map[data.id];
+        }
+    }
+    Planned.map = {};
+    class Related {
         constructor(kind, key, data) {
-            super(data);
             this.kind = kind;
             this.key = key;
+            this.data = data;
         }
         static is(item) {
             return typeof item === 'object' && item !== null && 'kind' in item && item.kind === 'related';
-        }
-        static fromJSON(key, jsonFilmData) {
-            return Related.create(jsonFilmData.id, () => ({
-                kind: 'related',
-                key,
-                data: FilmBase.parseJSON(jsonFilmData),
-            }));
         }
         static create(id, getData) {
             const related = Related.map[id];
@@ -193,72 +335,51 @@ String.prototype.toFilename = function () {
         }
     }
     Related.map = {};
-    class Film extends FilmBase {
+    class Film {
         constructor(kind, key, online, data, extendedData) {
-            super(data);
             this.kind = kind;
             this.key = key;
             this.online = online;
+            this.data = data;
             this.extendedData = extendedData;
         }
         static is(item) {
             return typeof item === 'object' && item !== null && 'kind' in item && item.kind === 'film';
         }
-        static fromHTML(id, html) {
+        static fromHTML(id, html, url) {
             return Film.create(id, () => {
                 var _a;
-                if (!html) {
-                    error('Пустое содержимое страницы фильма');
+                const htmlParser = HTMLParser.parse(html, url);
+                const allFilms = htmlParser.getRelatedFilms();
+                for (const [filmKey, jsonFilmData] of allFilms) {
+                    Related.create(jsonFilmData.id, () => ({
+                        kind: 'related',
+                        key: filmKey,
+                        data: htmlParser.getData(filmKey),
+                    }));
                 }
-                if (typeof html.match !== 'function') {
-                    error('Некорректное содержимое страницы фильма');
-                }
-                const htmlMatch = html.match(/__NEXT_DATA__.*?>(.*?)<\/script>/);
-                if (!htmlMatch) {
-                    error('Не удалось найти объект __NEXT_DATA__ на странице фильма');
-                }
-                function isRecord(obj) {
-                    return typeof obj === 'object' && obj !== null;
-                }
-                function jsonSelect(text, keys) {
-                    const json = JSON.parse(text);
-                    let value = json;
-                    for (const key of keys) {
-                        if (!isRecord(value)) {
-                            error(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
-                        }
-                        if (!(key in value)) {
-                            error(`Значение не является объектом (попытка получить ${key} из списка ${keys.join(', ')})`);
-                        }
-                        value = value[key];
-                    }
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-                    return value;
-                }
-                const jsonData = jsonSelect(htmlMatch[1], ['props', 'apolloState', 'data']);
-                const related = Film.getRelated(jsonData);
                 const relatedFilm = Related.map[id];
                 if (!relatedFilm) {
-                    error('Не удалось найти связанные фильмы');
+                    throw new KPError('Не удалось найти связанные фильмы');
                 }
                 const key = relatedFilm.key;
-                const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0] || select($(html), 'span:contains("Смотреть сериал")', false)[0];
+                const related = allFilms.map(([, { id }]) => id);
+                const watchButton = select($(html), 'span:contains("Смотреть фильм")', false)[0]
+                    || select($(html), 'span:contains("Продолжить просмотр")', false)[0]
+                    || select($(html), 'span:contains("Смотреть сериал")', false)[0];
                 const online = (_a = watchButton === null || watchButton === void 0 ? void 0 : watchButton.closest('a')) === null || _a === void 0 ? void 0 : _a.href.split('?')[0];
-                const jsonFilmData = jsonData[key];
-                if (!jsonFilmData) {
-                    throw new Error(`Cannot find jsonFilmData by key ${key}`);
-                }
-                const genres = Film.getGenres(jsonFilmData, jsonData);
-                const lists = Film.getLists(jsonFilmData, jsonData);
-                const poster = Film.getPoster(jsonFilmData);
-                const description = Film.getDescription(jsonFilmData);
-                const note = Film.getNote(jsonFilmData);
-                const directors = Film.getMembers(jsonFilmData, jsonData, '"DIRECTOR"');
+                const genres = htmlParser.getGenres(key);
+                const lists = htmlParser.getLists(key);
+                const poster = htmlParser.getPoster(key);
+                const description = htmlParser.getDescription(key);
+                const note = htmlParser.getNote(key);
+                const directors = htmlParser.getMembers(key, '"DIRECTOR"');
+                const data = htmlParser.getData(key);
                 return {
                     kind: 'film',
                     key,
                     online,
-                    data: FilmBase.parseJSON(jsonFilmData),
+                    data,
                     extendedData: { related, genres, lists, poster, description, note, directors },
                 };
             });
@@ -270,75 +391,6 @@ String.prototype.toFilename = function () {
             }
             const { kind, key, online, data, extendedData } = getData();
             return Film.map[id] = new Film(kind, key, online, data, extendedData);
-        }
-        static getRelated(data) {
-            return Object.keys(data)
-                .filter(Film.isFilmKey)
-                .map((key) => {
-                const film = data[key];
-                Related.fromJSON(key, film);
-                return film.id;
-            });
-        }
-        static isFilmKey(key) {
-            const [typeName, idString] = key.split(':');
-            return Film.isFilmTypeName(typeName) && !isNaN(Number(idString));
-        }
-        static isFilmTypeName(typeName) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            return filmTypeNames.includes(typeName);
-        }
-        static dereference(links, jsonData) {
-            const result = [];
-            for (const { __ref } of links) {
-                const data = jsonData[__ref];
-                if (!data) {
-                    error(`Не удалось найти связь '${__ref}'`);
-                }
-                result.push(data);
-            }
-            return result;
-        }
-        static getGenres(jsonFilmData, jsonData) {
-            const genres = this.dereference(jsonFilmData.genres, jsonData).map(({ name }) => name);
-            if (jsonFilmData.__typename === 'TvSeries') {
-                genres.push('сериал');
-            }
-            return genres.sort();
-        }
-        static getLists(jsonFilmData, jsonData) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            const key = Object.keys(jsonFilmData.userData)
-                .find((key) => key.startsWith('userFolders'));
-            const links = jsonFilmData.userData[key].items;
-            return this.dereference(links, jsonData).map(({ name }) => name);
-        }
-        static getPoster(jsonFilmData) {
-            var _a;
-            let poster = jsonFilmData.poster && ((_a = jsonFilmData.poster.avatarsUrl) !== null && _a !== void 0 ? _a : jsonFilmData.poster.fallbackUrl);
-            if (poster) {
-                if (poster.startsWith('//')) {
-                    poster = `https:${poster}`;
-                }
-                if (!poster.match(/\d+x\d+$/)) {
-                    poster = `${poster}/600x900`;
-                }
-            }
-            return poster;
-        }
-        static getDescription(jsonFilmData) {
-            var _a, _b;
-            return ((_b = (_a = jsonFilmData.synopsis) !== null && _a !== void 0 ? _a : jsonFilmData.shortDescription) !== null && _b !== void 0 ? _b : '').beautify();
-        }
-        static getNote(jsonFilmData) {
-            var _a, _b;
-            return (_b = (_a = jsonFilmData.userData.note) === null || _a === void 0 ? void 0 : _a.value) !== null && _b !== void 0 ? _b : null;
-        }
-        static getMembers(jsonFilmData, jsonData, jsonRole) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-            const key = Object.keys(jsonFilmData).find((key) => key.startsWith('members') && key.includes(jsonRole));
-            const links = jsonFilmData[key].items.map((item) => item.person);
-            return this.dereference(links, jsonData).map((member) => member.name || member.originalName);
         }
     }
     Film.map = {};
@@ -462,25 +514,17 @@ String.prototype.toFilename = function () {
             return `~ ${minutes} ${minutes.case('минут', 'минута', 'минуты')}`;
         }
     }
-    function error(ex) {
-        if (currentProgress) {
-            currentProgress.error(`Не удалось обработать страницу ${currentUrl}. Ошибка: ${ex}`);
-        }
-        // eslint-disable-next-line no-debugger
-        debugger;
-        throw new Error(ex);
-    }
     function select(context, selector, throwIfNotExists = true) {
         const obj = context.find(selector);
         if (obj.length === 0 && throwIfNotExists) {
-            error(`Не удалось найти элемент по селектору ${selector}`);
+            throw new KPError(`Не удалось найти элемент по селектору ${selector}`);
         }
         return obj;
     }
     function regex(text, pattern) {
         const match = pattern.exec(text);
         if (!match) {
-            error(`Не удалось найти текст по регулярному выражению ${pattern}`);
+            throw new KPError(`Не удалось найти текст по регулярному выражению ${pattern}`);
         }
         return match;
     }
@@ -500,7 +544,7 @@ String.prototype.toFilename = function () {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             }
             catch (ex) {
-                console.warn(`Не удалось загрузить страницу '${url}', попытка #${attempt++} через секунду...`);
+                console.warn(`Не удалось загрузить страницу '${url}', попытка #${++attempt} через секунду...`);
                 if (attempt > 3) {
                     // eslint-disable-next-line no-debugger
                     debugger;
@@ -516,7 +560,7 @@ String.prototype.toFilename = function () {
         const idString = String($(li).data('id'));
         const id = parseInt(idString);
         if (isNaN(id)) {
-            error(`Id не является целым числом: ${idString}`);
+            throw new KPError(`Id не является целым числом: ${idString}`);
         }
         return id;
     }
@@ -526,7 +570,42 @@ String.prototype.toFilename = function () {
     function shouldSkipList(listName) {
         return debug.enabled && debug.listNames.length > 0 && !debug.listNames.includes(listName);
     }
-    function downloadAll() {
+    function getNames({ name, originalName, year }) {
+        if (!name && originalName) {
+            name = originalName;
+            originalName = '';
+        }
+        const fullNameParts = [];
+        fullNameParts.push(name);
+        if (originalName.length > 0 && originalName !== name) {
+            fullNameParts.push(`(${originalName})`);
+        }
+        fullNameParts.push(`[${year ? year : '...'}]`);
+        const fullName = fullNameParts.join(' ').toFilename();
+        return { name, originalName, fullName };
+    }
+    function getYear(data) {
+        var _a, _b;
+        if (!data.releaseYears || data.releaseYears.length === 0) {
+            return data.productionYear ? data.productionYear.toString() : '';
+        }
+        const start = (_a = data.releaseYears[0]) === null || _a === void 0 ? void 0 : _a.start;
+        const end = (_b = data.releaseYears.slice(-1)[0]) === null || _b === void 0 ? void 0 : _b.end;
+        if (start == null) {
+            return '...';
+        }
+        if (start === end) {
+            return start.toString();
+        }
+        if (end) {
+            return `${start} - ${end}`;
+        }
+        if (data.__typename === 'TvSeries') {
+            return `${start} - ...`;
+        }
+        return start.toString();
+    }
+    function showDownloadAll() {
         listsProgress = new Progress('Загрузка списков');
         filmsProgress = new Progress('Загрузка фильмов');
         currentProgress = listsProgress;
@@ -544,7 +623,7 @@ String.prototype.toFilename = function () {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
                     const data = JSON.parse(contents);
                     if (!('lists' in data)) {
-                        error('Загруженный файл не является корректным файлом списков');
+                        throw new KPError('Загруженный файл не является корректным файлом списков');
                     }
                     for (const item of Object.values(data.lists)) {
                         if (!ListItem.is(item)) {
@@ -579,6 +658,18 @@ String.prototype.toFilename = function () {
             void downloadAllLists();
         });
     }
+    function showDownloadSelectedItems() {
+        watchedProgress = new Progress('Загрузка списков просмотренного');
+        plannedProgress = new Progress('Загрузка списков запланированного');
+        const startButton = $('<a></a>')
+            .addClass('button')
+            .text('Начать')
+            .appendTo(watchedProgress.buttonPanel)
+            .on('click', () => {
+            startButton.hide();
+            void downloadSelectedItems();
+        });
+    }
     function createFileInput({ success, fail }) {
         const fileInput = $('<input type="file" />');
         fileInput.on('change', (ev) => {
@@ -604,8 +695,8 @@ String.prototype.toFilename = function () {
     async function downloadAllLists() {
         var _a;
         listsProgress.start();
-        const startUrl = buildUrl();
-        const startHTML = await get(startUrl);
+        const startURL = buildFoldersUrl();
+        const startHTML = await get(startURL);
         const lists = select($(startHTML), '#folderList li')
             .toArray()
             .map((li) => createList(li, startHTML));
@@ -627,7 +718,7 @@ String.prototype.toFilename = function () {
         const firstPageHTML = $(li).find('a').attr('href') ? null : startHTML;
         const matches = text.match(/^\s*(.*?)(\s+\((\d+)\)\s*)?$/);
         if (!matches) {
-            error(`Text '${text}' doesn't match regexp`);
+            throw new KPError(`Text '${text}' doesn't match regexp`);
         }
         const title = matches[1];
         const totalPages = matches[3] ? Math.ceil(parseInt(matches[3]) / perPage) : 0;
@@ -637,7 +728,7 @@ String.prototype.toFilename = function () {
         if (shouldSkipList(list.title)) {
             return;
         }
-        const url = buildUrl(list, currentPage);
+        const url = buildFoldersUrl(list, currentPage);
         const html = currentPage === 1 && list.firstPageHTML ? list.firstPageHTML : await get(url);
         listsProgress.increment(`${list.title} [${currentPage} of ${list.totalPages}]`, url);
         const listItems = select($(html), '#itemList li', false);
@@ -652,8 +743,79 @@ String.prototype.toFilename = function () {
             await parseList(list, currentPage + 1);
         }
     }
-    function buildUrl(list = { id: defaultListID }, currentPage = 1) {
-        return `/mykp/folders/${list.id}/?page=${currentPage}&limit=${perPage}`;
+    async function downloadSelectedItems() {
+        var _a;
+        const htmlParser = HTMLParser.parse(document.body.innerHTML, location.href);
+        const profileAlias = htmlParser.getProfileAlias();
+        const actions = [
+            { progress: watchedProgress, Class: Watched, buildUrl: buildWatchedUrl },
+            { progress: plannedProgress, Class: Planned, buildUrl: buildPlannedUrl },
+        ];
+        for (const { progress, Class, buildUrl } of actions) {
+            currentProgress = progress;
+            progress.start();
+            const startURL = buildUrl(profileAlias);
+            const startHTML = await get(startURL);
+            const countBlock = select($(startHTML), `a[data-test-id="next-link"][href="${buildUrl(profileAlias, null)}"]`);
+            const count = Number(select(countBlock, '[class*="styles_subtitle__"').text());
+            if (isNaN(count)) {
+                throw new KPError(`Total pages count is invalid: ${countBlock.text()}`);
+            }
+            const pager = select($(startHTML), 'ul.styles_list__N_W_1', false);
+            const totalPagesString = select($(pager), 'li:last-child', false).text();
+            const totalPages = totalPagesString.length ? Number(totalPagesString) : 1;
+            if (isNaN(totalPages)) {
+                throw new KPError(`Total pages marker is invalid: ${totalPagesString}`);
+            }
+            progress.push(totalPages, 1);
+            parseSelectedItems(Class, progress, startHTML, startURL);
+            for (let currentPage = 2; currentPage <= totalPages; currentPage++) {
+                const url = buildUrl(profileAlias, currentPage);
+                const html = await get(url);
+                parseSelectedItems(Class, progress, html, url);
+            }
+            progress.pop();
+            progress.finish();
+        }
+        (_a = createDownloadButton({ download: 'selected.json', json: { watched: Watched.map, planned: Planned.map }, title: 'Скачать списки' })
+            .appendTo(plannedProgress.buttonPanel)
+            .get(0)) === null || _a === void 0 ? void 0 : _a.click();
+    }
+    function parseSelectedItems(Class, progress, html, url) {
+        const selectedItems = select($(html), 'main [class*="styles_item__"][class*="styles_poster__"]', false)
+            .toArray()
+            .map(createSelectedItem);
+        for (const selectedItem of selectedItems) {
+            Class.create(selectedItem);
+        }
+        progress.increment('ссылка на страницу списка', url);
+    }
+    function createSelectedItem(div) {
+        const link = select($(div), '[class*="styles_captions__"][href]');
+        const href = link.get(0).href;
+        const id = Number(regex(href, /\/(\d+)\//)[1]);
+        const name = select(link, '[class*="styles_title__"]').text();
+        const rateEl = select($(div), '[class*="styles_rating__"] [class*="styles_value__"]', false);
+        const rate = rateEl.length > 0 ? Number(rateEl.text()) : undefined;
+        return { id, href, name, rate };
+    }
+    function buildFoldersUrl(list = { id: defaultListID }, currentPage = 1) {
+        const baseUrl = `/mykp/folders/${list.id}/`;
+        return currentPage === null
+            ? baseUrl
+            : `${baseUrl}?page=${currentPage}&limit=${perPage}`;
+    }
+    function buildWatchedUrl(profileAlias, currentPage = 1) {
+        const baseUrl = `/user/${profileAlias}/movies/voted-watched/`;
+        return currentPage === null
+            ? baseUrl
+            : `${baseUrl}?page=${currentPage}`;
+    }
+    function buildPlannedUrl(profileAlias, currentPage = 1) {
+        const baseUrl = `/user/${profileAlias}/movies/planned-to-watch/`;
+        return currentPage === null
+            ? baseUrl
+            : `${baseUrl}?page=${currentPage}`;
     }
     async function downloadAllFilms() {
         var _a;
@@ -667,7 +829,7 @@ String.prototype.toFilename = function () {
             const url = `/film/${listItem.data.id}/`;
             filmsProgress.increment(listItem.data.name, url);
             const html = await get(url);
-            Film.fromHTML(listItem.data.id, html);
+            Film.fromHTML(listItem.data.id, html, url);
         }
         filmsProgress.pop();
         filmsProgress.finish();
@@ -677,7 +839,7 @@ String.prototype.toFilename = function () {
     }
     function downloadFilm() {
         const id = getCurrentFilmId();
-        const film = Film.fromHTML(id, document.body.innerHTML);
+        const film = Film.fromHTML(id, document.body.innerHTML, location.href);
         setTimeout(() => {
             var _a;
             if (getListsDropdown().length === 0) {
@@ -704,7 +866,7 @@ String.prototype.toFilename = function () {
     function copyTitle() {
         const id = getCurrentFilmId();
         setTimeout(() => {
-            const film = Film.fromHTML(id, document.body.innerHTML);
+            const film = Film.fromHTML(id, document.body.innerHTML, location.href);
             void navigator.clipboard.writeText(film.data.fullName);
         }, 1);
     }
@@ -913,7 +1075,8 @@ String.prototype.toFilename = function () {
             renderButton({ container, icon: '#', title: 'Copy title', func: copyTitle, top: 7, fontSize: 35 });
             renderButton({ container, icon: '{}', title: 'Download film', func: debug.enabled ? test : downloadFilm, top: 0, fontSize: 24 });
         }
-        renderButton({ container, icon: '⇩', title: 'Download all', func: downloadAll, top: 3, fontSize: 32 });
+        renderButton({ container, icon: '⇩', title: 'Download all', func: showDownloadAll, top: 3, fontSize: 32 });
+        renderButton({ container, icon: '👁', title: 'Download selected items', func: showDownloadSelectedItems, top: 3, fontSize: 32 });
         setCSS();
     }
     if (window === top) {

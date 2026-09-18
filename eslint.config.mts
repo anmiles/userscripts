@@ -1,6 +1,5 @@
 import { configs, globals, patterns } from '@anmiles/eslint-config';
 import type { Linter } from 'eslint';
-import nodePlugin from 'eslint-plugin-n';
 
 export default [
 	...configs.base,
@@ -44,9 +43,6 @@ export default [
 	},
 
 	{
-		plugins: {
-			'n': nodePlugin,
-		},
 		rules: {
 			'n/no-unsupported-features/node-builtins': [ 'off' ],
 		},

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0](../../tags/v5.0.0) - 2026-09-18
+### Changed
+- Migrated to NodeJS 24.18
+- Updated dependencies
+- Updated `Kinopoisk - download json` script to match newest Kinopoisk
+
 ## [4.0.4](../../tags/v4.0.4) - 2026-04-13
 ### Changed
 - Fix vulnerable dependencies

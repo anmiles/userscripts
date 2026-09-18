@@ -676,7 +676,7 @@ type ApiProfileData = Record<string, number> & {
 							},
 						}, {});
 					};
-				})(console[eventType], console.error);
+				})(console[eventType], console.error); // eslint-disable-line @typescript-eslint/unbound-method
 			});
 		}
 	}

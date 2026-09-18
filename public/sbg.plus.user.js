@@ -105,7 +105,7 @@ const langs = ['ru', 'en'];
                             },
                         }, {});
                     };
-                })(console[eventType], console.error);
+                })(console[eventType], console.error); // eslint-disable-line @typescript-eslint/unbound-method
             });
         }
     }
